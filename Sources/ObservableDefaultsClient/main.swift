@@ -14,7 +14,7 @@ import ObservableDefaults
 
 @ObservableDefaults
 public class Test {
-    @DefaultsKey("firstName")
+    @DefaultsKey(userDefaultsKey: "firstName")
     public var name: String = "abc"
 
     @ObservableOnly
