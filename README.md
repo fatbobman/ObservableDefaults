@@ -124,7 +124,7 @@ public init(
 
 - `userDefaults`: The `UserDefaults` instance to use (default is `.standard`).
 - `ignoreExternalChanges`: If `true`, the instance ignores external `UserDefaults` changes (default is `false`).
-- `prefix`: A prefix for all `UserDefaults` keys associated with this class.
+- `prefix`: A prefix for all `UserDefaults` keys associated with this class. The prefix must not contain '.' characters.
 
 #### Example Usage
 
@@ -162,7 +162,7 @@ If you set `autoInit` to `false`, you need to create your own initializer and ex
 ```swift
 init() {
     // Start listening for changes
-    observer = DefaultsObservation(host: self, userDefaults: _userDefaults, prefix: _prefix)
+    observerStarter()
 }
 ```
 
@@ -179,7 +179,7 @@ class AppState {
 }
 
 struct ContentView: View {
-    @StateObject var state = AppState()
+    @State var state = AppState()
 
     var body: some View {
         VStack(spacing: 30) {
@@ -201,6 +201,7 @@ struct ContentView: View {
 - **External Changes**: By default, `ObservableDefaults` instances respond to external changes in `UserDefaults`. You can disable this by setting `ignoreExternalChanges` to `true`.
 - **Key Prefixes**: Use the `prefix` parameter to prevent key collisions when multiple classes use the same property names.
 - **Custom Keys**: Use `@DefaultsKey` to specify custom keys for properties.
+- **Prefixe Charters**: The prefix must not contain '.' characters.
 
 ## License
 

@@ -39,7 +39,7 @@ public macro ObservableOnly() = #externalMacro(module: "ObservableDefaultsMacros
 // - prefix: Prefix for UserDefaults keys. Note: It cannot contain the '.' character
 // If a parameter is set in both the macro and the initializer, the value in the initializer takes precedence
 @attached(member, names: named(_$observationRegistrar), named(_userDefaults), named(_isExternalNotificationDisabled), named(access), named(withMutation), named(getValue), named(setValue), named(UserDefaultsWrapper), named(init), named(_prefix), named(cancellables), named(setupUserDefaultsObservation),
-          named(checkForChanges), named(observer), named(DefaultsObservation))
+          named(checkForChanges), named(observer), named(DefaultsObservation), named(observerStarter))
 @attached(extension, conformances: Observable)
 @attached(memberAttribute)
 public macro ObservableDefaults(autoInit: Bool = true, ignoreExternalChanges: Bool = false, suiteName: String? = nil, prefix: String? = nil) = #externalMacro(module: "ObservableDefaultsMacros", type: "ObservableDefaultsMacros")

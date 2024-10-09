@@ -149,7 +149,7 @@ extension ObservableDefaultsMacros: MemberMacro {
                 }
                 assert(!_prefix.contains("."), "Prefix '\\(_prefix)' should not contain '.' to avoid KVO issues!")
                 if !_isExternalNotificationDisabled {
-                    observer = DefaultsObservation(host: self, userDefaults: _userDefaults, prefix: _prefix)
+                    observerStarter()
                 }
             }
             """
@@ -188,7 +188,13 @@ extension ObservableDefaultsMacros: MemberMacro {
                 }
             }
             """
-
+        let observerStarterSyntax: DeclSyntax =
+        """
+        private func observerStarter() {
+            observer = DefaultsObservation(host: self, userDefaults: _userDefaults, prefix: _prefix)
+        }
+        """
+        
         return [
             registrarSyntax,
             accessFunctionSyntax,
@@ -197,6 +203,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             isExternalNotificationDisabledSyntax,
             prefixSyntax,
             observerFunctionSyntax,
+            observerStarterSyntax,
         ] + (autoInit ? [initFunctionSyntax] : [])
     }
 }
