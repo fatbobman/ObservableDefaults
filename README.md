@@ -50,6 +50,8 @@ class Settings {
 }
 ```
 
+https://github.com/user-attachments/assets/469d55e8-7468-44ac-b591-804c40815724
+
 This macro automatically:
 
 - Associates the `name` and `age` properties with `UserDefaults` keys.
