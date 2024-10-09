@@ -23,6 +23,5 @@ struct UserDefaultsObservationPlugin: CompilerPlugin {
         ObservableDefaultsMacros.self,
         IgnoreMacro.self,
         ObservableOnlyMacro.self,
-        GeneratedClassNameMacro.self
     ]
 }

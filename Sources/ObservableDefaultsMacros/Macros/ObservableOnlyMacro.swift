@@ -12,6 +12,7 @@
 import SwiftSyntax
 import SwiftSyntaxMacros
 
+// A macro to mark a property as Observable but not associated with any UserDefaults key
 public enum ObservableOnlyMacro {
     static let name: String = "ObservableOnly"
 }

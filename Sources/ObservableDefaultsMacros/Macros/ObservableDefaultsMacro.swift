@@ -9,13 +9,15 @@
 //  ------------------------------------------------
 //  Copyright © 2024-present Fatbobman. All rights reserved.
 
-import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
-import SwiftUI
 
 public enum ObservableDefaultsMacros {
     static let name: String = "ObservableDefaults"
+    static let autoInit: String = "autoInit"
+    static let ignoreExternalChanges: String = "ignoreExternalChanges"
+    static let suiteName: String = "suiteName"
+    static let prefix: String = "prefix"
 }
 
 extension ObservableDefaultsMacros: MemberMacro {
@@ -30,12 +32,11 @@ extension ObservableDefaultsMacros: MemberMacro {
 
         let (autoInit, suiteName, prefix, ignoreExternalChanges) = extractProperty(node)
 
-        // 遍历所有成员，获取所有 isPersistent 为 true 的成员
+        // Traverse all members and get all members with isPersistent set to true
         guard let classDecl = declaration as? ClassDeclSyntax else {
             fatalError()
         }
         let persistentProperties = classDecl.memberBlock.members.compactMap { member -> VariableDeclSyntax? in
-            // member: MemberBlockItemListSyntax.Element
             guard let varDecl = member.decl.as(VariableDeclSyntax.self),
                   varDecl.isPersistent
             else {
@@ -50,14 +51,16 @@ extension ObservableDefaultsMacros: MemberMacro {
             return (key, propertyID)
         }
 
+        // Add observer code
+        // To align, the first line uses 0 spaces, and the others use 8 spaces. A better method has not been found yet
         let addObserverCode = metas.enumerated().map { index, meta in
-            let indent = index == 0 ? "" : "        " // 第一行用 0 个空格，其他行用 8 个
+            let indent = index == 0 ? "" : "        "
             return "\(indent)userDefaults.addObserver(self, forKeyPath: prefix + \"\(meta.userDefaultsKey)\", options: .new, context: nil)"
         }.joined(separator: "\n")
 
         let caseCode = metas.enumerated().map { index, meta in
-            let caseIndent = index == 0 ? "" : "        " // 第一个 case 使用 8 个空格，其他的用 8 个
-            let bodyIndent = "            " // 12 个空格用于 case 内的代码
+            let caseIndent = index == 0 ? "" : "        "
+            let bodyIndent = "            "
             return """
             \(caseIndent)case prefix + "\(meta.userDefaultsKey)":
             \(bodyIndent)host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
@@ -65,7 +68,7 @@ extension ObservableDefaultsMacros: MemberMacro {
         }.joined(separator: "\n")
 
         let removeObserverCode = metas.enumerated().map { index, meta in
-            let indent = index == 0 ? "" : "        " // 第一行用 0 个空格，其他行用 8 个
+            let indent = index == 0 ? "" : "        "
             return "\(indent)userDefaults.removeObserver(self, forKeyPath: prefix + \"\(meta.userDefaultsKey)\")"
         }.joined(separator: "\n")
 
@@ -94,7 +97,8 @@ extension ObservableDefaultsMacros: MemberMacro {
                 if let userDefaults = Foundation.UserDefaults(suiteName: \(raw: suiteName!)) {
                     return userDefaults
                 } else {
-                    assertionFailure("Failed to create UserDefaults with suiteName 'hello', falling back to UserDefaults.standard.")
+                    let suiteName = \(raw: suiteName ?? "")
+                    assertionFailure("Failed to create UserDefaults with suiteName: \\(suiteName), falling back to UserDefaults.standard.")
                     return Foundation.UserDefaults.standard
                 }
             }()
@@ -106,13 +110,25 @@ extension ObservableDefaultsMacros: MemberMacro {
         let isExternalNotificationDisabled = !ignoreExternalChanges ? "true" : "false"
         let isExternalNotificationDisabledSyntax: DeclSyntax =
             """
+            /// Determines whether the instance responds to UserDefaults modifications made externally.
+            /// When set to `true`, the instance ignores notifications from changes made to UserDefaults
+            /// by other parts of the application or other processes.
+            /// When set to `false`, the instance will respond to all UserDefaults changes, regardless of their origin.
+            ///
+            /// - Note: This flag is particularly useful in scenarios where you want to avoid
+            ///   recursive or unnecessary updates when the instance itself is modifying UserDefaults.
+            ///
+            /// - Important: Default value is `false`.
             internal var _isExternalNotificationDisabled: Bool = \(raw: isExternalNotificationDisabled)
             """
 
-        let prefixStr = prefix != nil ? prefix! : "\"\(className).\""
+        let prefixStr = prefix != nil ? prefix! : ""
+        let emptyStr = prefixStr == "" ? "\"\"" : ""
         let prefixSyntax: DeclSyntax =
             """
-            internal var _prefix: String = \(raw: prefixStr)
+            /// Prefix for the UserDefaults key. The default value is an empty string.
+            /// Note: The prefix must not contain '.' characters.
+            internal var _prefix: String = \(raw: prefixStr)\(raw: emptyStr)
             """
 
         let initFunctionSyntax: DeclSyntax =
@@ -141,7 +157,13 @@ extension ObservableDefaultsMacros: MemberMacro {
         let observerFunctionSyntax: DeclSyntax =
             """
             private var observer: DefaultsObservation?
-            class DefaultsObservation: NSObject {
+
+            /// The observation registrar is used to manage the observation of changes to UserDefaults.
+            /// It ensures that the observer is properly registered and deregistered when the instance is created and deinitialized.
+            /// The registrar is accessed through the `_$observationRegistrar` property.
+            ///
+            /// - Note: This property is internal and can be accessed within the same module.
+            private class DefaultsObservation: NSObject {
                 let host: \(className)
                 let userDefaults: Foundation.UserDefaults
                 let prefix: String
@@ -218,22 +240,10 @@ extension ObservableDefaultsMacros: MemberAttributeMacro {
 }
 
 extension ObservableDefaultsMacros {
-    static func allowInit(node: AttributeSyntax, context _: MacroExpansionContext) throws -> Bool {
-        guard let argumentList = node.arguments?.as(LabeledExprListSyntax.self) else {
-            return false // 如果没有参数，默认返回 false
-        }
-
-        // 遍历参数列表
-        for argument in argumentList {
-            if argument.label?.text == "autoInit",
-               let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
-            {
-                return booleanLiteral.literal.text == "true"
-            }
-        }
-        return false
-    }
-
+    /// Extract the parameters from the attribute syntax
+    /// - Parameters:
+    ///   - node: The attribute syntax
+    /// - Returns: A tuple containing the parameters
     static func extractProperty(_ node: AttributeSyntax) -> (
         autoInit: Bool,
         suiteName: String?,
@@ -247,19 +257,19 @@ extension ObservableDefaultsMacros {
 
         if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
             for argument in argumentList {
-                if argument.label?.text == "autoInit",
+                if argument.label?.text == ObservableDefaultsMacros.autoInit,
                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
                     autoInit = booleanLiteral.literal.text == "true"
-                } else if argument.label?.text == "ignoreExternalChanges",
+                } else if argument.label?.text == ObservableDefaultsMacros.ignoreExternalChanges,
                           let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
                     ignoreExternalChanges = booleanLiteral.literal.text == "true"
-                } else if argument.label?.text == "suiteName",
+                } else if argument.label?.text == ObservableDefaultsMacros.suiteName,
                           let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self)
                 {
                     suiteName = stringLiteral.trimmedDescription
-                } else if argument.label?.text == "prefix",
+                } else if argument.label?.text == ObservableDefaultsMacros.prefix,
                           let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self)
                 {
                     prefix = stringLiteral.trimmedDescription
@@ -269,31 +279,3 @@ extension ObservableDefaultsMacros {
         return (autoInit, suiteName, prefix, ignoreExternalChanges)
     }
 }
-
-// extension ObservableDefaultsMacros {
-//    static func extractVarProperties(_ declaration: some DeclGroupSyntax) -> [VariableDeclSyntax] {
-//        return declaration.memberBlock.members.compactMap { member in
-//            guard let varDecl = member.decl.as(VariableDeclSyntax.self),
-//                  varDecl.bindingSpecifier.text == "var",
-//                  varDecl.bindings.count == 1,
-//                  varDecl.bindings.first?.accessorBlock == nil
-//            else {
-//                return nil
-//            }
-//            return varDecl
-//        }
-//    }
-//
-//    static func generatePrivateLetDeclarations(_ varProperties: [VariableDeclSyntax]) -> [DeclSyntax] {
-//        return varProperties.compactMap { varDecl in
-//            guard let binding = varDecl.bindings.first,
-//                  let identifier = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier,
-//                  let type = binding.typeAnnotation?.type
-//            else {
-//                return nil
-//            }
-//
-//            return DeclSyntax("private var _\(identifier): \(type)")
-//        }
-//    }
-// }
