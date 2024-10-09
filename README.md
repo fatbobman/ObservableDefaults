@@ -12,6 +12,12 @@ ObservableDefaults was created to address these challenges by providing a compre
 
 For an in-depth discussion on the limitations of @AppStorage and the motivation behind ObservableDefaults, you can read the full article on [my blog](https://fatbobman.com/en/posts/userdefaults-and-observation).
 
+---
+
+Don't miss out on the latest updates and excellent articles about Swift, SwiftUI, Core Data, and SwiftData. Subscribe to **[Fatbobman's Swift Weekly](https://weekly.fatbobman.com)** and receive weekly insights and valuable content directly to your inbox.
+
+---
+
 ## Features
 
 - Seamless integration with the SwiftUI Observation framework.
