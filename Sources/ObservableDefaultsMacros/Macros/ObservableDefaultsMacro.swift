@@ -107,7 +107,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             internal var _userDefaults: Foundation.UserDefaults = Foundation.UserDefaults.standard
             """
 
-        let isExternalNotificationDisabled = !ignoreExternalChanges ? "true" : "false"
+        let isExternalNotificationDisabled = ignoreExternalChanges ? "true" : "false"
         let isExternalNotificationDisabledSyntax: DeclSyntax =
             """
             /// Determines whether the instance responds to UserDefaults modifications made externally.
