@@ -37,9 +37,10 @@ public macro ObservableOnly() = #externalMacro(module: "ObservableDefaultsMacros
 // - ignoreExternalChanges: Ignore notifications from external modifications. When true, the instance will only respond to its own data modifications
 // - suiteName: The suite name for UserDefaults
 // - prefix: Prefix for UserDefaults keys. Note: It cannot contain the '.' character
+// - observeFirst: Observation priority mode. When enabled (set to true), only properties explicitly marked with `@DefaultsBacked` will correspond to UserDefaults, while others will be treated as ObservableOnly. The default value is false
 // If a parameter is set in both the macro and the initializer, the value in the initializer takes precedence
 @attached(member, names: named(_$observationRegistrar), named(_userDefaults), named(_isExternalNotificationDisabled), named(access), named(withMutation), named(getValue), named(setValue), named(UserDefaultsWrapper), named(init), named(_prefix), named(cancellables), named(setupUserDefaultsObservation),
           named(checkForChanges), named(observer), named(DefaultsObservation), named(observerStarter))
 @attached(extension, conformances: Observable)
 @attached(memberAttribute)
-public macro ObservableDefaults(autoInit: Bool = true, ignoreExternalChanges: Bool = false, suiteName: String? = nil, prefix: String? = nil) = #externalMacro(module: "ObservableDefaultsMacros", type: "ObservableDefaultsMacros")
+public macro ObservableDefaults(autoInit: Bool = true, ignoreExternalChanges: Bool = false, suiteName: String? = nil, prefix: String? = nil, observeFirst: Bool = false) = #externalMacro(module: "ObservableDefaultsMacros", type: "ObservableDefaultsMacros")

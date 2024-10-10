@@ -18,6 +18,7 @@ public enum ObservableDefaultsMacros {
     static let ignoreExternalChanges: String = "ignoreExternalChanges"
     static let suiteName: String = "suiteName"
     static let prefix: String = "prefix"
+    static let observeFirst: String = "observeFirst"
 }
 
 extension ObservableDefaultsMacros: MemberMacro {
@@ -30,7 +31,7 @@ extension ObservableDefaultsMacros: MemberMacro {
 
         let className = IdentifierPatternSyntax(identifier: .init(stringLiteral: "\(identifier.name.trimmed)"))
 
-        let (autoInit, suiteName, prefix, ignoreExternalChanges) = extractProperty(node)
+        let (autoInit, suiteName, prefix, ignoreExternalChanges, _) = extractProperty(node)
 
         // Traverse all members and get all members with isPersistent set to true
         guard let classDecl = declaration as? ClassDeclSyntax else {
@@ -189,12 +190,12 @@ extension ObservableDefaultsMacros: MemberMacro {
             }
             """
         let observerStarterSyntax: DeclSyntax =
-        """
-        private func observerStarter() {
-            observer = DefaultsObservation(host: self, userDefaults: _userDefaults, prefix: _prefix)
-        }
-        """
-        
+            """
+            private func observerStarter() {
+                observer = DefaultsObservation(host: self, userDefaults: _userDefaults, prefix: _prefix)
+            }
+            """
+
         return [
             registrarSyntax,
             accessFunctionSyntax,
@@ -228,21 +229,29 @@ extension ObservableDefaultsMacros: ExtensionMacro {
 
 extension ObservableDefaultsMacros: MemberAttributeMacro {
     public static func expansion(
-        of _: AttributeSyntax,
+        of node: AttributeSyntax,
         attachedTo _: some DeclGroupSyntax,
         providingAttributesFor member: some DeclSyntaxProtocol,
         in _: some MacroExpansionContext
     ) throws -> [SwiftSyntax.AttributeSyntax] {
+        let (_, _, _, _, observeFirst) = extractProperty(node)
         guard let varDecl = member.as(VariableDeclSyntax.self),
-              varDecl.isPersistent
+              varDecl.isObservable
         else {
             return []
         }
-        return [
-            """
-            @\(raw: DefaultsBackedMacro.name)
-            """,
-        ]
+        
+        if observeFirst {
+            if !varDecl.hasAttribute(named: DefaultsBackedMacro.name) && !varDecl.hasAttribute(named: ObservableOnlyMacro.name){
+                 return [ "@\(raw: ObservableOnlyMacro.name)"]
+            }
+        } else {
+            if varDecl.isPersistent {
+                return  [ "@\(raw: DefaultsBackedMacro.name)" ]
+            }
+        }
+
+        return []
     }
 }
 
@@ -255,12 +264,14 @@ extension ObservableDefaultsMacros {
         autoInit: Bool,
         suiteName: String?,
         prefix: String?,
-        ignoreExternalChanges: Bool
+        ignoreExternalChanges: Bool,
+        observeFirst: Bool
     ) {
         var autoInit = true
         var suiteName: String?
         var prefix: String?
         var ignoreExternalChanges = false
+        var observeFirst = false
 
         if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
             for argument in argumentList {
@@ -280,9 +291,13 @@ extension ObservableDefaultsMacros {
                           let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self)
                 {
                     prefix = stringLiteral.trimmedDescription
+                } else if argument.label?.text == ObservableDefaultsMacros.observeFirst,
+                          let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
+                {
+                    observeFirst = booleanLiteral.literal.text == "true"
                 }
             }
         }
-        return (autoInit, suiteName, prefix, ignoreExternalChanges)
+        return (autoInit, suiteName, prefix, ignoreExternalChanges, observeFirst)
     }
 }

@@ -12,11 +12,13 @@
 import Foundation
 import ObservableDefaults
 
-@ObservableDefaults
+@ObservableDefaults(observeFirst: true)
 public class Test {
     @DefaultsKey(userDefaultsKey: "firstName")
+    @DefaultsBacked
     public var name: String = "abc"
 
-    @ObservableOnly
     var age: String?
+
+    var sex: Bool = false
 }

@@ -85,6 +85,7 @@ The library provides additional macros for finer control:
 - `@ObservableOnly`: The property is observable but not stored in `UserDefaults`.
 - `@Ignore`: The property is neither observable nor stored in `UserDefaults`.
 - `@DefaultsKey`: Specifies a custom `UserDefaults` key for the property.
+- `@DefaultsBacked`: The property is stored in `UserDefaults` and observable.
 
 #### Example
 
@@ -125,6 +126,7 @@ public init(
 - `userDefaults`: The `UserDefaults` instance to use (default is `.standard`).
 - `ignoreExternalChanges`: If `true`, the instance ignores external `UserDefaults` changes (default is `false`).
 - `prefix`: A prefix for all `UserDefaults` keys associated with this class. The prefix must not contain '.' characters.
+- `observeFirst`: Observation priority mode. When enabled (set to true), only properties explicitly marked with `@DefaultsBacked` will correspond to UserDefaults, while others will be treated as ObservableOnly. The default value is false
 
 #### Example Usage
 
@@ -195,6 +197,16 @@ struct ContentView: View {
     }
 }
 ```
+
+## Observe First Mode
+
+You can enable this mode by setting the observeFirst parameter in the `@ObservableDefaults` macro:
+
+```swift
+@ObservableDefaults(observeFirst: true)
+```
+
+When this mode is enabled, only properties explicitly marked with `@DefaultsBacked` will be persisted to UserDefaults. All other properties will automatically have the `@ObservableOnly` macro applied, making them observable but not persisted. Think of this as the inverse of the standard mode, focusing on observability while adding persistence capabilities to individual properties as needed.
 
 ## Important Notes
 
