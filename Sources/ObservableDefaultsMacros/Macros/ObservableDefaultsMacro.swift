@@ -47,7 +47,9 @@ extension ObservableDefaultsMacros: MemberMacro {
         }
 
         let metas: [(userDefaultsKey: String, propertyID: String)] = persistentProperties.map { property in
-            let key = property.attributes.extractValue(forAttribute: DefaultsKeyMacro.name, argument: DefaultsKeyMacro.key) ?? property.identifier?.text ?? ""
+            let key =
+                property.attributes.extractValue(forAttribute: DefaultsBackedMacro.name, argument: DefaultsBackedMacro.key) ??
+                property.attributes.extractValue(forAttribute: DefaultsKeyMacro.name, argument: DefaultsKeyMacro.key) ?? property.identifier?.text ?? ""
             let propertyID = property.identifier?.text ?? ""
             return (key, propertyID)
         }
@@ -240,14 +242,14 @@ extension ObservableDefaultsMacros: MemberAttributeMacro {
         else {
             return []
         }
-        
+
         if observeFirst {
-            if !varDecl.hasAttribute(named: DefaultsBackedMacro.name) && !varDecl.hasAttribute(named: ObservableOnlyMacro.name){
-                 return [ "@\(raw: ObservableOnlyMacro.name)"]
+            if !varDecl.hasAttribute(named: DefaultsBackedMacro.name) && !varDecl.hasAttribute(named: ObservableOnlyMacro.name) {
+                return ["@\(raw: ObservableOnlyMacro.name)"]
             }
         } else {
-            if varDecl.isPersistent && !varDecl.hasAttribute(named: DefaultsBackedMacro.name){
-                return  [ "@\(raw: DefaultsBackedMacro.name)" ]
+            if varDecl.isPersistent && !varDecl.hasAttribute(named: DefaultsBackedMacro.name) {
+                return ["@\(raw: DefaultsBackedMacro.name)"]
             }
         }
 

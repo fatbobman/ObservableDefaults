@@ -51,7 +51,7 @@ extension DefaultsBackedMacro: AccessorMacro {
         }
 
         // Check if the type is optional, if so, report an error (supporting ? ! and Optional three ways of judgment)
-        if let typeAnnotation = binding.typeAnnotation  {
+        if let typeAnnotation = binding.typeAnnotation {
             let typeSyntax = typeAnnotation.type
             let typeName = typeSyntax.description.trimmingCharacters(in: .whitespacesAndNewlines)
             if typeSyntax.is(OptionalTypeSyntax.self) ||
@@ -64,8 +64,11 @@ extension DefaultsBackedMacro: AccessorMacro {
             }
         }
 
-        // If @DefaultsKey(originalKey:) is annotated, use the user-specified Key
-        if let extractedKey: String = property.attributes.extractValue(forAttribute: DefaultsKeyMacro.name, argument: DefaultsKeyMacro.key) {
+        // If @DefaultsBacked(originalKey:) or @DefaultsKey(originalKey:) is annotated, use the user-specified Key
+        // If both add originalKey, @DefaultsBacked will take precedence.
+        if let extractedKey: String = property.attributes.extractValue(forAttribute: DefaultsBackedMacro.name, argument: DefaultsBackedMacro.key) ??
+            property.attributes.extractValue(forAttribute: DefaultsKeyMacro.name, argument: DefaultsKeyMacro.key)
+        {
             keyString = extractedKey
         }
 
