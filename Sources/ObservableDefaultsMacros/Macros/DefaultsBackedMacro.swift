@@ -49,26 +49,21 @@ extension DefaultsBackedMacro: AccessorMacro {
             return []
         }
 
-        // Extract the type annotation of the variable, which requires explicit type annotation
-        guard let typeAnnotation = binding.typeAnnotation else {
-            let diagnostic = Diagnostic.explicitTypeAnnotationRequired(property: property)
-            context.diagnose(diagnostic)
-            return []
-        }
-
         // Check if the type is optional, if so, report an error (supporting ? ! and Optional three ways of judgment)
-        let typeSyntax = typeAnnotation.type
-        let typeName = typeSyntax.description.trimmingCharacters(in: .whitespacesAndNewlines)
-        if typeSyntax.is(OptionalTypeSyntax.self) ||
-            typeSyntax.is(ImplicitlyUnwrappedOptionalTypeSyntax.self) ||
-            typeName.contains("Optional")
-        {
-            let diagnostic = Diagnostic.optionalTypeNotSupported(property: property, typeName: typeName)
-            context.diagnose(diagnostic)
-            return []
+        if let typeAnnotation = binding.typeAnnotation  {
+            let typeSyntax = typeAnnotation.type
+            let typeName = typeSyntax.description.trimmingCharacters(in: .whitespacesAndNewlines)
+            if typeSyntax.is(OptionalTypeSyntax.self) ||
+                typeSyntax.is(ImplicitlyUnwrappedOptionalTypeSyntax.self) ||
+                typeName.contains("Optional")
+            {
+                let diagnostic = Diagnostic.optionalTypeNotSupported(property: property, typeName: typeName)
+                context.diagnose(diagnostic)
+                return []
+            }
         }
 
-        // If @Attribute(originalKey:) is annotated, use the user-specified Key
+        // If @DefaultsKey(originalKey:) is annotated, use the user-specified Key
         if let extractedKey: String = property.attributes.extractValue(forAttribute: DefaultsKeyMacro.name, argument: DefaultsKeyMacro.key) {
             keyString = extractedKey
         }
@@ -113,41 +108,12 @@ extension DefaultsBackedMacro: PeerMacro {
         in _: Context
     ) throws -> [DeclSyntax] {
         guard let property = declaration.as(VariableDeclSyntax.self),
-              property.isPersistent,
-              let identifier = property.identifier
+              property.isPersistent
         else {
             return []
         }
 
-        guard let binding = property.bindings.first else {
-            return []
-        }
-
-        let defaultValue: String = binding
-            .initializer?
-            .trimmedDescription
-            .replacingOccurrences(of: "=", with: "")
-            .trimmingCharacters(in: .whitespaces) ?? ""
-
-        let store: DeclSyntax =
-            """
-            private var _\(raw: identifier.text) = \(raw: defaultValue)
-            """
-        return [store]
+        let storage = DeclSyntax(property.privatePrefixed("_"))
+        return [storage]
     }
 }
-
-// private func findEnclosingTypeName(of node: some SyntaxProtocol) -> String? {
-//    var currentNode: SyntaxProtocol = node
-//    while let parent = currentNode.parent {
-//        if let structDecl = parent.as(StructDeclSyntax.self) {
-//            return structDecl.name.text
-//        } else if let classDecl = parent.as(ClassDeclSyntax.self) {
-//            return classDecl.name.text
-//        } else if let enumDecl = parent.as(EnumDeclSyntax.self) {
-//            return enumDecl.name.text
-//        }
-//        currentNode = parent
-//    }
-//    return nil
-// }

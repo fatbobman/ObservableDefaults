@@ -24,21 +24,11 @@ extension ObservableOnlyMacro: PeerMacro {
         in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.DeclSyntax] {
         guard let property = declaration.as(VariableDeclSyntax.self),
-              property.isObservable,
-              let identifier = property.identifier,
-              let typeAnnotation = property.bindings.first?.typeAnnotation
+              property.isObservable
         else {
             return []
         }
-
-        guard let binding = property.bindings.first else {
-            return []
-        }
-
-        let storage: DeclSyntax =
-            """
-            private var _\(raw: identifier.text)\(typeAnnotation) \(binding.initializer)
-            """
+        let storage = DeclSyntax(property.privatePrefixed("_"))
         return [storage]
     }
 }
