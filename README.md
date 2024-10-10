@@ -132,7 +132,6 @@ public init(
 - `userDefaults`: The `UserDefaults` instance to use (default is `.standard`).
 - `ignoreExternalChanges`: If `true`, the instance ignores external `UserDefaults` changes (default is `false`).
 - `prefix`: A prefix for all `UserDefaults` keys associated with this class. The prefix must not contain '.' characters.
-- `observeFirst`: Observation priority mode. When enabled (set to true), only properties explicitly marked with `@DefaultsBacked` will correspond to UserDefaults, while others will be treated as ObservableOnly. The default value is false
 
 #### Example Usage
 
@@ -152,6 +151,7 @@ You can also set parameters directly in the `@ObservableDefaults` macro:
 - `ignoreExternalChanges`: Whether to ignore external changes.
 - `prefix`: A prefix for `UserDefaults` keys.
 - `autoInit`: Whether to automatically generate the initializer (default is `true`).
+- `observeFirst`: Observation priority mode. When enabled (set to true), only properties explicitly marked with `@DefaultsBacked` will correspond to UserDefaults, while others will be treated as ObservableOnly. The default value is false
 
 #### Example
 
@@ -180,14 +180,14 @@ It's recommended to manage `UserDefaults` data separately from your main applica
 
 ```swift
 @Observable
-class AppState {
+class ViewState {
     var selection = 10
     var isLogin = false
     let settings = Settings()
 }
 
 struct ContentView: View {
-    @State var state = AppState()
+    @State var state = ViewState()
 
     var body: some View {
         VStack(spacing: 30) {
