@@ -246,7 +246,7 @@ extension ObservableDefaultsMacros: MemberAttributeMacro {
                  return [ "@\(raw: ObservableOnlyMacro.name)"]
             }
         } else {
-            if varDecl.isPersistent {
+            if varDecl.isPersistent && !varDecl.hasAttribute(named: DefaultsBackedMacro.name){
                 return  [ "@\(raw: DefaultsBackedMacro.name)" ]
             }
         }
