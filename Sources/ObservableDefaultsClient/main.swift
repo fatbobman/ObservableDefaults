@@ -12,13 +12,37 @@
 import Foundation
 import ObservableDefaults
 
-@ObservableDefaults(observeFirst: true)
-public class Test {
+@ObservableDefaults
+public class Test1 {
     @DefaultsKey(userDefaultsKey: "firstName")
-    @DefaultsBacked
-    public var name: String = "abc"
+    // Automatically adds @DefaultsBacked
+    public var name: String = "fat"
 
-    var age: String?
+    // Automatically adds @DefaultsBacked
+    public var age = 109
 
-    var sex: Bool = false
+    // Only observes, not persisted in UserDefaults
+    @ObservableOnly
+    public var height = 190
+
+    // Not observable and not persisted
+    @Ignore
+    public var weight = 10
+}
+
+@ObservableDefaults(observeFirst: true) // Observe First Mode
+public class Test2 {
+    // Automatically adds @ObservabeOnly
+    public var name: String = "fat"
+
+    // Automatically adds @ObservabeOnly
+    public var age = 109
+
+    // In Observe First Mode, only properties that need to be persisted require the use of @DefaultsBacked for annotation, and userDefaultsKey can be set within it
+    @DefaultsBacked(userDefaultsKey: "myHeight")
+    public var height = 190
+
+    // Not observable and not persisted
+    @Ignore
+    public var weight = 10
 }

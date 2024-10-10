@@ -96,7 +96,7 @@ extension ObservableDefaultsMacros: MemberMacro {
 
         let userDefaultStoreSyntax: DeclSyntax = suiteName != nil ?
             """
-            internal var _userDefaults: Foundation.UserDefaults = {
+            private var _userDefaults: Foundation.UserDefaults = {
                 if let userDefaults = Foundation.UserDefaults(suiteName: \(raw: suiteName!)) {
                     return userDefaults
                 } else {
@@ -107,7 +107,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             }()
             """
             : """
-            internal var _userDefaults: Foundation.UserDefaults = Foundation.UserDefaults.standard
+            private var _userDefaults: Foundation.UserDefaults = Foundation.UserDefaults.standard
             """
 
         let isExternalNotificationDisabled = ignoreExternalChanges ? "true" : "false"
@@ -122,7 +122,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             ///   recursive or unnecessary updates when the instance itself is modifying UserDefaults.
             ///
             /// - Important: Default value is `false`.
-            internal var _isExternalNotificationDisabled: Bool = \(raw: isExternalNotificationDisabled)
+            private var _isExternalNotificationDisabled: Bool = \(raw: isExternalNotificationDisabled)
             """
 
         let prefixStr = prefix != nil ? prefix! : ""
@@ -131,7 +131,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             """
             /// Prefix for the UserDefaults key. The default value is an empty string.
             /// Note: The prefix must not contain '.' characters.
-            internal var _prefix: String = \(raw: prefixStr)\(raw: emptyStr)
+            private var _prefix: String = \(raw: prefixStr)\(raw: emptyStr)
             """
 
         let initFunctionSyntax: DeclSyntax =
