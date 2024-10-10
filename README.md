@@ -208,6 +208,26 @@ You can enable this mode by setting the observeFirst parameter in the `@Observab
 
 When this mode is enabled, only properties explicitly marked with `@DefaultsBacked` will be persisted to UserDefaults. All other properties will automatically have the `@ObservableOnly` macro applied, making them observable but not persisted. Think of this as the inverse of the standard mode, focusing on observability while adding persistence capabilities to individual properties as needed.
 
+```swift
+// Observe First Mode
+@ObservableDefaults(observeFirst: true)
+public class Test2 {
+    // Automatically adds @ObservabeOnly
+    public var name: String = "fat"
+
+    // Automatically adds @ObservabeOnly
+    public var age = 109
+
+    // In Observe First Mode, only properties that need to be persisted require the use of @DefaultsBacked for annotation, and userDefaultsKey can be set within it
+    @DefaultsBacked(userDefaultsKey: "myHeight")
+    public var height = 190
+
+    // Not observable and not persisted
+    @Ignore
+    public var weight = 10
+}
+```
+
 ## Important Notes
 
 - **External Changes**: By default, `ObservableDefaults` instances respond to external changes in `UserDefaults`. You can disable this by setting `ignoreExternalChanges` to `true`.
