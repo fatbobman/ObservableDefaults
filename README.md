@@ -112,8 +112,8 @@ public class Test1 {
 In this example:
 
 - `name` is stored in `UserDefaults` under the key `"fullName"`.
-- `age` is observable but not stored in `UserDefaults`.
-- `city` is neither observable nor stored in `UserDefaults`.
+- `height` is observable but not stored in `UserDefaults`.
+- `weight` is neither observable nor stored in `UserDefaults`.
 
 ### Initializer and Parameters
 
