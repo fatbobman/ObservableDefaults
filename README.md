@@ -91,15 +91,21 @@ The library provides additional macros for finer control:
 
 ```swift
 @ObservableDefaults
-class Settings {
-    @DefaultsKey(userDefaultsKey: "fullName")
-    var name: String = "Fatbobman"
+public class Test1 {
+    @DefaultsKey(userDefaultsKey: "firstName")
+    // Automatically adds @DefaultsBacked
+    public var name: String = "fat"
 
+    // Automatically adds @DefaultsBacked
+    public var age = 109
+
+    // Only observes, not persisted in UserDefaults
     @ObservableOnly
-    var age: Int = 20
+    public var height = 190
 
+    // Not observable and not persisted
     @Ignore
-    var city: String = "Dalian"
+    public var weight = 10
 }
 ```
 
@@ -131,7 +137,7 @@ public init(
 #### Example Usage
 
 ```swift
-@StateObject var settings = Settings(
+@State var settings = Settings(
     userDefaults: .standard,
     ignoreExternalChanges: false,
     prefix: "myApp_"
