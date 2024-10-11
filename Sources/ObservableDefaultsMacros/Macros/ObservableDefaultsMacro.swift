@@ -54,11 +54,18 @@ extension ObservableDefaultsMacros: MemberMacro {
             return (key, propertyID)
         }
 
+        let keyPathMaps = "[" + metas.map { "\\\(className).\($0.propertyID): \"\($0.userDefaultsKey)\"" }.joined(separator: ", ") + "]"
+        let keyPathMapsSyntax: DeclSyntax =
+            """
+            private let _defaultsKeyPathMap: [AnyKeyPath: String] = \(raw: keyPathMaps)
+            private var _ignoredKeyPathsForExternalUpdates: [PartialKeyPath<\(raw: className)>] = []
+            """
+
         // Add observer code
         // To align, the first line uses 0 spaces, and the others use 8 spaces. A better method has not been found yet
         let addObserverCode = metas.enumerated().map { index, meta in
             let indent = index == 0 ? "" : "        "
-            return "\(indent)userDefaults.addObserver(self, forKeyPath: prefix + \"\(meta.userDefaultsKey)\", options: .new, context: nil)"
+            return "\(indent)if !observableKeysBlacklist.contains(prefix + \"\(meta.userDefaultsKey)\"){ userDefaults.addObserver(self, forKeyPath: prefix + \"\(meta.userDefaultsKey)\", options: .new, context: nil) }"
         }.joined(separator: "\n")
 
         let caseCode = metas.enumerated().map { index, meta in
@@ -72,7 +79,7 @@ extension ObservableDefaultsMacros: MemberMacro {
 
         let removeObserverCode = metas.enumerated().map { index, meta in
             let indent = index == 0 ? "" : "        "
-            return "\(indent)userDefaults.removeObserver(self, forKeyPath: prefix + \"\(meta.userDefaultsKey)\")"
+            return "\(indent)if !observableKeysBlacklist.contains(prefix + \"\(meta.userDefaultsKey)\"){ userDefaults.removeObserver(self, forKeyPath: prefix + \"\(meta.userDefaultsKey)\") }"
         }.joined(separator: "\n")
 
         let registrarSyntax: DeclSyntax =
@@ -139,7 +146,8 @@ extension ObservableDefaultsMacros: MemberMacro {
             public init(
                 userDefaults: Foundation.UserDefaults? = nil,
                 ignoreExternalChanges: Bool? = nil,
-                prefix: String? = nil
+                prefix: String? = nil,
+                ignoredKeyPathsForExternalUpdates: [PartialKeyPath<\(raw: className)>] = []
             ) {
                 if let userDefaults {
                     _userDefaults = userDefaults
@@ -150,9 +158,10 @@ extension ObservableDefaultsMacros: MemberMacro {
                 if let prefix {
                     _prefix = prefix
                 }
+                _ignoredKeyPathsForExternalUpdates = ignoredKeyPathsForExternalUpdates
                 assert(!_prefix.contains("."), "Prefix '\\(_prefix)' should not contain '.' to avoid KVO issues!")
                 if !_isExternalNotificationDisabled {
-                    observerStarter()
+                    observerStarter(observableKeysBlacklist: ignoredKeyPathsForExternalUpdates)
                 }
             }
             """
@@ -170,10 +179,12 @@ extension ObservableDefaultsMacros: MemberMacro {
                 let host: \(className)
                 let userDefaults: Foundation.UserDefaults
                 let prefix: String
-                init(host: \(className), userDefaults: Foundation.UserDefaults, prefix: String) {
+                let observableKeysBlacklist: [String]
+                init(host: \(className), userDefaults: Foundation.UserDefaults, prefix: String, observableKeysBlacklist: [String]) {
                     self.host = host
                     self.userDefaults = userDefaults
                     self.prefix = prefix
+                    self.observableKeysBlacklist = observableKeysBlacklist
                     super.init()
                     \(raw: addObserverCode)
                 }
@@ -193,8 +204,9 @@ extension ObservableDefaultsMacros: MemberMacro {
             """
         let observerStarterSyntax: DeclSyntax =
             """
-            private func observerStarter() {
-                observer = DefaultsObservation(host: self, userDefaults: _userDefaults, prefix: _prefix)
+            private func observerStarter(observableKeysBlacklist: [PartialKeyPath<\(raw: className)>] = []) {
+                let keyList = observableKeysBlacklist.compactMap{ _defaultsKeyPathMap[$0] }
+                observer = DefaultsObservation(host: self, userDefaults: _userDefaults, prefix: _prefix, observableKeysBlacklist: keyList)
             }
             """
 
@@ -205,6 +217,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             userDefaultStoreSyntax,
             isExternalNotificationDisabledSyntax,
             prefixSyntax,
+            keyPathMapsSyntax,
             observerFunctionSyntax,
             observerStarterSyntax,
         ] + (autoInit ? [initFunctionSyntax] : [])

@@ -40,7 +40,7 @@ public macro ObservableOnly() = #externalMacro(module: "ObservableDefaultsMacros
 // - observeFirst: Observation priority mode. When enabled (set to true), only properties explicitly marked with `@DefaultsBacked` will correspond to UserDefaults, while others will be treated as ObservableOnly. The default value is false
 // If a parameter is set in both the macro and the initializer, the value in the initializer takes precedence
 @attached(member, names: named(_$observationRegistrar), named(_userDefaults), named(_isExternalNotificationDisabled), named(access), named(withMutation), named(getValue), named(setValue), named(UserDefaultsWrapper), named(init), named(_prefix), named(cancellables), named(setupUserDefaultsObservation),
-          named(checkForChanges), named(observer), named(DefaultsObservation), named(observerStarter))
+          named(checkForChanges), named(observer), named(DefaultsObservation), named(observerStarter), named(_defaultsKeyPathMap), named(_ignoredKeyPathsForExternalUpdates))
 @attached(extension, conformances: Observable)
 @attached(memberAttribute)
 public macro ObservableDefaults(autoInit: Bool = true, ignoreExternalChanges: Bool = false, suiteName: String? = nil, prefix: String? = nil, observeFirst: Bool = false) = #externalMacro(module: "ObservableDefaultsMacros", type: "ObservableDefaultsMacros")

@@ -46,3 +46,4 @@ public class Test2 {
     @Ignore
     public var weight = 10
 }
+
