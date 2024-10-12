@@ -1,6 +1,6 @@
 # ObservableDefaults
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Swift 6](https://img.shields.io/badge/Swift-6-orange?logo=swift) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 `ObservableDefaults` is a Swift library that integrates `UserDefaults` with the new SwiftUI Observation framework introduced in WWDC 2023. It provides a macro `@ObservableDefaults` that simplifies the management of `UserDefaults` data by automatically associating declared stored properties with `UserDefaults` keys. This allows for precise and efficient responsiveness to changes in `UserDefaults`, whether they originate from within the app or externally.
 
