@@ -57,7 +57,7 @@ extension ObservableDefaultsMacros: MemberMacro {
         let keyPathMaps = "[" + metas.map { "\\\(className).\($0.propertyID): \"\($0.userDefaultsKey)\"" }.joined(separator: ", ") + "]"
         let keyPathMapsSyntax: DeclSyntax =
             """
-            private let _defaultsKeyPathMap: [AnyKeyPath: String] = \(raw: keyPathMaps)
+            private let _defaultsKeyPathMap: [PartialKeyPath<\(raw: className)>: String] = \(raw: keyPathMaps)
             private var _ignoredKeyPathsForExternalUpdates: [PartialKeyPath<\(raw: className)>] = []
             """
 
