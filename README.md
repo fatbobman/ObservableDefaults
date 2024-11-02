@@ -240,6 +240,7 @@ public class Test2 {
 - **Key Prefixes**: Use the `prefix` parameter to prevent key collisions when multiple classes use the same property names.
 - **Custom Keys**: Use `@DefaultsKey` to specify custom keys for properties.
 - **Prefixe Charters**: The prefix must not contain '.' characters.
+_ **Preview Environment**: Due to functionality limitations, instances in preview mode cannot respond to external UserDefaults changes.
 
 ## License
 

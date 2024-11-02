@@ -171,7 +171,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             private var observer: DefaultsObservation?
 
             /// The observation registrar is used to manage the observation of changes to UserDefaults.
-            /// It ensures that the observer is properly registered and deregistered when the instance is created and deinitialized.
+            /// It ensures that the observer is properly registered and deregistered when the instance is created and deInitialized.
             /// The registrar is accessed through the `_$observationRegistrar` property.
             ///
             /// - Note: This property is internal and can be accessed within the same module.

@@ -85,7 +85,9 @@ extension DefaultsBackedMacro: AccessorMacro {
             """
             set {
                 let key = _prefix + "\(raw: keyString)"
-                if _isExternalNotificationDisabled || _ignoredKeyPathsForExternalUpdates.contains(\\.\(identifier)) {
+                if _isExternalNotificationDisabled || 
+                   _ignoredKeyPathsForExternalUpdates.contains(\\.\(identifier)) ||
+                   ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
                     withMutation(keyPath: \\.\(identifier)) {
                         UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
                     }
