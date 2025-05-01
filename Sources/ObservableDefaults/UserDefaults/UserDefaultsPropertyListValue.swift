@@ -28,6 +28,8 @@ import Foundation
 
 public protocol UserDefaultsPropertyListValue: Equatable {}
 
+public protocol CodableUserDefaultsPropertyListValue: UserDefaultsPropertyListValue, Codable { }
+
 extension NSData: UserDefaultsPropertyListValue {}
 extension Data: UserDefaultsPropertyListValue {}
 

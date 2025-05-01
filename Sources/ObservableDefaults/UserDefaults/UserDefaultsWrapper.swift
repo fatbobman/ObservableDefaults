@@ -57,6 +57,19 @@ public struct UserDefaultsWrapper<Value> {
         return store.object(forKey: key) as? R ?? defaultValue
     }
 
+    public nonisolated static func getValue(_ key: String, _ defaultValue: Value, _ store: UserDefaults) -> Value
+    where Value: CodableUserDefaultsPropertyListValue {
+        guard let data = store.data(forKey: key) else {
+            return defaultValue
+        }
+        
+        do {
+            return try JSONDecoder().decode(Value.self, from: data)
+        } catch {
+            return defaultValue
+        }
+    }
+
     // MARK: - Set Values
 
     public nonisolated static func setValue(_ key: String, _ newValue: Value, _ store: UserDefaults)
@@ -77,5 +90,11 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func setValue<R>(_ key: String, _ newValue: Value, _ store: UserDefaults)
     where Value == R?, R: UserDefaultsPropertyListValue {
         store.set(newValue, forKey: key)
+    }
+
+    public nonisolated static func setValue(_ key: String, _ newValue: Value, _ store: UserDefaults)
+    where Value: CodableUserDefaultsPropertyListValue {
+        guard let data = try? JSONEncoder().encode(newValue) else { return }
+        store.set(data, forKey: key)
     }
 }
