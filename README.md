@@ -25,6 +25,7 @@ Don't miss out on the latest updates and excellent articles about Swift, SwiftUI
 - Precise notifications for property changes, reducing unnecessary view updates.
 - Customizable behavior through additional macros and parameters.
 - Support for property-specific `UserDefaults` keys and prefixes.
+- Supports Codable types for complex data persistence.
 
 ## Installation
 
@@ -200,6 +201,31 @@ struct ContentView: View {
             }
         }
         .buttonStyle(.bordered)
+    }
+}
+```
+
+### Supporting Codable Types (Thanks to @jmisol)
+
+Thanks to the contribution from @jmisol, ObservableDefaults now supports properties conforming to `Codable` via the `CodableUserDefaultsPropertyListValue` protocol. This allows you to seamlessly store and retrieve complex data types using UserDefaults.
+
+To use this feature, your property type must conform to `CodableUserDefaultsPropertyListValue`, which extends Codable and ensures the type is compatible with UserDefaults storage.
+
+#### Example
+
+```swift
+@ObservableDefaults
+class Store {
+    var people: People = .init(name: "fat", age: 10)
+}
+
+struct People: CodableUserDefaultsPropertyListValue {
+    var name: String
+    var age: Int
+
+    init(name: String, age: Int) {
+        self.name = name
+        self.age = age
     }
 }
 ```
