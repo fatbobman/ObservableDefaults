@@ -12,57 +12,132 @@
 import SwiftSyntax
 import SwiftSyntaxMacros
 
+/// A macro that automatically integrates UserDefaults with SwiftUI's Observation framework.
+///
+/// The `@ObservableDefaults` macro generates the necessary code to:
+/// - Make the class conform to `Observable` protocol
+/// - Automatically synchronize properties with UserDefaults
+/// - Handle external UserDefaults changes via KVO
+/// - Provide precise view updates in SwiftUI
+///
+/// Basic usage:
+/// ```swift
+/// @ObservableDefaults
+/// class Settings {
+///     var name: String = "Fatbobman"  // Automatically stored in UserDefaults
+///     var age: Int = 20              // Automatically stored in UserDefaults
+/// }
+/// ```
+///
+/// With configuration parameters:
+/// ```swift
+/// @ObservableDefaults(
+///     autoInit: true,
+///     ignoreExternalChanges: false,
+///     suiteName: "group.myapp",
+///     prefix: "myApp_",
+///     observeFirst: false
+/// )
+/// class Settings {
+///     // Properties automatically managed
+/// }
+/// ```
+///
+/// Observe First mode:
+/// ```swift
+/// @ObservableDefaults(observeFirst: true)
+/// class Settings {
+///     var name: String = "fat"          // Only observable (not stored)
+///
+///     @DefaultsBacked
+///     var age: Int = 109               // Observable and stored in UserDefaults
+/// }
+/// ```
 public enum ObservableDefaultsMacros {
+    /// The name of the macro as used in source code
     static let name: String = "ObservableDefaults"
+    /// Parameter for controlling automatic initializer generation
     static let autoInit: String = "autoInit"
+    /// Parameter for controlling response to external UserDefaults changes
     static let ignoreExternalChanges: String = "ignoreExternalChanges"
+    /// Parameter for specifying custom UserDefaults suite name
     static let suiteName: String = "suiteName"
+    /// Parameter for setting a prefix for all UserDefaults keys
     static let prefix: String = "prefix"
+    /// Parameter for enabling Observe First mode
     static let observeFirst: String = "observeFirst"
 }
 
 extension ObservableDefaultsMacros: MemberMacro {
+    /// Generates member declarations for the `@ObservableDefaults` macro.
+    ///
+    /// This method creates the following members:
+    /// - Observation registrar for SwiftUI integration
+    /// - Access and mutation methods for precise view updates
+    /// - UserDefaults instance (standard or custom suite)
+    /// - Configuration properties (prefix, external change handling)
+    /// - KVO observer class for external UserDefaults changes
+    /// - Optional initializer (when autoInit is true)
+    ///
+    /// - Parameters:
+    ///   - node: The attribute syntax containing macro parameters
+    ///   - declaration: The class declaration to add members to
+    ///   - context: The macro expansion context (unused)
+    /// - Returns: An array of generated member declarations
+    /// - Throws: Fatal error if declaration is not a class
     public static func expansion(
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
-        in _: some MacroExpansionContext
-    ) throws -> [DeclSyntax] {
+        in _: some MacroExpansionContext) throws -> [DeclSyntax]
+    {
         guard let identifier = declaration.asProtocol(NamedDeclSyntax.self) else { return [] }
 
-        let className = IdentifierPatternSyntax(identifier: .init(stringLiteral: "\(identifier.name.trimmed)"))
+        let className =
+            IdentifierPatternSyntax(identifier: .init(stringLiteral: "\(identifier.name.trimmed)"))
 
+        // Extract macro parameters
         let (autoInit, suiteName, prefix, ignoreExternalChanges, _) = extractProperty(node)
 
-        // Traverse all members and get all members with isPersistent set to true
+        // Find all properties that should be persisted to UserDefaults
         guard let classDecl = declaration as? ClassDeclSyntax else {
-            fatalError()
+            fatalError("@ObservableDefaults can only be applied to classes")
         }
-        let persistentProperties = classDecl.memberBlock.members.compactMap { member -> VariableDeclSyntax? in
-            guard let varDecl = member.decl.as(VariableDeclSyntax.self),
-                  varDecl.isPersistent
-            else {
-                return nil
+        let persistentProperties = classDecl.memberBlock.members
+            .compactMap { member -> VariableDeclSyntax? in
+                guard let varDecl = member.decl.as(VariableDeclSyntax.self),
+                      varDecl.isPersistent
+                else {
+                    return nil
+                }
+                return varDecl
             }
-            return varDecl
-        }
 
-        let metas: [(userDefaultsKey: String, propertyID: String)] = persistentProperties.map { property in
-            let key =
-                property.attributes.extractValue(forAttribute: DefaultsBackedMacro.name, argument: DefaultsBackedMacro.key) ??
-                property.attributes.extractValue(forAttribute: DefaultsKeyMacro.name, argument: DefaultsKeyMacro.key) ?? property.identifier?.text ?? ""
-            let propertyID = property.identifier?.text ?? ""
-            return (key, propertyID)
-        }
+        // Build mapping between properties and their UserDefaults keys
+        let metas: [(userDefaultsKey: String, propertyID: String)] = persistentProperties
+            .map { property in
+                let key =
+                    property.attributes.extractValue(
+                        forAttribute: DefaultsBackedMacro.name,
+                        argument: DefaultsBackedMacro.key) ??
+                    property.attributes.extractValue(
+                        forAttribute: DefaultsKeyMacro.name,
+                        argument: DefaultsKeyMacro.key) ?? property.identifier?.text ?? ""
+                let propertyID = property.identifier?.text ?? ""
+                return (key, propertyID)
+            }
 
-        let keyPathMaps = "[" + metas.map { "\\\(className).\($0.propertyID): \"\($0.userDefaultsKey)\"" }.joined(separator: ", ") + "]"
+        // Generate keyPath mapping for external change handling
+        let keyPathMaps = "[" + metas
+            .map { "\\\(className).\($0.propertyID): \"\($0.userDefaultsKey)\"" }
+            .joined(separator: ", ") + "]"
         let keyPathMapsSyntax: DeclSyntax =
             """
-            private let _defaultsKeyPathMap: [PartialKeyPath<\(raw: className)>: String] = \(raw: keyPathMaps)
+            private let _defaultsKeyPathMap: [PartialKeyPath<\(raw: className)>: String] = \(
+                raw: keyPathMaps)
             private var _ignoredKeyPathsForExternalUpdates: [PartialKeyPath<\(raw: className)>] = []
             """
 
-        // Add observer code
-        // To align, the first line uses 0 spaces, and the others use 8 spaces. A better method has not been found yet
+        // Generate KVO observer code for external UserDefaults changes
         let addObserverCode = metas.enumerated().map { index, meta in
             let indent = index == 0 ? "" : "        "
             return "\(indent)if !observableKeysBlacklist.contains(prefix + \"\(meta.userDefaultsKey)\"){ userDefaults.addObserver(self, forKeyPath: prefix + \"\(meta.userDefaultsKey)\", options: .new, context: nil) }"
@@ -72,9 +147,10 @@ extension ObservableDefaultsMacros: MemberMacro {
             let caseIndent = index == 0 ? "" : "        "
             let bodyIndent = "            "
             return """
-            \(caseIndent)case prefix + "\(meta.userDefaultsKey)":
-            \(bodyIndent)host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
-            """
+                \(caseIndent)case prefix + "\(meta.userDefaultsKey)":
+                \(bodyIndent)host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta
+                .propertyID)) {}
+                """
         }.joined(separator: "\n")
 
         let removeObserverCode = metas.enumerated().map { index, meta in
@@ -82,11 +158,13 @@ extension ObservableDefaultsMacros: MemberMacro {
             return "\(indent)if !observableKeysBlacklist.contains(prefix + \"\(meta.userDefaultsKey)\"){ userDefaults.removeObserver(self, forKeyPath: prefix + \"\(meta.userDefaultsKey)\") }"
         }.joined(separator: "\n")
 
+        // Generate observation registrar for SwiftUI integration
         let registrarSyntax: DeclSyntax =
             """
             internal let _$observationRegistrar = Observation.ObservationRegistrar()
             """
 
+        // Generate access method for precise view updates
         let accessFunctionSyntax: DeclSyntax =
             """
             internal nonisolated func access<Member>(keyPath: KeyPath<\(className), Member>) {
@@ -94,13 +172,16 @@ extension ObservableDefaultsMacros: MemberMacro {
             }
             """
 
+        // Generate mutation method for property changes
         let withMutationFunctionSyntax: DeclSyntax =
             """
-            internal nonisolated func withMutation<Member, T>(keyPath: KeyPath<\(className), Member>, _ mutation: () throws -> T) rethrows -> T {
+            internal nonisolated func withMutation<Member, T>(keyPath: KeyPath<\(
+                className), Member>, _ mutation: () throws -> T) rethrows -> T {
               try _$observationRegistrar.withMutation(of: self, keyPath: keyPath, mutation)
             }
             """
 
+        // Generate UserDefaults instance (standard or custom suite)
         let userDefaultStoreSyntax: DeclSyntax = suiteName != nil ?
             """
             private var _userDefaults: Foundation.UserDefaults = {
@@ -114,9 +195,10 @@ extension ObservableDefaultsMacros: MemberMacro {
             }()
             """
             : """
-            private var _userDefaults: Foundation.UserDefaults = Foundation.UserDefaults.standard
-            """
+                private var _userDefaults: Foundation.UserDefaults = Foundation.UserDefaults.standard
+                """
 
+        // Generate external notification control property
         let isExternalNotificationDisabled = ignoreExternalChanges ? "true" : "false"
         let isExternalNotificationDisabledSyntax: DeclSyntax =
             """
@@ -129,9 +211,11 @@ extension ObservableDefaultsMacros: MemberMacro {
             ///   recursive or unnecessary updates when the instance itself is modifying UserDefaults.
             ///
             /// - Important: Default value is `false`.
-            private var _isExternalNotificationDisabled: Bool = \(raw: isExternalNotificationDisabled)
+            private var _isExternalNotificationDisabled: Bool = \(
+                raw: isExternalNotificationDisabled)
             """
 
+        // Generate prefix property for UserDefaults keys
         let prefixStr = prefix != nil ? prefix! : ""
         let emptyStr = prefixStr == "" ? "\"\"" : ""
         let prefixSyntax: DeclSyntax =
@@ -141,6 +225,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             private var _prefix: String = \(raw: prefixStr)\(raw: emptyStr)
             """
 
+        // Generate initializer when autoInit is enabled
         let initFunctionSyntax: DeclSyntax =
             """
             public init(
@@ -166,6 +251,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             }
             """
 
+        // Generate KVO observer class for external UserDefaults changes
         let observerFunctionSyntax: DeclSyntax =
             """
             private var observer: DefaultsObservation?
@@ -180,7 +266,8 @@ extension ObservableDefaultsMacros: MemberMacro {
                 let userDefaults: Foundation.UserDefaults
                 let prefix: String
                 let observableKeysBlacklist: [String]
-                init(host: \(className), userDefaults: Foundation.UserDefaults, prefix: String, observableKeysBlacklist: [String]) {
+                init(host: \(
+                    className), userDefaults: Foundation.UserDefaults, prefix: String, observableKeysBlacklist: [String]) {
                     self.host = host
                     self.userDefaults = userDefaults
                     self.prefix = prefix
@@ -202,9 +289,12 @@ extension ObservableDefaultsMacros: MemberMacro {
                 }
             }
             """
+
+        // Generate observer starter method
         let observerStarterSyntax: DeclSyntax =
             """
-            private func observerStarter(observableKeysBlacklist: [PartialKeyPath<\(raw: className)>] = []) {
+            private func observerStarter(observableKeysBlacklist: [PartialKeyPath<\(
+                raw: className)>] = []) {
                 let keyList = observableKeysBlacklist.compactMap{ _defaultsKeyPathMap[$0] }
                 observer = DefaultsObservation(host: self, userDefaults: _userDefaults, prefix: _prefix, observableKeysBlacklist: keyList)
             }
@@ -225,13 +315,25 @@ extension ObservableDefaultsMacros: MemberMacro {
 }
 
 extension ObservableDefaultsMacros: ExtensionMacro {
+    /// Generates an extension that makes the class conform to the `Observable` protocol.
+    ///
+    /// This enables SwiftUI integration and precise view updates when properties change.
+    ///
+    /// - Parameters:
+    ///   - node: The attribute syntax (unused)
+    ///   - declaration: The class declaration (unused)
+    ///   - type: The type to generate the extension for
+    ///   - protocols: The protocols to conform to (unused)
+    ///   - context: The macro expansion context (unused)
+    /// - Returns: An array containing the Observable conformance extension
+    /// - Throws: No errors are thrown in this implementation
     public static func expansion(
         of _: AttributeSyntax,
         attachedTo _: some DeclGroupSyntax,
         providingExtensionsOf type: some TypeSyntaxProtocol,
         conformingTo _: [TypeSyntax],
-        in _: some MacroExpansionContext
-    ) throws -> [ExtensionDeclSyntax] {
+        in _: some MacroExpansionContext) throws -> [ExtensionDeclSyntax]
+    {
         let observableProtocol: DeclSyntax =
             """
                 extension \(type.trimmed): Observation.Observable {}
@@ -243,12 +345,29 @@ extension ObservableDefaultsMacros: ExtensionMacro {
 }
 
 extension ObservableDefaultsMacros: MemberAttributeMacro {
+    /// Automatically applies appropriate macros to properties based on the operation mode.
+    ///
+    /// In standard mode:
+    /// - Properties are automatically marked with `@DefaultsBacked` to enable UserDefaults
+    /// synchronization
+    ///
+    /// In Observe First mode (`observeFirst: true`):
+    /// - Properties are automatically marked with `@ObservableOnly` unless explicitly marked with
+    /// `@DefaultsBacked`
+    ///
+    /// - Parameters:
+    ///   - node: The attribute syntax containing macro parameters
+    ///   - declaration: The class declaration (unused)
+    ///   - member: The member declaration to potentially add attributes to
+    ///   - context: The macro expansion context (unused)
+    /// - Returns: An array of attribute syntax to apply to the member
+    /// - Throws: No errors are thrown in this implementation
     public static func expansion(
         of node: AttributeSyntax,
         attachedTo _: some DeclGroupSyntax,
         providingAttributesFor member: some DeclSyntaxProtocol,
-        in _: some MacroExpansionContext
-    ) throws -> [SwiftSyntax.AttributeSyntax] {
+        in _: some MacroExpansionContext) throws -> [SwiftSyntax.AttributeSyntax]
+    {
         let (_, _, _, _, observeFirst) = extractProperty(node)
         guard let varDecl = member.as(VariableDeclSyntax.self),
               varDecl.isObservable
@@ -257,11 +376,16 @@ extension ObservableDefaultsMacros: MemberAttributeMacro {
         }
 
         if observeFirst {
-            if !varDecl.hasAttribute(named: DefaultsBackedMacro.name) && !varDecl.hasAttribute(named: ObservableOnlyMacro.name) {
+            // In Observe First mode, only add @ObservableOnly if not already marked with
+            // @DefaultsBacked or @ObservableOnly
+            if !varDecl.hasAttribute(named: DefaultsBackedMacro.name),
+               !varDecl.hasAttribute(named: ObservableOnlyMacro.name)
+            {
                 return ["@\(raw: ObservableOnlyMacro.name)"]
             }
         } else {
-            if varDecl.isPersistent && !varDecl.hasAttribute(named: DefaultsBackedMacro.name) {
+            // In standard mode, add @DefaultsBacked to persistent properties
+            if varDecl.isPersistent, !varDecl.hasAttribute(named: DefaultsBackedMacro.name) {
                 return ["@\(raw: DefaultsBackedMacro.name)"]
             }
         }
@@ -271,17 +395,24 @@ extension ObservableDefaultsMacros: MemberAttributeMacro {
 }
 
 extension ObservableDefaultsMacros {
-    /// Extract the parameters from the attribute syntax
-    /// - Parameters:
-    ///   - node: The attribute syntax
-    /// - Returns: A tuple containing the parameters
+    /// Extracts parameters from the `@ObservableDefaults` macro attribute.
+    ///
+    /// Supported parameters:
+    /// - `autoInit`: Whether to generate an automatic initializer (default: true)
+    /// - `suiteName`: Custom UserDefaults suite name (default: nil, uses standard)
+    /// - `prefix`: Prefix for all UserDefaults keys (default: nil, no prefix)
+    /// - `ignoreExternalChanges`: Whether to ignore external UserDefaults changes (default: false)
+    /// - `observeFirst`: Whether to enable Observe First mode (default: false)
+    ///
+    /// - Parameter node: The attribute syntax containing the parameters
+    /// - Returns: A tuple containing all extracted parameter values
     static func extractProperty(_ node: AttributeSyntax) -> (
         autoInit: Bool,
         suiteName: String?,
         prefix: String?,
         ignoreExternalChanges: Bool,
-        observeFirst: Bool
-    ) {
+        observeFirst: Bool)
+    {
         var autoInit = true
         var suiteName: String?
         var prefix: String?

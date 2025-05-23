@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:ObservableDefaults}",
+            "name": "Debug ObservableDefaultsClient",
+            "program": "${workspaceFolder:ObservableDefaults}/.build/debug/ObservableDefaultsClient",
+            "preLaunchTask": "swift: Build Debug ObservableDefaultsClient"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:ObservableDefaults}",
+            "name": "Release ObservableDefaultsClient",
+            "program": "${workspaceFolder:ObservableDefaults}/.build/release/ObservableDefaultsClient",
+            "preLaunchTask": "swift: Build Release ObservableDefaultsClient"
+        }
+    ]
+}

@@ -17,12 +17,12 @@ import SwiftSyntaxMacros
 extension VariableDeclSyntax {
     // Determine if it's a mutable variable and not a computed property
     var isMutableAndNotComputed: Bool {
-        return bindingSpecifier.tokenKind == .keyword(.var) && !isComputed
+        bindingSpecifier.tokenKind == .keyword(.var) && !isComputed
     }
 
     // Check if an attribute with a given name exists
     func hasAttribute(named attributeName: String) -> Bool {
-        return attributes.contains(where: { attribute in
+        attributes.contains(where: { attribute in
             if case let .attribute(attr) = attribute,
                let identifierType = attr.attributeName.as(IdentifierTypeSyntax.self)
             {
@@ -39,7 +39,8 @@ extension VariableDeclSyntax {
 
     // Persistent
     var isPersistent: Bool {
-        isMutableAndNotComputed && !hasAttribute(named: IgnoreMacro.name) && !hasAttribute(named: ObservableOnlyMacro.name)
+        isMutableAndNotComputed && !hasAttribute(named: IgnoreMacro.name) &&
+            !hasAttribute(named: ObservableOnlyMacro.name)
     }
 
     // Get the identifier of the variable
@@ -53,13 +54,15 @@ extension VariableDeclSyntax {
         // Iterate through the attribute list, checking each attribute's token
         for attribute in attributes {
             switch attribute {
-            case let .attribute(attr):
-                // If the attribute's token list contains the specified macro name, return true
-                if attr.attributeName.tokens(viewMode: .all).map({ $0.tokenKind }) == [.identifier(name)] {
-                    return true
-                }
-            default:
-                break
+                case let .attribute(attr):
+                    // If the attribute's token list contains the specified macro name, return true
+                    if attr.attributeName.tokens(viewMode: .all)
+                        .map(\.tokenKind) == [.identifier(name)]
+                    {
+                        return true
+                    }
+                default:
+                    break
             }
         }
         // If no specific macro application is found, return false
@@ -68,8 +71,10 @@ extension VariableDeclSyntax {
 
     // Get the identifier pattern of the variable declaration
     var identifierPattern: IdentifierPatternSyntax? {
-        // Get the first binding's pattern from the binding list, if it's an identifier pattern, return it
-        // For example, if the variable declaration is `var name: String`, the returned identifier pattern is `name`
+        // Get the first binding's pattern from the binding list, if it's an identifier pattern,
+        // return it
+        // For example, if the variable declaration is `var name: String`, the returned identifier
+        // pattern is `name`
         bindings.first?.pattern.as(IdentifierPatternSyntax.self)
     }
 
@@ -77,14 +82,14 @@ extension VariableDeclSyntax {
     var isComputed: Bool {
         // If there's a get accessor, it's a computed property
         if !accessorsMatching({ $0 == .keyword(.get) }).isEmpty {
-            return true
+            true
         } else {
             // If there's a getter accessor in the binding list, it's a computed property
-            return bindings.contains { binding in
+            bindings.contains { binding in
                 if case .getter = binding.accessorBlock?.accessors {
-                    return true
+                    true
                 } else {
-                    return false
+                    false
                 }
             }
         }
@@ -106,50 +111,62 @@ extension VariableDeclSyntax {
         // Convert the binding list to an accessor list
         let accessors: [AccessorDeclListSyntax.Element] = bindings.compactMap { patternBinding in
             switch patternBinding.accessorBlock?.accessors {
-            case let .accessors(accessors):
-                return accessors
-            default:
-                return nil
+                case let .accessors(accessors):
+                    accessors
+                default:
+                    nil
             }
-        }.flatMap { $0 }
+        }.flatMap(\.self)
         // Filter accessors based on conditions
         return accessors.compactMap { accessor in
             if predicate(accessor.accessorSpecifier.tokenKind) {
-                return accessor
+                accessor
             } else {
-                return nil
+                nil
             }
         }
     }
 
-    func privatePrefixed(_ prefix: String, addingAttribute attribute: AttributeSyntax) -> VariableDeclSyntax {
-      let newAttributes = attributes + [.attribute(attribute)]
-      return VariableDeclSyntax(
-        leadingTrivia: leadingTrivia,
-        attributes: newAttributes,
-        modifiers: modifiers.privatePrefixed(prefix),
-        bindingSpecifier: TokenSyntax(bindingSpecifier.tokenKind, leadingTrivia: .space, trailingTrivia: .space, presence: .present),
-        bindings: bindings.privatePrefixed(prefix),
-        trailingTrivia: trailingTrivia
-      )
+    func privatePrefixed(
+        _ prefix: String,
+        addingAttribute attribute: AttributeSyntax) -> VariableDeclSyntax
+    {
+        let newAttributes = attributes + [.attribute(attribute)]
+        return VariableDeclSyntax(
+            leadingTrivia: leadingTrivia,
+            attributes: newAttributes,
+            modifiers: modifiers.privatePrefixed(prefix),
+            bindingSpecifier: TokenSyntax(
+                bindingSpecifier.tokenKind,
+                leadingTrivia: .space,
+                trailingTrivia: .space,
+                presence: .present),
+            bindings: bindings.privatePrefixed(prefix),
+            trailingTrivia: trailingTrivia)
     }
 
     func privatePrefixed(_ prefix: String) -> VariableDeclSyntax {
-        return VariableDeclSyntax(
+        VariableDeclSyntax(
             leadingTrivia: leadingTrivia,
             attributes: [],
             modifiers: modifiers.privatePrefixed(prefix),
-            bindingSpecifier: TokenSyntax(bindingSpecifier.tokenKind, leadingTrivia: .space, trailingTrivia: .space, presence: .present),
+            bindingSpecifier: TokenSyntax(
+                bindingSpecifier.tokenKind,
+                leadingTrivia: .space,
+                trailingTrivia: .space,
+                presence: .present),
             bindings: bindings.privatePrefixed(prefix),
-            trailingTrivia: trailingTrivia
-        )
+            trailingTrivia: trailingTrivia)
     }
 }
 
 extension AttributeListSyntax {
     func extractValue<T>(forAttribute attributeName: String, argument argumentName: String) -> T? {
         for attribute in self {
-            if let value: T = attribute.extractValue(forAttribute: attributeName, argument: argumentName) {
+            if let value: T = attribute.extractValue(
+                forAttribute: attributeName,
+                argument: argumentName)
+            {
                 return value
             }
         }
@@ -213,19 +230,19 @@ extension DeclModifierListSyntax {
         let modifier = DeclModifierSyntax(name: "private", trailingTrivia: .space)
         return [modifier] + filter {
             switch $0.name.tokenKind {
-            case let .keyword(keyword):
-                switch keyword {
-                case .fileprivate: fallthrough
-                case .private: fallthrough
-                case .internal: fallthrough
-                case .package: fallthrough
-                case .public:
-                    return false
+                case let .keyword(keyword):
+                    switch keyword {
+                        case .fileprivate: fallthrough
+                        case .private: fallthrough
+                        case .internal: fallthrough
+                        case .package: fallthrough
+                        case .public:
+                            return false
+                        default:
+                            return true
+                    }
                 default:
                     return true
-                }
-            default:
-                return true
             }
         }
     }
@@ -238,17 +255,21 @@ extension DeclModifierListSyntax {
 extension TokenSyntax {
     func privatePrefixed(_ prefix: String) -> TokenSyntax {
         switch tokenKind {
-        case let .identifier(identifier):
-            return TokenSyntax(.identifier(prefix + identifier), leadingTrivia: leadingTrivia, trailingTrivia: trailingTrivia, presence: presence)
-        default:
-            return self
+            case let .identifier(identifier):
+                TokenSyntax(
+                    .identifier(prefix + identifier),
+                    leadingTrivia: leadingTrivia,
+                    trailingTrivia: trailingTrivia,
+                    presence: presence)
+            default:
+                self
         }
     }
 }
 
 extension PatternBindingListSyntax {
     func privatePrefixed(_ prefix: String) -> PatternBindingListSyntax {
-        var bindings = map { $0 }
+        var bindings = map(\.self)
         for index in 0 ..< bindings.count {
             let binding = bindings[index]
             if let identifier = binding.pattern.as(IdentifierPatternSyntax.self) {
@@ -257,14 +278,12 @@ extension PatternBindingListSyntax {
                     pattern: IdentifierPatternSyntax(
                         leadingTrivia: identifier.leadingTrivia,
                         identifier: identifier.identifier.privatePrefixed(prefix),
-                        trailingTrivia: identifier.trailingTrivia
-                    ),
+                        trailingTrivia: identifier.trailingTrivia),
                     typeAnnotation: binding.typeAnnotation,
                     initializer: binding.initializer,
                     accessorBlock: binding.accessorBlock,
                     trailingComma: binding.trailingComma,
-                    trailingTrivia: binding.trailingTrivia
-                )
+                    trailingTrivia: binding.trailingTrivia)
             }
         }
 

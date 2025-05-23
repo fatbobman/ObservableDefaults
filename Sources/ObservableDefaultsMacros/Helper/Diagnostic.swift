@@ -18,10 +18,10 @@ func createDiagnostic(
     node: some SyntaxProtocol,
     message: String,
     fixItMessage: String? = nil,
-    fixIt: FixIt.Change? = nil
-) -> Diagnostic {
+    fixIt: FixIt.Change? = nil) -> Diagnostic
+{
     var fixIts: [FixIt] = []
-    if let fixItMessage = fixItMessage, let fixIt = fixIt {
+    if let fixItMessage, let fixIt {
         fixIts = [
             FixIt(message: MacroExpansionFixItMessage(fixItMessage), changes: [fixIt]),
         ]
@@ -30,8 +30,7 @@ func createDiagnostic(
     return Diagnostic(
         node: node,
         message: MacroExpansionErrorMessage(message),
-        fixIts: fixIts
-    )
+        fixIts: fixIts)
 }
 
 extension Diagnostic {
@@ -42,9 +41,7 @@ extension Diagnostic {
             fixItMessage: "Change 'let' to 'var'",
             fixIt: FixIt.Change.replace(
                 oldNode: Syntax(property.bindingSpecifier),
-                newNode: Syntax(TokenSyntax(.keyword(.var), presence: .present))
-            )
-        )
+                newNode: Syntax(TokenSyntax(.keyword(.var), presence: .present))))
         return diagnostic
     }
 
@@ -65,15 +62,11 @@ extension Diagnostic {
                                 pattern: property.bindings.first!.pattern,
                                 typeAnnotation: property.bindings.first!.typeAnnotation,
                                 initializer: InitializerClauseSyntax(
-                                    equal: .equalToken(leadingTrivia: .spaces(1), trailingTrivia: .spaces(1)),
-                                    value: ExprSyntax("<#initializer#>")
-                                )
-                            ),
-                        ])
-                    )
-                )
-            )
-        )
+                                    equal: .equalToken(
+                                        leadingTrivia: .spaces(1),
+                                        trailingTrivia: .spaces(1)),
+                                    value: ExprSyntax("<#initializer#>"))),
+                        ])))))
     }
 
     static func explicitTypeAnnotationRequired(property: VariableDeclSyntax) -> Diagnostic {
@@ -93,18 +86,15 @@ extension Diagnostic {
                                 pattern: property.bindings.first!.pattern,
                                 typeAnnotation: TypeAnnotationSyntax(
                                     colon: .colonToken(trailingTrivia: .spaces(1)),
-                                    type: TypeSyntax("<#Type#> ")
-                                ),
-                                initializer: property.bindings.first!.initializer
-                            ),
-                        ])
-                    )
-                )
-            )
-        )
+                                    type: TypeSyntax("<#Type#> ")),
+                                initializer: property.bindings.first!.initializer),
+                        ])))))
     }
 
-    static func optionalTypeNotSupported(property: VariableDeclSyntax, typeName: String) -> Diagnostic {
+    static func optionalTypeNotSupported(
+        property: VariableDeclSyntax,
+        typeName: String) -> Diagnostic
+    {
         createDiagnostic(
             node: property,
             message: "@DefaultsProperty does not support optional types",
@@ -112,9 +102,9 @@ extension Diagnostic {
             fixIt: FixIt.Change.replace(
                 oldNode: Syntax(property.bindings.first!.typeAnnotation!.type),
                 newNode: Syntax(
-                    TypeSyntax(stringLiteral: typeName.replacingOccurrences(of: "?", with: "").replacingOccurrences(of: "!", with: "").replacingOccurrences(of: "Optional<", with: "").replacingOccurrences(of: ">", with: ""))
-                )
-            )
-        )
+                    TypeSyntax(stringLiteral: typeName.replacingOccurrences(of: "?", with: "")
+                        .replacingOccurrences(of: "!", with: "")
+                        .replacingOccurrences(of: "Optional<", with: "")
+                        .replacingOccurrences(of: ">", with: "")))))
     }
 }

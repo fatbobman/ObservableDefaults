@@ -32,8 +32,8 @@ trailing_comma:
   severity: warning # or error
 
 line_length:
-  warning: 120
-  error: 130
+  warning: 180
+  error: 200
   ignores_comments: true
 
 force_cast: warning
