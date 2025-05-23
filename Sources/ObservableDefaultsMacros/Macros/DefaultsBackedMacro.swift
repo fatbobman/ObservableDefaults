@@ -77,14 +77,18 @@ extension DefaultsBackedMacro: AccessorMacro {
 
         // Validate that the property can be persisted to UserDefaults
         guard property.isPersistent else {
-            let diagnostic = Diagnostic.variableRequired(property: property)
+            let diagnostic = Diagnostic.variableRequired(
+                property: property,
+                macroType: .observableDefaults)
             context.diagnose(diagnostic)
             return []
         }
 
         // Ensure the property has a default value (required for UserDefaults integration)
         if binding.initializer == nil {
-            let diagnostic = Diagnostic.initializerRequired(property: property)
+            let diagnostic = Diagnostic.initializerRequired(
+                property: property,
+                macroType: .observableDefaults)
             context.diagnose(diagnostic)
             return []
         }
@@ -99,7 +103,8 @@ extension DefaultsBackedMacro: AccessorMacro {
             {
                 let diagnostic = Diagnostic.optionalTypeNotSupported(
                     property: property,
-                    typeName: typeName)
+                    typeName: typeName,
+                    macroType: .observableDefaults)
                 context.diagnose(diagnostic)
                 return []
             }

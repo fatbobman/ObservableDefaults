@@ -34,10 +34,10 @@ func createDiagnostic(
 }
 
 extension Diagnostic {
-    static func variableRequired(property: VariableDeclSyntax) -> Diagnostic {
+    static func variableRequired(property: VariableDeclSyntax, macroType: MacroType) -> Diagnostic {
         let diagnostic = createDiagnostic(
             node: property.bindingSpecifier,
-            message: "@DefaultsProperty can only be used on var properties",
+            message: "\(macroType.rawValue) can only be used on var properties",
             fixItMessage: "Change 'let' to 'var'",
             fixIt: FixIt.Change.replace(
                 oldNode: Syntax(property.bindingSpecifier),
@@ -45,10 +45,13 @@ extension Diagnostic {
         return diagnostic
     }
 
-    static func initializerRequired(property: VariableDeclSyntax) -> Diagnostic {
+    static func initializerRequired(
+        property: VariableDeclSyntax,
+        macroType: MacroType) -> Diagnostic
+    {
         createDiagnostic(
             node: property,
-            message: "@DefaultsProperty properties must have an initial value",
+            message: "\(macroType.rawValue) properties must have an initial value",
             fixItMessage: "Add an initial value",
             fixIt: FixIt.Change.replace(
                 oldNode: Syntax(property),
@@ -69,10 +72,13 @@ extension Diagnostic {
                         ])))))
     }
 
-    static func explicitTypeAnnotationRequired(property: VariableDeclSyntax) -> Diagnostic {
+    static func explicitTypeAnnotationRequired(
+        property: VariableDeclSyntax,
+        macroType: MacroType) -> Diagnostic
+    {
         createDiagnostic(
             node: property,
-            message: "@DefaultsProperty properties must have an explicit type annotation. var name: String",
+            message: "\(macroType.rawValue) properties must have an explicit type annotation. var name: String",
             fixItMessage: "Add a type annotation",
             fixIt: FixIt.Change.replace(
                 oldNode: Syntax(property),
@@ -93,11 +99,12 @@ extension Diagnostic {
 
     static func optionalTypeNotSupported(
         property: VariableDeclSyntax,
-        typeName: String) -> Diagnostic
+        typeName: String,
+        macroType: MacroType) -> Diagnostic
     {
         createDiagnostic(
             node: property,
-            message: "@DefaultsProperty does not support optional types",
+            message: "\(macroType.rawValue) does not support optional types",
             fixItMessage: "Use a non-optional type",
             fixIt: FixIt.Change.replace(
                 oldNode: Syntax(property.bindings.first!.typeAnnotation!.type),
