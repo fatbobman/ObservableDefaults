@@ -1,0 +1,185 @@
+--acronyms ID,URL,UUID 
+# 指定首字母缩写词，防止它们被错误格式化为驼峰
+--allman false 
+# 指定是否使用 Allman 风格的花括号
+--anonymousforeach convert 
+# 将匿名的 forEach 转换为更具可读性的形式
+--assetliterals visual-width 
+# 设置资产文字的视觉宽度
+--beforemarks 
+# 在标记之前添加空行
+--binarygrouping 4,8 
+# 指定二进制数字的分组方式
+--callsiteparen same-line 
+# 设置调用位置的括号风格
+--categorymark "MARK: %c" 
+# 自定义类别标记的格式
+--classthreshold 0 
+# 设置类的阈值
+--closingparen same-line 
+# 指定闭合括号与前一行在同一行
+--closurevoid remove 
+# 移除闭包的 void 类型
+--commas always 
+# 始终在参数列表中使用逗号
+--complexattrs preserve 
+# 保留复杂属性
+--computedvarattrs preserve 
+# 保留计算属性的属性
+--condassignment after-property 
+# 将条件赋值放在属性之后
+--conflictmarkers reject 
+# 拒绝冲突标记
+--dateformat system 
+# 使用系统日期格式
+--decimalgrouping 3,6 
+# 指定十进制数字的分组方式
+--doccomments before-declarations 
+# 在声明之前添加文档注释
+--elseposition same-line 
+# 指定 else 语句与 if 在同一行
+--emptybraces no-space 
+# 在空花括号中不添加空格
+--enumnamespaces always 
+# 始终使用命名空间的枚举
+--enumthreshold 0 
+# 设置枚举的阈值
+--exponentcase lowercase 
+# 指定指数部分使用小写字母
+--exponentgrouping disabled 
+# 禁用指数分组
+--extensionacl on-declarations 
+# 在声明上启用扩展 ACL
+--extensionlength 0 
+# 设置扩展的长度
+--extensionmark "MARK: - %t + %c" 
+# 自定义扩展标记的格式
+--fractiongrouping disabled 
+# 禁用分数分组
+--fragment false 
+# 禁用片段格式化
+--funcattributes preserve 
+# 保留函数属性
+--groupedextension "MARK: %c" 
+# 自定义分组扩展的格式
+--guardelse auto 
+# 自动处理 guard-else 语句
+--header ignore 
+# 忽略头部格式化
+--hexgrouping 4,8 
+# 指定十六进制数字的分组方式
+--hexliteralcase uppercase 
+# 指定十六进制字面量使用大写字母
+--ifdef indent 
+# 在条件编译指令中使用缩进
+--importgrouping alpha 
+# 按字母顺序分组导入
+--indent 4 
+# 设置缩进为 4 个空格
+--indentcase true 
+# 对 switch case 进行缩进
+--indentstrings true 
+# 对字符串进行缩进
+--initcodernil false 
+# 不在初始化时使用 nil
+--lineaftermarks true 
+# 在标记后添加空行
+--linebreaks lf 
+# 使用 LF 作为换行符
+--markcategories true 
+# 启用标记类别
+--markextensions always 
+# 始终标记扩展
+--marktypes always 
+# 始终标记类型
+--maxwidth 100 
+# 设置最大宽度为 100 字符
+--modifierorder 
+# 设置修饰符顺序
+#--nevertrailing 
+# 禁用尾随逗号
+--nilinit remove 
+# 移除 nil 初始化
+--nospaceoperators 
+# 禁用操作符之间的空格
+--nowrapoperators 
+# 禁用操作符换行
+--octalgrouping 4,8 
+# 指定八进制数字的分组方式
+--onelineforeach ignore 
+# 忽略单行 forEach 格式
+--operatorfunc spaced 
+# 在操作符函数中使用空格
+--organizationmode visibility 
+# 按可见性组织代码
+--organizetypes actor,class,enum,struct 
+# 按类型组织代码
+--patternlet hoist 
+# 提升模式 let 变量
+--ranges spaced 
+# 在范围中使用空格
+--redundanttype infer-locals-only 
+# 仅推断局部变量的类型
+--self remove 
+# 移除 self 关键字
+--semicolons inline 
+# 使用行内分号
+--shortoptionals always 
+# 始终使用短选项
+--smarttabs enabled 
+# 启用智能制表符
+--someany false 
+# 启用 some 和 any 的使用
+--storedvarattrs preserve 
+# 保留存储属性的属性
+--stripunusedargs always 
+# 始终剥离未使用的参数
+--structthreshold 0 
+# 设置结构的阈值
+--tabwidth unspecified 
+# 制表符宽度未指定
+--timezone system 
+# 使用系统时区
+--trailingclosures 
+# 启用尾随闭包
+--trimwhitespace always 
+# 始终修剪多余空白
+--typeattributes preserve 
+# 保留类型属性
+--typedelimiter space-after 
+# 在类型分隔符后添加空格
+--typemark "MARK: - %t" 
+# 自定义类型标记的格式
+--voidtype void 
+# 指定 void 类型
+--wraparguments before-first 
+# 在第一个参数之前换行
+--wrapcollections before-first
+# 集合的换行格式
+--wrapconditions preserve 
+# 保留条件的换行格式
+--wrapeffects preserve 
+# 保留效果的换行格式
+--wrapenumcases always 
+# 始终换行枚举案例
+--wrapparameters before-first 
+# 在第一个参数之前换行
+--wrapreturntype preserve 
+# 保留返回类型的换行格式
+--wrapternary default 
+# 默认换行三元表达式
+--wraptypealiases preserve 
+# 保留类型别名的换行格式
+--xcodeindentation enabled 
+# 启用 Xcode 缩进
+#--yodaswap always 
+# 始终交换 Yoda 条件
+--disable blankLineAfterImports,blankLinesBetweenChainedFunctions 
+# 禁用导入后的空行和链式函数之间的空行
+--enable isEmpty 
+# 启用 isEmpty 检查
+--disable unusedArguments 
+# 禁用未使用参数的警告
+
+
+

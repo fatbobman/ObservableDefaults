@@ -1,0 +1,19 @@
+{
+    "Swift File Header": {
+      "prefix": "swiftheader",
+      "body": [
+        "//",
+        "// ${TM_FILENAME}",
+        "// Created by Xu Yang on ${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE}.",
+        "// Blog: https://fatbobman.com",
+        "// GitHub: https://github.com/fatbobman",
+        "//",
+        "// Copyright © ${CURRENT_YEAR} Fatbobman. All rights reserved.",
+        "",
+        "import Foundation",
+        "",
+        "$0"
+      ],
+      "description": "Insert Swift file header"
+    }
+  }

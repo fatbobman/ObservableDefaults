@@ -1,0 +1,86 @@
+opt_in_rules:
+  - empty_count
+  - missing_docs
+
+disabled_rules:
+  - opening_brace
+
+included:
+  - Domain/Sources
+  - Persistent/Sources
+  # 如果需要包含测试，添加：
+  # - Domain/Tests
+  # - Persistent/Tests
+
+excluded:
+  - .build
+  - .swiftpm
+  - Generated
+  - Domain/Tests
+  - Persistent/Test
+
+missing_docs:
+  severity: warning
+  included: [public, open]
+  required_declarations:
+    - type
+    - method
+    - property
+
+trailing_comma:
+  mandatory_comma: true # ✅ 多行结构必须添加尾随逗号
+  severity: warning # or error
+
+line_length:
+  warning: 120
+  error: 130
+  ignores_comments: true
+
+force_cast: warning
+force_try:
+  severity: warning
+
+file_length:
+  warning: 500
+  error: 1200
+
+type_body_length:
+  - 300 # warning
+  - 400 # error
+
+type_name:
+  min_length: 3
+  max_length:
+    warning: 40
+    error: 50
+  excluded:
+    - ID
+
+identifier_name:
+  allowed_symbols: "_"
+  min_length:
+    error: 3
+  excluded:
+    - id
+    - URL
+    - GlobalAPIKey
+    - i
+    - x
+    - y
+    - z
+    - by
+
+nesting:
+  type_level:
+    warning: 3
+    error: 6
+
+cyclomatic_complexity:
+  warning: 15
+  error: 25
+
+switch_case_alignment:
+  severity: warning
+  indented_cases: true # 允许 case 缩进
+
+reporter: "xcode"
