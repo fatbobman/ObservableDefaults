@@ -175,6 +175,11 @@ extension ObservableDefaultsMacros: MemberMacro {
         // Generate mutation method for property changes
         let withMutationFunctionSyntax: DeclSyntax =
             """
+            /// Performs a mutation on the specified keyPath and notifies observers.
+            /// - Parameters:
+            ///   - keyPath: The key path to the property being mutated
+            ///   - mutation: The mutation closure to execute
+            /// - Returns: The result of the mutation closure
             internal nonisolated func withMutation<Member, T>(keyPath: KeyPath<\(
                 className), Member>, _ mutation: () throws -> T) rethrows -> T {
               try _$observationRegistrar.withMutation(of: self, keyPath: keyPath, mutation)
@@ -256,16 +261,20 @@ extension ObservableDefaultsMacros: MemberMacro {
             """
             private var observer: DefaultsObservation?
 
-            /// The observation registrar is used to manage the observation of changes to UserDefaults.
-            /// It ensures that the observer is properly registered and deregistered when the instance is created and deInitialized.
-            /// The registrar is accessed through the `_$observationRegistrar` property.
-            ///
-            /// - Note: This property is internal and can be accessed within the same module.
+            /// The observation registrar manages UserDefaults change observation.
+            /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
             private class DefaultsObservation: NSObject {
                 let host: \(className)
                 let userDefaults: Foundation.UserDefaults
                 let prefix: String
                 let observableKeysBlacklist: [String]
+
+                /// Initializes the observation with the specified parameters.
+                /// - Parameters:
+                ///   - host: The host instance to observe
+                ///   - userDefaults: The UserDefaults instance to monitor
+                ///   - prefix: The key prefix for UserDefaults keys
+                ///   - observableKeysBlacklist: Keys to exclude from observation
                 init(host: \(
                     className), userDefaults: Foundation.UserDefaults, prefix: String, observableKeysBlacklist: [String]) {
                     self.host = host
@@ -276,6 +285,12 @@ extension ObservableDefaultsMacros: MemberMacro {
                     \(raw: addObserverCode)
                 }
 
+                /// Observes value changes for UserDefaults keys.
+                /// - Parameters:
+                ///   - keyPath: The key path that changed
+                ///   - object: The object being observed
+                ///   - change: The change dictionary
+                ///   - context: The observation context
                 override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
                     switch keyPath {
                     \(raw: caseCode)
