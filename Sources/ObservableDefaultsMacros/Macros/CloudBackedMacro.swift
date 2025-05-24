@@ -89,7 +89,7 @@ extension CloudBackedMacro: AccessorMacro {
             """
             get {
                 access(keyPath: \\.\(identifier))
-                if developmentMode {
+                if _developmentMode_ {
                     return _\(raw: identifier)
                 } else {
                     let key = _prefix + "\(raw: keyString)"
@@ -102,14 +102,14 @@ extension CloudBackedMacro: AccessorMacro {
         let setAccessor: AccessorDeclSyntax =
             """
             set {
-                if developmentMode {
+                if _developmentMode_ {
                     withMutation(keyPath: \\.\(raw: identifier)) {
                         _\(identifier) = newValue
                     }
                 } else {
                     let key = _prefix + "\(raw: keyString)"
                     NSUbiquitousKeyValueStoreWrapper.setValue(key, newValue)
-                    if syncImmediately {
+                    if _syncImmediately {
                         NSUbiquitousKeyValueStore.default.synchronize()
                     }
                 }

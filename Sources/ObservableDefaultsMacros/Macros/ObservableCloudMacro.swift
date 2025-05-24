@@ -74,7 +74,7 @@ extension ObservableCloudMacros: MemberMacro {
             /// - Development mode: Uses memory storage for testing and development.
             /// - Production mode: Uses NSUbiquitousKeyValueStore for production data storage.
             private var _developmentMode: Bool = \(raw: developmentMode)
-            private var developmentMode: Bool {
+            public var _developmentMode_: Bool {
                 if _developmentMode
                     || ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
                     || ProcessInfo.processInfo.environment["com.observableDefaults.developmentMode"] == "true"
@@ -102,12 +102,10 @@ extension ObservableCloudMacros: MemberMacro {
 
         let caseCode = metas.enumerated().map { index, meta in
             let caseIndent = index == 0 ? "" : "        "
-            let bodyIndent = "            "
             return """
                 \(caseIndent)case prefix + "\(meta.keyValueStoreKey)":
-                \(bodyIndent)host._$observationRegistrar.withMutation(
-                    of: host,
-                    keyPath: \\.\(meta.propertyID)) {}
+                \(caseIndent)     host._$observationRegistrar.withMutation(of: host,
+                \(caseIndent)                   keyPath: \\.\(meta.propertyID)) {}
                 """
         }.joined(separator: "\n")
 
@@ -163,8 +161,8 @@ extension ObservableCloudMacros: MemberMacro {
                 _syncImmediately = syncImmediately
                 _developmentMode = developmentMode
                 assert(!_prefix.contains("."), "Prefix '\\(_prefix)' should not contain '.' to avoid KVO issues!")
-                if case .production = _cloudKitRequirementMode {
-                    _cloudObserver = CloudObservation(host: self)
+                if !_developmentMode_ {
+                    _cloudObserver = CloudObservation(host: self, prefix: _prefix)
                 }
             }
             """
@@ -178,12 +176,15 @@ extension ObservableCloudMacros: MemberMacro {
             /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
             private class CloudObservation {
                 let host: \(className)
+                let prefix: String
 
                 /// Initializes the observation with the specified parameters.
                 /// - Parameters:
                 ///   - host: The host instance to observe
-                init(host: \(className)) {
+                ///   - prefix: The prefix for the NSUbiquitousKeyValueStore keys
+                init(host: \(className), prefix: String) {
                     self.host = host
+                    self.prefix = prefix
                     NotificationCenter.default
                         .addObserver(
                             forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,

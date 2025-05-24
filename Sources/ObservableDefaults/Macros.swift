@@ -234,10 +234,11 @@ public macro CloudKey(keyValueStoreKey: String? = nil) = #externalMacro(
     named(setValue),
     named(init),
     named(_prefix),
+    named(_observableCloudLogger),
     named(_cloudObserver),
     named(CloudObservation),
     named(_syncImmediately),
-    named(developmentMode),
+    named(_developmentMode_),
     named(_developmentMode))
 @attached(extension, conformances: Observable)
 @attached(memberAttribute)
