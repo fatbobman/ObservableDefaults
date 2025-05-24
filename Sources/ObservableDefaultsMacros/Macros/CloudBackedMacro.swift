@@ -89,12 +89,11 @@ extension CloudBackedMacro: AccessorMacro {
             """
             get {
                 access(keyPath: \\.\(identifier))
-                switch _cloudKitRequirementMode {
-                    case .development:
-                        return _\(raw: identifier)
-                    case .production:
-                        let key = _prefix + "\(raw: keyString)"
-                        return NSUbiquitousKeyValueStoreWrapper.getValue(key, _\(raw: identifier))
+                if developmentMode {
+                    return _\(raw: identifier)
+                } else {
+                    let key = _prefix + "\(raw: keyString)"
+                    return NSUbiquitousKeyValueStoreWrapper.getValue(key, _\(raw: identifier))
                 }
             }
             """
@@ -103,17 +102,16 @@ extension CloudBackedMacro: AccessorMacro {
         let setAccessor: AccessorDeclSyntax =
             """
             set {
-                switch _cloudKitRequirementMode {
-                    case .development:
-                        withMutation(keyPath: \\.\(raw: identifier)) {
-                            _\(identifier) = newValue
-                        }
-                    case .production:
-                        let key = _prefix + "\(raw: keyString)"
-                        NSUbiquitousKeyValueStoreWrapper.setValue(key, newValue)
-                        if syncImmediately {
-                            _cloudStore.synchronize()
-                        }
+                if developmentMode {
+                    withMutation(keyPath: \\.\(raw: identifier)) {
+                        _\(identifier) = newValue
+                    }
+                } else {
+                    let key = _prefix + "\(raw: keyString)"
+                    NSUbiquitousKeyValueStoreWrapper.setValue(key, newValue)
+                    if syncImmediately {
+                        NSUbiquitousKeyValueStore.default.synchronize()
+                    }
                 }
             }
             """

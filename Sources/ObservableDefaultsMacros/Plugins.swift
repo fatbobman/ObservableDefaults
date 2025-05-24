@@ -25,5 +25,6 @@ struct UserDefaultsObservationPlugin: CompilerPlugin {
         ObservableOnlyMacro.self,
         CloudBackedMacro.self,
         CloudKeyMacro.self,
+        ObservableCloudMacros.self,
     ]
 }

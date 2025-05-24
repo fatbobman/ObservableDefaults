@@ -224,3 +224,28 @@ public macro CloudBacked(keyValueStoreKey: String? = nil) = #externalMacro(
 public macro CloudKey(keyValueStoreKey: String? = nil) = #externalMacro(
     module: "ObservableDefaultsMacros",
     type: "CloudKeyMacro")
+
+@attached(
+    member,
+    names: named(_$observationRegistrar),
+    named(access),
+    named(withMutation),
+    named(getValue),
+    named(setValue),
+    named(init),
+    named(_prefix),
+    named(_cloudObserver),
+    named(CloudObservation),
+    named(_syncImmediately),
+    named(developmentMode),
+    named(_developmentMode))
+@attached(extension, conformances: Observable)
+@attached(memberAttribute)
+public macro ObservableCloud(
+    autoInit: Bool = true,
+    prefix: String? = nil,
+    observeFirst: Bool = false,
+    syncImmediately: Bool = false,
+    developmentMode: Bool = false) = #externalMacro(
+    module: "ObservableDefaultsMacros",
+    type: "ObservableCloudMacros")
