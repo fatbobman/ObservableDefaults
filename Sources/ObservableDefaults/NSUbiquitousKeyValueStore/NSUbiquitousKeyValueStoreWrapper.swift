@@ -28,17 +28,17 @@ public struct NSUbiquitousKeyValueStoreWrapper<Value> {
     /// - Parameters:
     ///   - key: The key to get the value for
     ///   - defaultValue: The default value to return if the key is not found or conversion fails
-    ///   - store: The ubiquitous key-value store to get the value from
     /// - Returns: The enum value from the store, or the default value if the key is
     /// not found or conversion fails
     /// - Note: Uses `nonisolated` to allow concurrent access from different actors
     public nonisolated static func getValue(
         _ key: String,
-        _ defaultValue: Value,
-        _ store: NSUbiquitousKeyValueStore) -> Value
+        _ defaultValue: Value) -> Value
     where Value: RawRepresentable, Value.RawValue: CloudPropertyListValue {
         // Attempt to get the raw value from NSUbiquitousKeyValueStore
-        guard let rawValue = store.object(forKey: key) as? Value.RawValue else {
+        guard let rawValue = NSUbiquitousKeyValueStore.default.object(forKey: key) as? Value
+            .RawValue
+        else {
             return defaultValue
         }
         // Try to create the enum from the raw value, fallback to default if it fails
@@ -50,16 +50,15 @@ public struct NSUbiquitousKeyValueStoreWrapper<Value> {
     /// - Parameters:
     ///   - key: The key to get the value for
     ///   - defaultValue: The default value to return if the key is not found or conversion fails
-    ///   - store: The ubiquitous key-value store to get the value from
     /// - Returns: The optional enum value from the store, or the default value if the
     /// key is not found or conversion fails
     public nonisolated static func getValue<R>(
         _ key: String,
-        _ defaultValue: Value,
-        _ store: NSUbiquitousKeyValueStore) -> Value
+        _ defaultValue: Value) -> Value
     where Value == R?, R: RawRepresentable, R.RawValue: CloudPropertyListValue {
         // Attempt to get the raw value from NSUbiquitousKeyValueStore
-        guard let rawValue = store.object(forKey: key) as? R.RawValue else {
+        guard let rawValue = NSUbiquitousKeyValueStore.default.object(forKey: key) as? R.RawValue
+        else {
             return defaultValue
         }
         // Try to create the enum from the raw value, fallback to default if it fails
@@ -71,16 +70,14 @@ public struct NSUbiquitousKeyValueStoreWrapper<Value> {
     /// - Parameters:
     ///   - key: The key to get the value for
     ///   - defaultValue: The default value to return if the key is not found or type casting fails
-    ///   - store: The ubiquitous key-value store to get the value from
     /// - Returns: The value from the store, or the default value if the key is not
     /// found or type casting fails
     public nonisolated static func getValue(
         _ key: String,
-        _ defaultValue: Value,
-        _ store: NSUbiquitousKeyValueStore) -> Value
+        _ defaultValue: Value) -> Value
     where Value: CloudPropertyListValue {
         // Directly cast the object to the expected type, fallback to default if casting fails
-        store.object(forKey: key) as? Value ?? defaultValue
+        NSUbiquitousKeyValueStore.default.object(forKey: key) as? Value ?? defaultValue
     }
 
     /// Gets an optional basic property list value from the ubiquitous key-value store.
@@ -88,16 +85,14 @@ public struct NSUbiquitousKeyValueStoreWrapper<Value> {
     /// - Parameters:
     ///   - key: The key to get the value for
     ///   - defaultValue: The default value to return if the key is not found or type casting fails
-    ///   - store: The ubiquitous key-value store to get the value from
     /// - Returns: The optional value from the store, or the default value if the key
     /// is not found or type casting fails
     public nonisolated static func getValue<R>(
         _ key: String,
-        _ defaultValue: Value,
-        _ store: NSUbiquitousKeyValueStore) -> Value
+        _ defaultValue: Value) -> Value
     where Value == R?, R: CloudPropertyListValue {
         // Directly cast the object to the expected type, return nil or default if casting fails
-        store.object(forKey: key) as? R ?? defaultValue
+        NSUbiquitousKeyValueStore.default.object(forKey: key) as? R ?? defaultValue
     }
 
     /// Gets a Codable value from the ubiquitous key-value store.
@@ -105,16 +100,14 @@ public struct NSUbiquitousKeyValueStoreWrapper<Value> {
     /// - Parameters:
     ///   - key: The key to get the value for
     ///   - defaultValue: The default value to return if the key is not found or decoding fails
-    ///   - store: The ubiquitous key-value store to get the value from
     /// - Returns: The decoded value from the store, or the default value if the key
     /// is not found or decoding fails
     public nonisolated static func getValue(
         _ key: String,
-        _ defaultValue: Value,
-        _ store: NSUbiquitousKeyValueStore) -> Value
+        _ defaultValue: Value) -> Value
     where Value: CodableCloudPropertyListValue {
         // Get the data from NSUbiquitousKeyValueStore
-        guard let data = store.data(forKey: key) else {
+        guard let data = NSUbiquitousKeyValueStore.default.data(forKey: key) else {
             return defaultValue
         }
 
@@ -132,7 +125,6 @@ public struct NSUbiquitousKeyValueStoreWrapper<Value> {
     /// - Parameters:
     ///   - key: The key to get the value for
     ///   - defaultValue: The default value to return if the key is not found
-    ///   - store: The ubiquitous key-value store to get the value from
     /// - Returns: The Int64 value from the store, or the default value if the key is not found
     /// - Note: This method uses longLong(forKey:) to avoid the issue where
     ///   NSUbiquitousKeyValueStore returns 0 for non-existent keys
@@ -140,13 +132,12 @@ public struct NSUbiquitousKeyValueStoreWrapper<Value> {
     ///   should use the generic optional handling method
     public nonisolated static func getValue(
         _ key: String,
-        _ defaultValue: Value,
-        _ store: NSUbiquitousKeyValueStore) -> Value
+        _ defaultValue: Value) -> Value
     where Value == Int64 {
-        let value = store.longLong(forKey: key)
+        let value = NSUbiquitousKeyValueStore.default.longLong(forKey: key)
         // Check if the value is 0 and the key exists in the store
         // This is a workaround for the issue where NSUbiquitousKeyValueStore returns 0
-        return store.object(forKey: key) != nil ? value : defaultValue
+        return NSUbiquitousKeyValueStore.default.object(forKey: key) != nil ? value : defaultValue
     }
 
     // MARK: - Set Values
@@ -156,14 +147,12 @@ public struct NSUbiquitousKeyValueStoreWrapper<Value> {
     /// - Parameters:
     ///   - key: The key to set the value for
     ///   - newValue: The new enum value to store
-    ///   - store: The ubiquitous key-value store to set the value in
     public nonisolated static func setValue(
         _ key: String,
-        _ newValue: Value,
-        _ store: NSUbiquitousKeyValueStore)
+        _ newValue: Value)
     where Value: RawRepresentable, Value.RawValue: CloudPropertyListValue {
         // Store the raw value of the enum
-        store.set(newValue.rawValue, forKey: key)
+        NSUbiquitousKeyValueStore.default.set(newValue.rawValue, forKey: key)
     }
 
     /// Sets an optional RawRepresentable value in the ubiquitous key-value store.
@@ -171,17 +160,15 @@ public struct NSUbiquitousKeyValueStoreWrapper<Value> {
     /// - Parameters:
     ///   - key: The key to set the value for
     ///   - newValue: The new optional enum value to store (nil will remove the key)
-    ///   - store: The ubiquitous key-value store to set the value in
     public nonisolated static func setValue<R>(
         _ key: String,
-        _ newValue: Value,
-        _ store: NSUbiquitousKeyValueStore)
+        _ newValue: Value)
     where Value == R?, R: RawRepresentable, R.RawValue: CloudPropertyListValue {
         // Store the raw value of the optional enum (nil if the enum is nil)
         if let newValue {
-            store.set(newValue.rawValue, forKey: key)
+            NSUbiquitousKeyValueStore.default.set(newValue.rawValue, forKey: key)
         } else {
-            store.removeObject(forKey: key)
+            NSUbiquitousKeyValueStore.default.removeObject(forKey: key)
         }
     }
 
@@ -190,14 +177,12 @@ public struct NSUbiquitousKeyValueStoreWrapper<Value> {
     /// - Parameters:
     ///   - key: The key to set the value for
     ///   - newValue: The new value to store
-    ///   - store: The ubiquitous key-value store to set the value in
     public nonisolated static func setValue(
         _ key: String,
-        _ newValue: Value,
-        _ store: NSUbiquitousKeyValueStore)
+        _ newValue: Value)
     where Value: CloudPropertyListValue {
         // Directly store the value
-        store.set(newValue, forKey: key)
+        NSUbiquitousKeyValueStore.default.set(newValue, forKey: key)
     }
 
     /// Sets an optional basic property list value in the ubiquitous key-value store.
@@ -205,17 +190,15 @@ public struct NSUbiquitousKeyValueStoreWrapper<Value> {
     /// - Parameters:
     ///   - key: The key to set the value for
     ///   - newValue: The new optional value to store (nil will remove the key)
-    ///   - store: The ubiquitous key-value store to set the value in
     public nonisolated static func setValue<R>(
         _ key: String,
-        _ newValue: Value,
-        _ store: NSUbiquitousKeyValueStore)
+        _ newValue: Value)
     where Value == R?, R: CloudPropertyListValue {
         // Store the optional value (nil will remove the key)
         if let newValue {
-            store.set(newValue, forKey: key)
+            NSUbiquitousKeyValueStore.default.set(newValue, forKey: key)
         } else {
-            store.removeObject(forKey: key)
+            NSUbiquitousKeyValueStore.default.removeObject(forKey: key)
         }
     }
 
@@ -224,16 +207,14 @@ public struct NSUbiquitousKeyValueStoreWrapper<Value> {
     /// - Parameters:
     ///   - key: The key to set the value for
     ///   - newValue: The new Codable value to store
-    ///   - store: The ubiquitous key-value store to set the value in
     /// - Note: If encoding fails, the method silently returns without storing anything
     public nonisolated static func setValue(
         _ key: String,
-        _ newValue: Value,
-        _ store: NSUbiquitousKeyValueStore)
+        _ newValue: Value)
     where Value: CodableCloudPropertyListValue {
         // Encode the value to JSON data
         guard let data = try? JSONEncoder().encode(newValue) else { return }
         // Store the encoded data
-        store.set(data, forKey: key)
+        NSUbiquitousKeyValueStore.default.set(data, forKey: key)
     }
 }
