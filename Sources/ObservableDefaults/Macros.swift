@@ -213,3 +213,14 @@ public macro ObservableDefaults(
     observeFirst: Bool = false) = #externalMacro(
     module: "ObservableDefaultsMacros",
     type: "ObservableDefaultsMacros")
+
+@attached(peer, names: prefixed(`_`))
+@attached(accessor)
+public macro CloudBacked(keyValueStoreKey: String? = nil) = #externalMacro(
+    module: "ObservableDefaultsMacros",
+    type: "CloudBackedMacro")
+
+@attached(peer)
+public macro CloudKey(keyValueStoreKey: String? = nil) = #externalMacro(
+    module: "ObservableDefaultsMacros",
+    type: "CloudKeyMacro")

@@ -15,7 +15,7 @@ import SwiftSyntaxMacros
 public enum CloudBackedMacro {
     /// The name of the macro as used in source code
     static let name: String = "CloudBacked"
-    /// The parameter name for specifying custom UserDefaults keys
+    /// The parameter name for specifying custom NSUbiquitousKeyValueStore keys
     static let key: String = "keyValueStoreKey"
 }
 
@@ -32,10 +32,10 @@ extension CloudBackedMacro: AccessorMacro {
               binding.accessorBlock == nil // Ensure property doesn't already have custom accessors
         else { return [] }
 
-        // Use property name as default UserDefaults key
+        // Use property name as default NSUbiquitousKeyValueStore key
         var keyString: String = identifier.trimmedDescription
 
-        // Validate that the property can be persisted to UserDefaults
+        // Validate that the property can be persisted to NSUbiquitousKeyValueStore
         guard property.isPersistent else {
             let diagnostic = Diagnostic.variableRequired(
                 property: property,
@@ -44,7 +44,8 @@ extension CloudBackedMacro: AccessorMacro {
             return []
         }
 
-        // Ensure the property has a default value (required for UserDefaults integration)
+        // Ensure the property has a default value (required for NSUbiquitousKeyValueStore
+        // integration)
         if binding.initializer == nil {
             let diagnostic = Diagnostic.initializerRequired(
                 property: property,
@@ -70,12 +71,15 @@ extension CloudBackedMacro: AccessorMacro {
             }
         }
 
+        // Check for custom NSUbiquitousKeyValueStore key specified via
+        // @CloudBacked(keyValueStoreKey:)
+        // or @CloudKey(keyValueStoreKey:)
         if let extractedKey: String = property.attributes.extractValue(
-            forAttribute: DefaultsBackedMacro.name,
-            argument: DefaultsBackedMacro.key) ??
+            forAttribute: CloudBackedMacro.name,
+            argument: CloudBackedMacro.key) ??
             property.attributes.extractValue(
-                forAttribute: DefaultsKeyMacro.name,
-                argument: DefaultsKeyMacro.key)
+                forAttribute: CloudKeyMacro.name,
+                argument: CloudKeyMacro.key)
         {
             keyString = extractedKey
         }
@@ -85,8 +89,13 @@ extension CloudBackedMacro: AccessorMacro {
             """
             get {
                 access(keyPath: \\.\(identifier))
-                let key = _prefix + "\(raw: keyString)"
-                return UserDefaultsWrapper.getValue(key, _\(identifier), _userDefaults)
+                switch _cloudKitRequirementMode {
+                    case .development:
+                        return _\(raw: identifier)
+                    case .production:
+                        let key = _prefix + "\(raw: keyString)"
+                        return NSUbiquitousKeyValueStoreWrapper.getValue(key, _\(raw: identifier))
+                }
             }
             """
 
@@ -94,15 +103,17 @@ extension CloudBackedMacro: AccessorMacro {
         let setAccessor: AccessorDeclSyntax =
             """
             set {
-                let key = _prefix + "\(raw: keyString)"
-                if _isExternalNotificationDisabled ||
-                   _ignoredKeyPathsForExternalUpdates.contains(\\.\(identifier)) ||
-                   ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-                    withMutation(keyPath: \\.\(identifier)) {
-                        UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
-                    }
-                } else {
-                    UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
+                switch _cloudKitRequirementMode {
+                    case .development:
+                        withMutation(keyPath: \\.\(raw: identifier)) {
+                            _\(identifier) = newValue
+                        }
+                    case .production:
+                        let key = _prefix + "\(raw: keyString)"
+                        NSUbiquitousKeyValueStoreWrapper.setValue(key, newValue)
+                        if syncImmediately {
+                            _cloudStore.synchronize()
+                        }
                 }
             }
             """
