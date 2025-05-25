@@ -73,13 +73,15 @@ import ObservableDefaults
 
 @ObservableCloud
 class CloudSettings {
-    var username: String = "Fatbobman"
-    var theme: String = "light"
-    var isFirstLaunch: Bool = true
+    var number = 1
+    var color: Colors = .red
+    var style: FontStyle = .style1
 }
 ```
 
 https://github.com/user-attachments/assets/7e8dcf6b-3c8f-4bd3-8083-ff3c4a6bd6b0
+
+[Demo Code](https://gist.github.com/fatbobman/5ab86c35ac8cee93c8ac6ac4228a28a9)
 
 This macro automatically:
 
