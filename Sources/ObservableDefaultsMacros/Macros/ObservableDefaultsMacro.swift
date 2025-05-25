@@ -68,6 +68,8 @@ public enum ObservableDefaultsMacros {
     static let observeFirst: String = "observeFirst"
 }
 
+// swiftlint: disable line_length
+
 extension ObservableDefaultsMacros: MemberMacro {
     /// Generates member declarations for the `@ObservableDefaults` macro.
     ///
@@ -328,6 +330,8 @@ extension ObservableDefaultsMacros: MemberMacro {
         ] + (autoInit ? [initFunctionSyntax] : [])
     }
 }
+
+// swiftlint: enable line_length
 
 extension ObservableDefaultsMacros: ExtensionMacro {
     /// Generates an extension that makes the class conform to the `Observable` protocol.

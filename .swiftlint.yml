@@ -4,6 +4,8 @@ opt_in_rules:
 
 disabled_rules:
   - opening_brace
+  - large_tuple
+  - function_body_length
 
 included:
   - Domain/Sources

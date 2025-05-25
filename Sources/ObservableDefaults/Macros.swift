@@ -214,17 +214,268 @@ public macro ObservableDefaults(
     module: "ObservableDefaultsMacros",
     type: "ObservableDefaultsMacros")
 
+/// A macro that provides automatic NSUbiquitousKeyValueStore (iCloud Key-Value Storage) integration
+/// for individual properties within classes marked with `@ObservableCloud`.
+///
+/// The `@CloudBacked` macro generates getter and setter accessors that automatically:
+/// - Store and retrieve values from NSUbiquitousKeyValueStore for cross-device synchronization
+/// - Support development mode for testing without CloudKit container requirements
+/// - Integrate seamlessly with SwiftUI's Observation framework for precise view updates
+/// - Handle immediate synchronization when configured
+/// - Provide automatic fallback to default values when cloud data is unavailable
+///
+/// ## Basic Usage
+///
+/// ```swift
+/// @ObservableCloud
+/// class CloudSettings {
+///     @CloudBacked
+///     var username: String = "Fatbobman"  // Automatically synced to iCloud
+///
+///     @CloudBacked
+///     var theme: Theme = .light           // Enum support
+///
+///     @CloudBacked
+///     var preferences: UserPrefs = UserPrefs()  // Custom Codable types
+/// }
+/// ```
+///
+/// ## Custom Key Specification
+///
+/// ```swift
+/// @ObservableCloud
+/// class CloudSettings {
+///     @CloudBacked(keyValueStoreKey: "user_display_name")
+///     var username: String = "Fatbobman"
+///
+///     // Alternative syntax using @CloudKey
+///     @CloudKey(keyValueStoreKey: "app_theme_setting")
+///     @CloudBacked
+///     var theme: Theme = .light
+/// }
+/// ```
+///
+/// ## Supported Data Types
+///
+/// - **Basic Types**: String, Int, Int64, Double, Float, Bool, Data, Date
+/// - **Collections**: Array and Dictionary with CloudPropertyListValue elements
+/// - **Enums**: RawRepresentable types with CloudPropertyListValue raw values
+/// - **Custom Types**: Codable types conforming to CodableCloudPropertyListValue
+///
+/// ## Requirements
+///
+/// - Must be used within a class marked with `@ObservableCloud`
+/// - Property must have a default value (initializer required)
+/// - Property type must not be optional
+/// - Property must not already have custom accessors
+/// - Property type must conform to appropriate storage protocols
+///
+/// ## Generated Code
+///
+/// The macro generates:
+/// - A private storage property with underscore prefix (`_propertyName`)
+/// - Custom getter that reads from cloud storage or memory (development mode)
+/// - Custom setter that writes to cloud storage with observation support
+///
+/// ## Development Mode
+///
+/// In development mode, properties use memory storage instead of NSUbiquitousKeyValueStore,
+/// enabling testing without CloudKit setup. Development mode is automatically enabled when:
+/// - Explicitly set via `@ObservableCloud(developmentMode: true)`
+/// - Running in SwiftUI Previews
+/// - `OBSERVABLE_DEFAULTS_DEV_MODE` environment variable is set
+///
+/// - Important: NSUbiquitousKeyValueStore has a 1MB total storage limit and 1024 key limit
+/// - Note: Changes are automatically observed across devices via NotificationCenter integration
+/// - Warning: Changing property names or custom keys after deployment may cause data loss
 @attached(peer, names: prefixed(`_`))
 @attached(accessor)
 public macro CloudBacked(keyValueStoreKey: String? = nil) = #externalMacro(
     module: "ObservableDefaultsMacros",
     type: "CloudBackedMacro")
 
+/// A marker macro that provides an alternative syntax for specifying custom
+/// NSUbiquitousKeyValueStore
+/// keys for properties used with `@CloudBacked`.
+///
+/// The `@CloudKey` macro is a metadata-only macro that doesn't generate code itself.
+/// Instead, it provides a cleaner, more explicit way to specify custom cloud storage keys
+/// that are read by the `@CloudBacked` macro during code generation.
+///
+/// ## Usage
+///
+/// ```swift
+/// @ObservableCloud
+/// class CloudSettings {
+///     // Using @CloudKey for better readability
+///     @CloudKey(keyValueStoreKey: "user_display_name")
+///     @CloudBacked
+///     var username: String = "Fatbobman"
+///
+///     // Equivalent to using @CloudBacked parameter
+///     @CloudBacked(keyValueStoreKey: "user_display_name")
+///     var username: String = "Fatbobman"
+/// }
+/// ```
+///
+/// ## Key Resolution Priority
+///
+/// When both `@CloudKey` and `@CloudBacked(keyValueStoreKey:)` are present:
+/// 1. `@CloudBacked(keyValueStoreKey:)` parameter (highest priority)
+/// 2. `@CloudKey(keyValueStoreKey:)` parameter
+/// 3. Property name (default fallback)
+///
+/// ## Best Practices
+///
+/// - Use descriptive, stable names that won't change across app versions
+/// - Avoid special characters that might cause key-value storage issues
+/// - Consider using consistent naming patterns (snake_case or camelCase)
+/// - Prefix keys to avoid conflicts with system or framework keys
+///
+/// ## Advantages
+///
+/// - **Separation of Concerns**: Keeps key specification separate from storage behavior
+/// - **Readability**: Makes custom key usage more explicit and visible
+/// - **Flexibility**: Allows for future extensions without changing `@CloudBacked` syntax
+/// - **Consistency**: Provides uniform key specification across different storage macros
+///
+/// - Note: This is a marker macro - no code generation occurs
+/// - Important: Must be used with `@CloudBacked` to have any effect
+/// - Warning: Changing keys after deployment will make existing cloud data inaccessible
 @attached(peer)
 public macro CloudKey(keyValueStoreKey: String? = nil) = #externalMacro(
     module: "ObservableDefaultsMacros",
     type: "CloudKeyMacro")
 
+/// A comprehensive macro that automatically integrates NSUbiquitousKeyValueStore with SwiftUI's
+/// Observation framework for seamless cloud data synchronization.
+///
+/// The `@ObservableCloud` macro transforms a class into a fully observable cloud-backed data store
+/// by:
+/// - Making the class conform to the `Observable` protocol for SwiftUI integration
+/// - Automatically managing NSUbiquitousKeyValueStore synchronization for marked properties
+/// - Handling external cloud store changes via NotificationCenter observation
+/// - Providing precise view updates in SwiftUI applications
+/// - Supporting development mode for testing without CloudKit container requirements
+///
+/// ## Basic Usage
+///
+/// ```swift
+/// @ObservableCloud
+/// class CloudSettings {
+///     var username: String = "Fatbobman"  // Automatically cloud-backed
+///     var theme: String = "light"         // Automatically cloud-backed
+///     var isFirstLaunch: Bool = true      // Automatically cloud-backed
+/// }
+///
+/// // Usage in SwiftUI
+/// struct ContentView: View {
+///     @State private var settings = CloudSettings()
+///
+///     var body: some View {
+///         VStack {
+///             Text("Hello, \(settings.username)!")  // Automatically updates
+///             Button("Toggle Theme") {
+///                 settings.theme = settings.theme == "light" ? "dark" : "light"
+///             }
+///         }
+///     }
+/// }
+/// ```
+///
+/// ## Configuration Options
+///
+/// ```swift
+/// @ObservableCloud(
+///     autoInit: true,              // Generate automatic initializer
+///     prefix: "myApp_",            // Prefix for all cloud keys
+///     observeFirst: false,         // Enable Observe First mode
+///     syncImmediately: true,       // Force immediate synchronization
+///     developmentMode: false       // Use memory storage for testing
+/// )
+/// class CloudSettings {
+///     // Properties automatically managed based on configuration
+/// }
+/// ```
+///
+/// ## Observe First Mode
+///
+/// When `observeFirst: true`, properties are observable but not automatically cloud-backed:
+///
+/// ```swift
+/// @ObservableCloud(observeFirst: true)
+/// class CloudSettings {
+///     var localSetting: String = "local"     // Observable only (not stored)
+///
+///     @CloudBacked
+///     var cloudSetting: String = "cloud"     // Observable and cloud-backed
+/// }
+/// ```
+///
+/// ## Development Mode
+///
+/// For testing and development without CloudKit setup:
+///
+/// ```swift
+/// @ObservableCloud(developmentMode: true)
+/// class CloudSettings {
+///     // All properties use memory storage instead of NSUbiquitousKeyValueStore
+///     var setting1: String = "value1"
+///     var setting2: Int = 42
+/// }
+/// ```
+///
+/// Development mode is automatically enabled when:
+/// - Explicitly set via `developmentMode: true`
+/// - Running in SwiftUI Previews (`XCODE_RUNNING_FOR_PREVIEWS` environment variable)
+/// - `OBSERVABLE_DEFAULTS_DEV_MODE` environment variable is set to "true"
+///
+/// ## Generated Members
+///
+/// The macro automatically generates:
+/// - **Observation Infrastructure**: `_$observationRegistrar`, `access()`, `withMutation()`
+/// - **Configuration Properties**: `_prefix`, `_syncImmediately`, `_developmentMode`
+/// - **Cloud Observation**: `CloudObservation` class for external change handling
+/// - **Optional Initializer**: When `autoInit: true` (default)
+///
+/// ## Synchronization Behavior
+///
+/// - **Immediate Sync**: When `syncImmediately: true`, calls `synchronize()` after each write
+/// - **Deferred Sync**: When `false`, relies on system's automatic synchronization
+/// - **External Changes**: Automatically observes changes from other devices
+/// - **Conflict Resolution**: Uses NSUbiquitousKeyValueStore's last-writer-wins strategy
+///
+/// ## Key Management
+///
+/// - **Automatic Keys**: Property names are used as NSUbiquitousKeyValueStore keys by default
+/// - **Custom Keys**: Use `@CloudBacked(keyValueStoreKey:)` or `@CloudKey` for custom keys
+/// - **Prefix Support**: Global prefix applied to all keys to avoid conflicts
+/// - **Key Validation**: Prefix must not contain '.' characters to avoid KVO issues
+///
+/// ## Performance Considerations
+///
+/// - **Lazy Loading**: Cloud values are loaded on first access
+/// - **Caching**: Default values are cached in private storage properties
+/// - **Precise Updates**: SwiftUI views update only when observed properties change
+/// - **Background Sync**: External changes are processed on background queues
+///
+/// ## Error Handling and Limitations
+///
+/// - **Storage Limits**: NSUbiquitousKeyValueStore has 1MB total and 1024 key limits
+/// - **Network Dependency**: Requires iCloud account and network connectivity
+/// - **Type Restrictions**: Only supports CloudPropertyListValue-compatible types
+/// - **Class Only**: Can only be applied to classes, not structs
+/// - **Automatic Fallback**: Uses default values when cloud data is unavailable
+///
+/// ## Integration with Other Macros
+///
+/// - **@CloudBacked**: Explicitly marks properties for cloud storage
+/// - **@CloudKey**: Provides custom key specification
+/// - **@ObservableOnly**: In Observe First mode, marks properties as observable-only
+///
+/// - Important: Can only be applied to classes, not structs
+/// - Note: Supports all CloudPropertyListValue types and Codable types
+/// - Warning: Changing class structure after deployment may affect cloud data compatibility
 @attached(
     member,
     names: named(_$observationRegistrar),
