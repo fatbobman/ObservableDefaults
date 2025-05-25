@@ -258,7 +258,7 @@ extension ObservableCloudMacros: MemberMacro {
             /// Manages NSUbiquitousKeyValueStore change observation for external cloud updates.
             ///
             /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
-            private class CloudObservation {
+            private final class CloudObservation: @unchecked Sendable {
                 let host: \(className)
                 let prefix: String
 
@@ -276,11 +276,11 @@ extension ObservableCloudMacros: MemberMacro {
                             queue: nil,
                             using: cloudStoreDidChange
                         )
-
                 }
 
                 /// Handles cloud store changes from external sources.
                 /// - Parameter notification: The notification containing changed keys information
+                @Sendable
                 private func cloudStoreDidChange(_ notification: Notification) {
                     guard let userInfo = notification.userInfo,
                         let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
