@@ -1,21 +1,26 @@
 # ``ObservableDefaults``
 
-A Swift library that seamlessly integrates UserDefaults with SwiftUI's Observation framework.
+A comprehensive Swift library that seamlessly integrates both UserDefaults and iCloud Key-Value Store with SwiftUI's Observation framework.
 
 ## Overview
 
-ObservableDefaults simplifies UserDefaults management in SwiftUI applications by providing a macro-based solution that automatically synchronizes properties with UserDefaults while integrating with the Observation framework for precise view updates.
+`ObservableDefaults` is a comprehensive Swift library that seamlessly integrates both **`UserDefaults`** and **`NSUbiquitousKeyValueStore`** (iCloud Key-Value Storage) with SwiftUI's Observation framework. It provides two powerful macros - `@ObservableDefaults` for local UserDefaults management and `@ObservableCloud` for cloud-synchronized data storage - that simplify data persistence by automatically associating declared properties with their respective storage systems.
+
+This enables precise and efficient responsiveness to data changes, whether they originate from within the app, externally, or across multiple devices.
 
 ### Key Features
 
-- **Seamless Integration**: Works directly with SwiftUI's Observation framework introduced in iOS 17
-- **Automatic Synchronization**: Properties are automatically backed by UserDefaults storage
-- **Precise Updates**: Only affected views update when specific properties change
-- **External Change Handling**: Responds to UserDefaults modifications from outside your app
-- **Flexible Configuration**: Support for custom keys, prefixes, and UserDefaults suites
-- **Type Safety**: Compile-time validation for supported property types
+- **Dual Storage Support**: Seamless integration with both `UserDefaults` and `NSUbiquitousKeyValueStore` (iCloud)
+- **SwiftUI Observation**: Full integration with the SwiftUI Observation framework
+- **Automatic Synchronization**: Properties automatically sync with their respective storage systems
+- **Cross-Device Sync**: Cloud-backed properties automatically synchronize across user's devices
+- **Precise Notifications**: Property-level change notifications, reducing unnecessary view updates
+- **Development Mode**: Testing support without CloudKit container requirements
+- **Customizable Behavior**: Fine-grained control through additional macros and parameters
+- **Custom Keys and Prefixes**: Support for property-specific storage keys and global prefixes
+- **Codable Support**: Complex data persistence for both local and cloud storage
 
-## Basic Usage
+## UserDefaults Integration with @ObservableDefaults
 
 The simplest way to use ObservableDefaults is to mark your class with the `@ObservableDefaults` macro:
 
@@ -23,51 +28,136 @@ The simplest way to use ObservableDefaults is to mark your class with the `@Obse
 import ObservableDefaults
 
 @ObservableDefaults
-class AppSettings {
-    var username: String = "Guest"
-    var fontSize: Double = 16.0
-    var isDarkMode: Bool = false
-    var lastLoginDate: Date = Date()
+class Settings {
+    var name: String = "Fatbobman"
+    var age: Int = 20
 }
 ```
+
+This macro automatically:
+
+- Associates the `name` and `age` properties with `UserDefaults` keys
+- Listens for external changes to these keys and updates the properties accordingly
+- Notifies SwiftUI views of changes precisely, avoiding unnecessary redraws
 
 Use the settings class in your SwiftUI views:
 
 ```swift
 struct ContentView: View {
-    @State private var settings = AppSettings()
+    @State var settings = Settings()
     
     var body: some View {
         VStack {
-            Text("Hello, \(settings.username)!")
-                .font(.system(size: settings.fontSize))
+            Text("Name: \(settings.name)")
+            TextField("Enter name", text: $settings.name)
             
-            Toggle("Dark Mode", isOn: $settings.isDarkMode)
-            
-            Slider(value: $settings.fontSize, in: 12...24)
+            Text("Age: \(settings.age)")
+            Stepper("Age", value: $settings.age, in: 0...120)
         }
+        .padding()
     }
+}
+```
+
+## Cloud Storage Integration with @ObservableCloud
+
+For cloud-synchronized data that automatically syncs across devices, use the `@ObservableCloud` macro:
+
+```swift
+import ObservableDefaults
+
+@ObservableCloud
+class CloudSettings {
+    var username: String = "Fatbobman"
+    var theme: String = "light"
+    var isFirstLaunch: Bool = true
+}
+```
+
+This macro automatically:
+
+- Associates properties with `NSUbiquitousKeyValueStore` for iCloud synchronization
+- Listens for external changes from other devices and updates properties accordingly
+- Provides the same precise SwiftUI observation as `@ObservableDefaults`
+- Supports development mode for testing without CloudKit container setup
+
+Both `@ObservableDefaults` and `@ObservableCloud` classes work identically in SwiftUI views:
+
+```swift
+struct ContentView: View {
+    @State var settings = Settings()        // UserDefaults-backed
+    @State var cloudSettings = CloudSettings()  // iCloud-backed
+
+    var body: some View {
+        VStack {
+            // Local settings
+            Text("Name: \(settings.name)")
+            TextField("Enter name", text: $settings.name)
+            
+            // Cloud-synchronized settings
+            Text("Username: \(cloudSettings.username)")
+            TextField("Enter username", text: $cloudSettings.username)
+        }
+        .padding()
+    }
+}
+```
+
+## Customizing Behavior with Additional Macros
+
+### For @ObservableDefaults (UserDefaults)
+
+The library provides additional macros for finer control:
+
+- `@ObservableOnly`: The property is observable but not stored in `UserDefaults`
+- `@Ignore`: The property is neither observable nor stored in `UserDefaults`
+- `@DefaultsKey`: Specifies a custom `UserDefaults` key for the property
+- `@DefaultsBacked`: The property is stored in `UserDefaults` and observable
+
+```swift
+@ObservableDefaults
+public class LocalSettings {
+    @DefaultsKey(userDefaultsKey: "firstName")
+    public var name: String = "fat"
+
+    public var age = 109  // Automatically backed by UserDefaults
+
+    @ObservableOnly
+    public var height = 190  // Observable only, not persisted
+
+    @Ignore
+    public var weight = 10  // Neither observable nor persisted
+}
+```
+
+### For @ObservableCloud (iCloud Storage)
+
+Similar macro support with cloud-specific options:
+
+- `@ObservableOnly`: The property is observable but not stored in `NSUbiquitousKeyValueStore`
+- `@Ignore`: The property is neither observable nor stored
+- `@CloudKey`: Specifies a custom `NSUbiquitousKeyValueStore` key for the property
+- `@CloudBacked`: The property is stored in `NSUbiquitousKeyValueStore` and observable
+
+```swift
+@ObservableCloud
+public class CloudSettings {
+    @CloudKey(keyValueStoreKey: "user_display_name")
+    public var username: String = "Fatbobman"
+
+    public var theme: String = "light"  // Automatically cloud-backed
+
+    @ObservableOnly
+    public var localCache: String = ""  // Observable only, not synced to cloud
+
+    @Ignore
+    public var temporaryData: String = ""  // Neither observable nor persisted
 }
 ```
 
 ## Advanced Configuration
 
-### Custom UserDefaults Keys
-
-Use `@DefaultsKey` to specify custom UserDefaults keys:
-
-```swift
-@ObservableDefaults
-class UserPreferences {
-    @DefaultsKey(userDefaultsKey: "user_name")
-    var displayName: String = "Anonymous"
-    
-    @DefaultsKey(userDefaultsKey: "app_theme")
-    var theme: String = "system"
-}
-```
-
-### Key Prefixes
+### Custom Keys and Prefixes
 
 Add a prefix to all UserDefaults keys:
 
@@ -83,15 +173,47 @@ class Settings {
 }
 ```
 
-### Custom UserDefaults Suite
+### Macro Parameters
 
-Use a shared UserDefaults suite for app groups:
+#### @ObservableDefaults Macro Parameters
+
+You can set parameters directly in the `@ObservableDefaults` macro:
+
+- `userDefaults`: The `UserDefaults` instance to use
+- `ignoreExternalChanges`: Whether to ignore external changes
+- `prefix`: A prefix for `UserDefaults` keys
+- `autoInit`: Whether to automatically generate the initializer (default is `true`)
+- `observeFirst`: Observation priority mode (default is `false`)
 
 ```swift
-@ObservableDefaults(suiteName: "group.com.yourcompany.yourapp")
-class SharedSettings {
-    var sharedCounter: Int = 0
-    var sharedMessage: String = "Hello from extension!"
+@ObservableDefaults(autoInit: false, ignoreExternalChanges: true, prefix: "myApp_")
+class Settings {
+    @DefaultsKey(userDefaultsKey: "fullName")
+    var name: String = "Fatbobman"
+}
+```
+
+#### @ObservableCloud Macro Parameters
+
+The cloud macro provides similar configuration options:
+
+- `autoInit`: Whether to automatically generate the initializer (default is `true`)
+- `prefix`: A prefix for `NSUbiquitousKeyValueStore` keys
+- `observeFirst`: Observation priority mode (default is `false`)
+- `syncImmediately`: Whether to force immediate synchronization (default is `false`)
+- `developmentMode`: Whether to use memory storage for testing (default is `false`)
+
+```swift
+@ObservableCloud(
+    autoInit: true,
+    prefix: "myApp_",
+    observeFirst: false,
+    syncImmediately: true,
+    developmentMode: false
+)
+class CloudSettings {
+    @CloudKey(keyValueStoreKey: "user_theme")
+    var theme: String = "light"
 }
 ```
 
@@ -99,7 +221,7 @@ class SharedSettings {
 
 ### Standard Mode (Default)
 
-In standard mode, all properties are automatically stored in UserDefaults:
+In standard mode, all properties are automatically stored in their respective storage systems:
 
 ```swift
 @ObservableDefaults
@@ -116,45 +238,59 @@ class StandardSettings {
 
 In Observe First mode, properties are observable by default but not stored unless explicitly marked:
 
+#### UserDefaults Observe First Mode
+
 ```swift
 @ObservableDefaults(observeFirst: true)
-class ObserveFirstSettings {
-    var displayName: String = "User"    // Only observable (not stored)
-    var sessionId: String = ""          // Only observable (not stored)
-    
-    @DefaultsBacked
-    var savedUsername: String = "john"  // Observable and stored
-    
+public class LocalSettings {
+    public var name: String = "fat"        // Observable only
+    public var age = 109                   // Observable only
+
+    @DefaultsBacked(userDefaultsKey: "myHeight")
+    public var height = 190                // Observable and persisted to UserDefaults
+
     @Ignore
-    var tempData: String = ""           // Neither observable nor stored
+    public var weight = 10                 // Neither observable nor persisted
 }
 ```
 
-## Handling External Changes
-
-ObservableDefaults automatically responds to UserDefaults changes made outside your app:
+#### Cloud Observe First Mode
 
 ```swift
-@ObservableDefaults(ignoreExternalChanges: false) // Default behavior
-class SyncedSettings {
-    var syncedValue: String = "initial"
-}
+@ObservableCloud(observeFirst: true)
+public class CloudSettings {
+    public var localSetting: String = "local"     // Observable only
+    public var tempData = "temp"                  // Observable only
 
-// When another process modifies UserDefaults, your SwiftUI views automatically update
+    @CloudBacked(keyValueStoreKey: "user_theme")
+    public var theme: String = "light"            // Observable and synced to iCloud
+
+    @Ignore
+    public var cache = "cache"                    // Neither observable nor persisted
+}
 ```
 
-To ignore external changes:
+## Development Mode for Cloud Storage
+
+The `@ObservableCloud` macro supports development mode for testing without CloudKit setup:
 
 ```swift
-@ObservableDefaults(ignoreExternalChanges: true)
-class IsolatedSettings {
-    var localValue: String = "local"
+@ObservableCloud(developmentMode: true)
+class CloudSettings {
+    var setting1: String = "value1"  // Uses memory storage
+    var setting2: Int = 42           // Uses memory storage
 }
 ```
+
+Development mode is automatically enabled when:
+
+- Explicitly set via `developmentMode: true`
+- Running in SwiftUI Previews (`XCODE_RUNNING_FOR_PREVIEWS` environment variable)
+- `OBSERVABLE_DEFAULTS_DEV_MODE` environment variable is set to "true"
 
 ## Supported Types
 
-ObservableDefaults supports all types that conform to `UserDefaultsPropertyListValue`:
+ObservableDefaults supports all types that conform to the respective property list value protocols:
 
 ### Basic Types
 
@@ -164,27 +300,45 @@ ObservableDefaults supports all types that conform to `UserDefaultsPropertyListV
 
 ### Collection Types
 
-- `Array<Element>` where `Element: UserDefaultsPropertyListValue`
-- `Dictionary<String, Value>` where `Value: UserDefaultsPropertyListValue`
+- `Array<Element>` where `Element` conforms to the property list value protocol
+- `Dictionary<String, Value>` where `Value` conforms to the property list value protocol
 
 ### Custom Types
 
-For custom types, implement `CodableUserDefaultsPropertyListValue`:
+#### UserDefaults with Codable
+
+For custom types with UserDefaults, implement `CodableUserDefaultsPropertyListValue`:
 
 ```swift
-struct UserProfile: CodableUserDefaultsPropertyListValue {
-    let name: String
-    let email: String
-    let preferences: [String: String]
+@ObservableDefaults
+class LocalStore {
+    var people: People = .init(name: "fat", age: 10)
 }
 
-@ObservableDefaults
-class ProfileSettings {
-    var currentProfile: UserProfile = UserProfile(
-        name: "Guest",
-        email: "",
-        preferences: [:]
-    )
+struct People: CodableUserDefaultsPropertyListValue {
+    var name: String
+    var age: Int
+}
+```
+
+#### Cloud Storage with Codable
+
+For custom types with cloud storage, implement `CodableCloudPropertyListValue`:
+
+```swift
+@ObservableCloud
+class CloudStore {
+    var userProfile: UserProfile = .init(name: "fat", preferences: .init())
+}
+
+struct UserProfile: CodableCloudPropertyListValue {
+    var name: String
+    var preferences: UserPreferences
+}
+
+struct UserPreferences: Codable {
+    var theme: String = "light"
+    var fontSize: Int = 14
 }
 ```
 
@@ -205,28 +359,114 @@ class ThemeSettings {
 }
 ```
 
-## Initialization Options
+### Initialization Options
 
-When `autoInit` is enabled (default), ObservableDefaults generates a flexible initializer:
+When `autoInit` is enabled (default), ObservableDefaults generates flexible initializers:
+
+#### @ObservableDefaults Parameters
 
 ```swift
-@ObservableDefaults
-class ConfigurableSettings {
-    var value: String = "default"
+public init(
+    userDefaults: UserDefaults? = nil,
+    ignoreExternalChanges: Bool? = nil,
+    prefix: String? = nil
+)
+```
+
+**Parameters:**
+
+- `userDefaults`: The `UserDefaults` instance to use (default is `.standard`)
+- `ignoreExternalChanges`: If `true`, the instance ignores external `UserDefaults` changes (default is `false`)
+- `prefix`: A prefix for all `UserDefaults` keys associated with this class
+
+#### @ObservableCloud Parameters
+
+```swift
+public init(
+    prefix: String? = nil,
+    syncImmediately: Bool = false,
+    developmentMode: Bool = false
+)
+```
+
+**Parameters:**
+
+- `prefix`: A prefix for all `NSUbiquitousKeyValueStore` keys
+- `syncImmediately`: If `true`, forces immediate synchronization after each change
+- `developmentMode`: If `true`, uses memory storage instead of iCloud for testing
+
+#### Example Usage
+
+```swift
+// UserDefaults-backed settings
+@State var settings = Settings(
+    userDefaults: .standard,
+    ignoreExternalChanges: false,
+    prefix: "myApp_"
+)
+
+// Cloud-backed settings
+@State var cloudSettings = CloudSettings(
+    prefix: "myApp_",
+    syncImmediately: true,
+    developmentMode: false
+)
+```
+
+## Custom Initializer
+
+If you set `autoInit` to `false` for either macro, you need to create your own initializer:
+
+```swift
+// For @ObservableDefaults
+init() {
+    observerStarter()  // Start listening for UserDefaults changes
 }
 
-// Usage with different configurations
-let settings1 = ConfigurableSettings()
+// For @ObservableCloud
+init() {
+    // Start Cloud Observation only in production mode
+    if !_developmentMode_ {
+        _cloudObserver = CloudObservation(host: self, prefix: _prefix)
+    }
+}
+```
 
-let settings2 = ConfigurableSettings(
-    userDefaults: UserDefaults(suiteName: "custom.suite"),
-    ignoreExternalChanges: true,
-    prefix: "Debug_"
-)
+## Integration Patterns
 
-let settings3 = ConfigurableSettings(
-    ignoredKeyPathsForExternalUpdates: [\.value]
-)
+### Integrating with Other Observable Objects
+
+It's recommended to manage storage data separately from your main application state:
+
+```swift
+@Observable
+class ViewState {
+    var selection = 10
+    var isLogin = false
+    let localSettings = LocalSettings()    // UserDefaults-backed
+    let cloudSettings = CloudSettings()    // iCloud-backed
+}
+
+struct ContentView: View {
+    @State var state = ViewState()
+
+    var body: some View {
+        VStack(spacing: 30) {
+            // Local settings
+            Text("Local Name: \(state.localSettings.name)")
+            Button("Modify Local Setting") {
+                state.localSettings.name = "User \(Int.random(in: 0...1000))"
+            }
+            
+            // Cloud settings
+            Text("Cloud Username: \(state.cloudSettings.username)")
+            Button("Modify Cloud Setting") {
+                state.cloudSettings.username = "CloudUser \(Int.random(in: 0...1000))"
+            }
+        }
+        .buttonStyle(.bordered)
+    }
+}
 ```
 
 ## Best Practices
@@ -284,3 +524,20 @@ class MixedSettings {
     var isFirstLaunch: Bool = true
 }
 ```
+
+## Important Notes
+
+### General Notes
+
+- **External Changes**: By default, both macros respond to external changes in their respective storage systems
+- **Key Prefixes**: Use the `prefix` parameter to prevent key collisions when multiple classes use the same property names
+- **Custom Keys**: Use `@DefaultsKey` or `@CloudKey` to specify custom keys for properties
+- **Prefix Characters**: The prefix must not contain '.' characters
+
+### Cloud-Specific Notes
+
+- **iCloud Account**: Cloud storage requires an active iCloud account and network connectivity
+- **Storage Limits**: `NSUbiquitousKeyValueStore` has a 1MB total storage limit and 1024 key limit
+- **Synchronization**: Changes may take time to propagate across devices depending on network conditions
+- **Development Mode**: Use development mode for testing without CloudKit container setup
+- **Data Migration**: Changing property names or custom keys after deployment may cause cloud data to become inaccessible
