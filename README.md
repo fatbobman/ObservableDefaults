@@ -425,6 +425,7 @@ struct ContentView: View {
 - **Synchronization**: Changes may take time to propagate across devices depending on network conditions.
 - **Development Mode**: Use development mode for testing without CloudKit container setup.
 - **Data Migration**: Changing property names or custom keys after deployment may cause cloud data to become inaccessible.
+- **Direct NSUbiquitousKeyValueStore Modifications**: Directly modifying values using `NSUbiquitousKeyValueStore.default.set()` will not trigger local property updates in ObservableCloud classes. This is due to NSUbiquitousKeyValueStore's communication mechanism, which does not send notifications for local modifications. Always modify properties through the ObservableCloud instance to ensure proper synchronization and view updates.
 
 ## License
 
