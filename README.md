@@ -79,6 +79,8 @@ class CloudSettings {
 }
 ```
 
+https://github.com/user-attachments/assets/7e8dcf6b-3c8f-4bd3-8083-ff3c4a6bd6b0
+
 This macro automatically:
 
 - Associates properties with `NSUbiquitousKeyValueStore` for iCloud synchronization
