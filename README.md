@@ -2,6 +2,8 @@
 
 ![Swift 6](https://img.shields.io/badge/Swift-6-orange?logo=swift) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+> Seamless SwiftUI + Observation + UserDefaults + iCloud Key-Value Store integration
+
 `ObservableDefaults` is a comprehensive Swift library that seamlessly integrates both **`UserDefaults`** and **`NSUbiquitousKeyValueStore`** (iCloud Key-Value Storage) with SwiftUI's Observation framework. It provides two powerful macros - `@ObservableDefaults` for local UserDefaults management and `@ObservableCloud` for cloud-synchronized data storage - that simplify data persistence by automatically associating declared properties with their respective storage systems. This enables precise and efficient responsiveness to data changes, whether they originate from within the app, externally, or across multiple devices.
 
 ## Motivation
