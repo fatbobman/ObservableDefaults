@@ -13,10 +13,6 @@ let package = Package(
             name: "ObservableDefaults",
             targets: ["ObservableDefaults"]
         ),
-        .executable(
-            name: "ObservableDefaultsClient",
-            targets: ["ObservableDefaultsClient"]
-        ),
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "600.0.0"),
@@ -34,10 +30,6 @@ let package = Package(
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
             ]
-        ),
-        .executableTarget(
-            name: "ObservableDefaultsClient",
-            dependencies: ["ObservableDefaults"]
         ),
     ],
     swiftLanguageModes: [.v6]
