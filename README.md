@@ -435,9 +435,3 @@ struct ContentView: View {
 Special thanks to the Swift community for their continuous support and contributions.
 
 [![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://buymeacoffee.com/fatbobman)
-
-<div align="center">
-  <a href="https://buymeacoffee.com/fatbobman">
-    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="180">
-  </a>
-</div>
