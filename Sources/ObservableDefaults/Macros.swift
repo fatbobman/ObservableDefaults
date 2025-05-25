@@ -255,13 +255,6 @@ public macro ObservableDefaults(
 /// }
 /// ```
 ///
-/// ## Supported Data Types
-///
-/// - **Basic Types**: String, Int, Int64, Double, Float, Bool, Data, Date
-/// - **Collections**: Array and Dictionary with CloudPropertyListValue elements
-/// - **Enums**: RawRepresentable types with CloudPropertyListValue raw values
-/// - **Custom Types**: Codable types conforming to CodableCloudPropertyListValue
-///
 /// ## Requirements
 ///
 /// - Must be used within a class marked with `@ObservableCloud`
