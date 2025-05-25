@@ -225,16 +225,15 @@ extension CloudBackedMacro: AccessorMacro {
         let setAccessor: AccessorDeclSyntax =
             """
             set {
-                if _developmentMode_ {
-                    withMutation(keyPath: \\.\(raw: identifier)) {
-                        _\(identifier) = newValue
-                    }
-                } else {
+                if  !_developmentMode_ {
                     let key = _prefix + "\(raw: keyString)"
                     NSUbiquitousKeyValueStoreWrapper.setValue(key, newValue)
                     if _syncImmediately {
                         NSUbiquitousKeyValueStore.default.synchronize()
                     }
+                }
+                withMutation(keyPath: \\.\(raw: identifier)) {
+                    _\(identifier) = newValue
                 }
             }
             """
