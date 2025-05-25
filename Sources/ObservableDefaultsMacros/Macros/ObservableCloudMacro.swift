@@ -9,6 +9,59 @@
 import SwiftSyntax
 import SwiftSyntaxMacros
 
+/// A macro that automatically integrates NSUbiquitousKeyValueStore with SwiftUI's Observation
+/// framework.
+///
+/// The `@ObservableCloud` macro generates the necessary code to:
+/// - Make the class conform to `Observable` protocol
+/// - Automatically synchronize properties with NSUbiquitousKeyValueStore
+/// - Handle external cloud store changes via NotificationCenter
+/// - Provide precise view updates in SwiftUI
+/// - Support development mode for testing without CloudKit container
+///
+/// Basic usage:
+/// ```swift
+/// @ObservableCloud
+/// class CloudSettings {
+///     var username: String = "Fatbobman"  // Automatically stored in cloud
+///     var theme: String = "light"         // Automatically stored in cloud
+/// }
+/// ```
+///
+/// With configuration parameters:
+/// ```swift
+/// @ObservableCloud(
+///     autoInit: true,
+///     prefix: "myApp_",
+///     syncImmediately: true,
+///     developmentMode: false,
+///     observeFirst: false
+/// )
+/// class CloudSettings {
+///     // Properties automatically managed
+/// }
+/// ```
+///
+/// Observe First mode:
+/// ```swift
+/// @ObservableCloud(observeFirst: true)
+/// class CloudSettings {
+///     var username: String = "fat"        // Only observable (not stored)
+///
+///     @CloudBacked
+///     var theme: String = "light"         // Observable and stored in cloud
+/// }
+/// ```
+///
+/// Development mode for testing:
+/// ```swift
+/// @ObservableCloud(developmentMode: true)
+/// class CloudSettings {
+///     // Uses memory storage instead of NSUbiquitousKeyValueStore
+///     var setting1: String = "value1"
+///     var setting2: Int = 42
+/// }
+/// ```
 public enum ObservableCloudMacros {
     /// The name of the macro as used in source code
     static let name: String = "ObservableCloud"
@@ -18,13 +71,28 @@ public enum ObservableCloudMacros {
     static let prefix: String = "prefix"
     /// Parameter for enabling Observe First mode
     static let observeFirst: String = "observeFirst"
-    /// 是否在每次设置后立即调用 `NSUbiquitousKeyValueStore.synchronize()`
+    /// Parameter for controlling immediate synchronization after each change
     static let syncImmediately: String = "syncImmediately"
-    /// 持久化模式，使用 NSUbiquitousKeyValueStore 或者内存中存储（用于调试，避免崩溃）
+    /// Parameter for enabling development mode (uses memory storage instead of cloud)
     static let developmentMode: String = "developmentMode"
 }
 
 extension ObservableCloudMacros: MemberMacro {
+    // Generates member declarations for the `@ObservableCloud` macro.
+    ///
+    /// This method creates the following members:
+    /// - Observation registrar for SwiftUI integration
+    /// - Access and mutation methods for precise view updates
+    /// - Configuration properties (prefix, sync behavior, development mode)
+    /// - NotificationCenter observer class for external cloud store changes
+    /// - Optional initializer (when autoInit is true)
+    ///
+    /// - Parameters:
+    ///   - node: The attribute syntax containing macro parameters
+    ///   - declaration: The class declaration to add members to
+    ///   - context: The macro expansion context (unused)
+    /// - Returns: An array of generated member declarations
+    /// - Throws: Fatal error if declaration is not a class
     public static func expansion(
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
@@ -57,27 +125,37 @@ extension ObservableCloudMacros: MemberMacro {
                 return varDecl
             }
 
-        // syncImmediately is used to control whether to call
-        // `NSUbiquitousKeyValueStore.synchronize()`
-        // immediately after setting a value. This is useful for ensuring that changes are
+        // Generate synchronization control property
         let syncImmediatelySyntax: DeclSyntax =
             """
-            /// syncImmediately is used to control whether to call `NSUbiquitousKeyValueStore.synchronize()`
-            /// immediately after setting a value. This is useful for ensuring that changes are
+            /// Controls whether to call `NSUbiquitousKeyValueStore.synchronize()` immediately after setting a value.
+            ///
+            /// When set to `true`, changes are immediately synchronized with iCloud.
+            /// When set to `false`, synchronization follows the system's default behavior.
+            ///
+            /// - Note: Immediate synchronization can impact performance but ensures data consistency.
+            /// - Important: Default value is `false`.
             private var _syncImmediately = \(raw: syncImmediately ? "true" : "false")
             """
 
         let developementModeSyntax: DeclSyntax =
             """
-            /// The CloudKit requirement mode determines whether the instance operates in development or production mode.
+            /// Determines whether the instance operates in development or production mode.
             ///
-            /// - Development mode: Uses memory storage for testing and development.
-            /// - Production mode: Uses NSUbiquitousKeyValueStore for production data storage.
+            /// - Development mode: Uses memory storage for testing and development, avoiding CloudKit container requirements.
+            /// - Production mode: Uses NSUbiquitousKeyValueStore for actual cloud data storage.
+            ///
+            /// Development mode is automatically enabled when:
+            /// - Explicitly set via initializer parameter
+            /// - Running in SwiftUI Previews (XCODE_RUNNING_FOR_PREVIEWS environment variable)
+            /// - OBSERVABLE_DEFAULTS_DEV_MODE environment variable is set to "true"
+            ///
+            /// - Important: Default value is `false` (production mode).
             private var _developmentMode: Bool = \(raw: developmentMode)
             public var _developmentMode_: Bool {
                 if _developmentMode
                     || ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
-                    || ProcessInfo.processInfo.environment["com.observableDefaults.developmentMode"] == "true"
+                    || ProcessInfo.processInfo.environment["OBSERVABLE_DEFAULTS_DEV_MODE"] == "true"
                 {
                     true
                 } else {
@@ -86,27 +164,28 @@ extension ObservableCloudMacros: MemberMacro {
             }
             """
 
-        // Build mapping between properties and their UserDefaults keys
-        let metas: [(keyValueStoreKey: String, propertyID: String)] = persistentProperties
-            .map { property in
-                let key =
-                    property.attributes.extractValue(
-                        forAttribute: CloudBackedMacro.name,
-                        argument: CloudBackedMacro.key) ??
-                    property.attributes.extractValue(
-                        forAttribute: CloudKeyMacro.name,
-                        argument: CloudKeyMacro.key) ?? property.identifier?.text ?? ""
-                let propertyID = property.identifier?.text ?? ""
-                return (key, propertyID)
-            }
+        // Build mapping between properties and their NSUbiquitousKeyValueStore keys
+        let metas: [(keyValueStoreKey: String, propertyID: String)] =
+            persistentProperties
+                .map { property in
+                    let key =
+                        property.attributes.extractValue(
+                            forAttribute: CloudBackedMacro.name,
+                            argument: CloudBackedMacro.key) ??
+                        property.attributes.extractValue(
+                            forAttribute: CloudKeyMacro.name,
+                            argument: CloudKeyMacro.key) ?? property.identifier?.text ?? ""
+                    let propertyID = property.identifier?.text ?? ""
+                    return (key, propertyID)
+                }
 
         let caseCode = metas.enumerated().map { index, meta in
-            let caseIndent = index == 0 ? "" : "        "
+            let caseIndent = index == 0 ? "" : "                "
+            // swiftformat:disable all
             return """
-                \(caseIndent)case prefix + "\(meta.keyValueStoreKey)":
-                \(caseIndent)     host._$observationRegistrar.withMutation(of: host,
-                \(caseIndent)                   keyPath: \\.\(meta.propertyID)) {}
+                \(caseIndent)case prefix + "\(meta.keyValueStoreKey)": host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
                 """
+            // swiftformat:enable all
         }.joined(separator: "\n")
 
         // Generate observation registrar for SwiftUI integration
@@ -137,7 +216,7 @@ extension ObservableCloudMacros: MemberMacro {
             }
             """
 
-        // Generate prefix property for UserDefaults keys
+        // Generate prefix property for NSUbiquitousKeyValueStore keys
         let prefixStr = prefix != nil ? prefix! : ""
         let emptyStr = prefixStr == "" ? "\"\"" : ""
         let prefixSyntax: DeclSyntax =
@@ -163,16 +242,21 @@ extension ObservableCloudMacros: MemberMacro {
                 assert(!_prefix.contains("."), "Prefix '\\(_prefix)' should not contain '.' to avoid KVO issues!")
                 if !_developmentMode_ {
                     _cloudObserver = CloudObservation(host: self, prefix: _prefix)
+                } else {
+                    #if DEBUG
+                    print("Development mode is enabled, using memory storage for testing and development.")
+                    #endif
                 }
             }
             """
 
-        // Generate KVO observer class for NSUbiquitousKeyValueStore  changes
+        // Generate NotificationCenter observer class for NSUbiquitousKeyValueStore changes
         let observerFunctionSyntax: DeclSyntax =
             """
             private var _cloudObserver: CloudObservation?
 
-            /// The observation registrar manages NSUbiquitousKeyValueStore change observation.
+            /// Manages NSUbiquitousKeyValueStore change observation for external cloud updates.
+            ///
             /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
             private class CloudObservation {
                 let host: \(className)
@@ -195,6 +279,8 @@ extension ObservableCloudMacros: MemberMacro {
 
                 }
 
+                /// Handles cloud store changes from external sources.
+                /// - Parameter notification: The notification containing changed keys information
                 private func cloudStoreDidChange(_ notification: Notification) {
                     guard let userInfo = notification.userInfo,
                         let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
@@ -204,7 +290,7 @@ extension ObservableCloudMacros: MemberMacro {
 
                     for key in changedKeys {
                         switch key {
-                             \(raw: caseCode)
+                            \(raw: caseCode)
                             default:
                                 break
                         }
@@ -263,12 +349,13 @@ extension ObservableCloudMacros: MemberAttributeMacro {
     /// Automatically applies appropriate macros to properties based on the operation mode.
     ///
     /// In standard mode:
-    /// - Properties are automatically marked with `@DefaultsBacked` to enable UserDefaults
+    /// - Properties are automatically marked with `@CloudBacked` to enable
+    /// NSUbiquitousKeyValueStore
     /// synchronization
     ///
     /// In Observe First mode (`observeFirst: true`):
     /// - Properties are automatically marked with `@ObservableOnly` unless explicitly marked with
-    /// `@DefaultsBacked`
+    /// `@CloudBacked`
     ///
     /// - Parameters:
     ///   - node: The attribute syntax containing macro parameters
@@ -310,6 +397,18 @@ extension ObservableCloudMacros: MemberAttributeMacro {
 }
 
 extension ObservableCloudMacros {
+    /// Extracts parameters from the `@ObservableCloud` macro attribute.
+    ///
+    /// Supported parameters:
+    /// - `autoInit`: Whether to generate an automatic initializer (default: true)
+    /// - `prefix`: Prefix for all NSUbiquitousKeyValueStore keys (default: nil, no prefix)
+    /// - `observeFirst`: Whether to enable Observe First mode (default: false)
+    /// - `syncImmediately`: Whether to call synchronize() immediately after changes (default:
+    /// false)
+    /// - `developmentMode`: Whether to use memory storage instead of cloud store (default: false)
+    ///
+    /// - Parameter node: The attribute syntax containing the parameters
+    /// - Returns: A tuple containing all extracted parameter values
     static func extractProperty(_ node: AttributeSyntax) -> (
         autoInit: Bool,
         prefix: String?,
@@ -321,7 +420,6 @@ extension ObservableCloudMacros {
         var prefix: String?
         var observeFirst = false
         var syncImmediately = false
-        // 默认为生产模式，使用 NSUbiquitousKeyValueStore
         var developmentMode = false
 
         if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
