@@ -84,12 +84,14 @@ extension ObservableDefaultsMacros: MemberMacro {
     /// - Parameters:
     ///   - node: The attribute syntax containing macro parameters
     ///   - declaration: The class declaration to add members to
+    ///   - conformingTo: The protocols the declaration should conform to
     ///   - context: The macro expansion context (unused)
     /// - Returns: An array of generated member declarations
     /// - Throws: Fatal error if declaration is not a class
     public static func expansion(
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
+        conformingTo protocols: [TypeSyntax],
         in _: some MacroExpansionContext) throws -> [DeclSyntax]
     {
         guard let identifier = declaration.asProtocol(NamedDeclSyntax.self) else { return [] }
