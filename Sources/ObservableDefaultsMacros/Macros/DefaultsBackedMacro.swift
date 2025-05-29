@@ -123,6 +123,14 @@ extension DefaultsBackedMacro: AccessorMacro {
             keyString = extractedKey
         }
 
+        let storageRestrictionsSyntax: AccessorDeclSyntax =
+            """
+            @storageRestrictions(initializes: _\(raw: identifier))
+            init(initialValue) {
+                _\(raw: identifier) = initialValue
+            }
+            """
+
         // Generate getter that retrieves value from UserDefaults
         let getAccessor: AccessorDeclSyntax =
             """
@@ -138,9 +146,14 @@ extension DefaultsBackedMacro: AccessorMacro {
             """
             set {
                 let key = _prefix + "\(raw: keyString)"
+                let currentValue = UserDefaultsWrapper.getValue(key, _\(identifier), _userDefaults)
+                // Only set the value if it has changed, reduce the view re-evaluation
+                guard shouldSetValue(newValue, currentValue) else {
+                    return
+                }
                 if _isExternalNotificationDisabled ||
-                   _ignoredKeyPathsForExternalUpdates.contains(\\.\(identifier)) ||
-                   ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+                _ignoredKeyPathsForExternalUpdates.contains(\\.\(identifier)) ||
+                ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
                     withMutation(keyPath: \\.\(identifier)) {
                         UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
                     }
@@ -151,6 +164,7 @@ extension DefaultsBackedMacro: AccessorMacro {
             """
 
         return [
+            storageRestrictionsSyntax,
             getAccessor,
             setAccessor,
         ]

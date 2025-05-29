@@ -30,7 +30,7 @@
 ///
 /// - Note: Properties must have default values and cannot be optional types
 @attached(peer, names: prefixed(`_`))
-@attached(accessor)
+@attached(accessor, names: named(get), named(set), named(init))
 public macro DefaultsBacked(userDefaultsKey: String? = nil) = #externalMacro(
     module: "ObservableDefaultsMacros",
     type: "DefaultsBackedMacro")
@@ -116,7 +116,7 @@ public macro Ignore() = #externalMacro(module: "ObservableDefaultsMacros", type:
 ///
 /// - Note: Values will not persist between app launches
 @attached(peer, names: prefixed(`_`))
-@attached(accessor)
+@attached(accessor, names: named(get), named(set), named(init), named(_modify))
 public macro ObservableOnly() = #externalMacro(
     module: "ObservableDefaultsMacros",
     type: "ObservableOnlyMacro")
@@ -200,6 +200,7 @@ public macro ObservableOnly() = #externalMacro(
     named(checkForChanges),
     named(observer),
     named(DefaultsObservation),
+    named(shouldSetValue),
     named(observerStarter),
     named(_defaultsKeyPathMap),
     named(_ignoredKeyPathsForExternalUpdates))
@@ -282,7 +283,7 @@ public macro ObservableDefaults(
 /// - Note: Changes are automatically observed across devices via NotificationCenter integration
 /// - Warning: Changing property names or custom keys after deployment may cause data loss
 @attached(peer, names: prefixed(`_`))
-@attached(accessor)
+@attached(accessor, names: named(get), named(set), named(init))
 public macro CloudBacked(keyValueStoreKey: String? = nil) = #externalMacro(
     module: "ObservableDefaultsMacros",
     type: "CloudBackedMacro")
@@ -478,6 +479,7 @@ public macro CloudKey(keyValueStoreKey: String? = nil) = #externalMacro(
     named(setValue),
     named(init),
     named(_prefix),
+    named(shouldSetValue),
     named(_observableCloudLogger),
     named(_cloudObserver),
     named(CloudObservation),

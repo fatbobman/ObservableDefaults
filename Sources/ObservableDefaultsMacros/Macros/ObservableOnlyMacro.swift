@@ -127,6 +127,14 @@ extension ObservableOnlyMacro: AccessorMacro {
             return []
         }
 
+        let storageRestrictionsSyntax: AccessorDeclSyntax =
+            """
+            @storageRestrictions(initializes: _\(raw: identifier))
+            init(initialValue) {
+                _\(raw: identifier) = initialValue
+            }
+            """
+
         // Generate getter that integrates with SwiftUI observation
         let getAccessor: AccessorDeclSyntax =
             """
@@ -140,6 +148,8 @@ extension ObservableOnlyMacro: AccessorMacro {
         let setAccessor: AccessorDeclSyntax =
             """
             set {
+                // Only set the value if it has changed, reduce the view re-evaluation
+                guard shouldSetValue(newValue, _\(identifier)) else { return }
                 withMutation(keyPath: \\.\(identifier)) {
                     _\(identifier) = newValue
                 }
@@ -157,6 +167,6 @@ extension ObservableOnlyMacro: AccessorMacro {
             }
             """
 
-        return [getAccessor, setAccessor, modifyAccessor]
+        return [storageRestrictionsSyntax, getAccessor, setAccessor, modifyAccessor]
     }
 }

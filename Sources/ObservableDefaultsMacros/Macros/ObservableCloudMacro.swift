@@ -310,6 +310,7 @@ extension ObservableCloudMacros: MemberMacro {
             accessFunctionSyntax,
             withMutationFunctionSyntax,
             prefixSyntax,
+            shouldSetValueSyntax,
             syncImmediatelySyntax,
             developementModeSyntax,
             observerFunctionSyntax,

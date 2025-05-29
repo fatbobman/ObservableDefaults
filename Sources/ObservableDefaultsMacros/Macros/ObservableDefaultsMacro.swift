@@ -327,6 +327,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             isExternalNotificationDisabledSyntax,
             prefixSyntax,
             keyPathMapsSyntax,
+            shouldSetValueSyntax,
             observerFunctionSyntax,
             observerStarterSyntax,
         ] + (autoInit ? [initFunctionSyntax] : [])
@@ -468,3 +469,22 @@ extension ObservableDefaultsMacros {
         return (autoInit, suiteName, prefix, ignoreExternalChanges, observeFirst)
     }
 }
+
+let shouldSetValueSyntax: DeclSyntax =
+    """
+    private nonisolated func shouldSetValue<T>(_ lhs: T, _ rhs: T) -> Bool {
+       true
+    }
+
+    private nonisolated func shouldSetValue<T: Equatable>(_ lhs: T, _ rhs: T) -> Bool {
+       lhs != rhs
+    }
+
+    private nonisolated func shouldSetValue<T: AnyObject>(_ lhs: T, _ rhs: T) -> Bool {
+       lhs !== rhs
+    }
+
+    private nonisolated func shouldSetValue<T: Equatable & AnyObject>(_ lhs: T, _ rhs: T) -> Bool {
+        lhs != rhs
+    }
+    """
