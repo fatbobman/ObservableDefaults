@@ -43,6 +43,11 @@ func tracking<Model, Value>(
                     result,
                     "name should \(result ? "" : "not") be observable by setting value by UserDefaults",
                     sourceLocation: sourceLocation)
+            case .notification:
+                #expect(
+                    result,
+                    "name should \(result ? "" : "not") be observable by setting value by Notification",
+                    sourceLocation: sourceLocation)
         }
     }
 }
@@ -50,4 +55,5 @@ func tracking<Model, Value>(
 enum Source {
     case direct
     case userDefaults
+    case notification
 }

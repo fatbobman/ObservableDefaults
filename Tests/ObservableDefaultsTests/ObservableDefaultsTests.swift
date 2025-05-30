@@ -145,12 +145,21 @@ struct ObservableDefaultsTests {
             "mixKey should be observable by setting value by UserDefaults")
     }
 
-    @Test("Ignore Same Value Set")
-    func ignoreSameValue() {
+    @Test("Ignore Same Value Set for Backed Property")
+    func ignoreSameValueForBackedProperty() {
         let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
         let model = MockModel(userDefaults: userDefaults)
 
         tracking(model, \.name, .direct, false)
         model.name = "Test" // same value
+    }
+
+    @Test("Ignore Same Value Set for Observable Only Property")
+    func ignoreSameValueForObservableOnlyProperty() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let model = MockModel(userDefaults: userDefaults)
+
+        tracking(model, \.observableOnly, .direct, false)
+        model.observableOnly = "ObservableOnly" // same value
     }
 }

@@ -44,3 +44,13 @@ class MockModelKeyName {
     @DefaultsBacked(userDefaultsKey: "mix-key-backed-key")
     var mixKey: String = "Test"
 }
+
+@ObservableCloud
+class MockModelCloud {
+    var name: String = "Test"
+
+    var observableOnly: String = "ObservableOnly"
+
+    @Ignore
+    var ignore: String = "Ignore"
+}
