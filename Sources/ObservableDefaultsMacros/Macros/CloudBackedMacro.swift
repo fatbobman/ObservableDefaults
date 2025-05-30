@@ -77,7 +77,7 @@ import SwiftSyntaxMacros
 ///             guard shouldSetValue(newValue, currentValue) else { return }
 ///             NSUbiquitousKeyValueStoreWrapper.setValue(key, newValue)
 ///             if _syncImmediately {
-///                 NSUbiquitousKeyValueStore.default.synchronize()
+///                 _ = NSUbiquitousKeyValueStore.default.synchronize()
 ///             }
 ///             withMutation(keyPath: \.username) {
 ///                 _username = newValue
@@ -252,7 +252,7 @@ extension CloudBackedMacro: AccessorMacro {
                         guard shouldSetValue(newValue, currentValue) else { return }
                         NSUbiquitousKeyValueStoreWrapper.setValue(key, newValue)
                         if _syncImmediately {
-                            NSUbiquitousKeyValueStore.default.synchronize()
+                            _ = NSUbiquitousKeyValueStore.default.synchronize()
                         }
                         withMutation(keyPath: \\.\(raw: identifier)) {
                             _\(identifier) = newValue
