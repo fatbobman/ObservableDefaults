@@ -373,7 +373,7 @@ extension ObservableCloudMacros: MemberAttributeMacro {
         providingAttributesFor member: some DeclSyntaxProtocol,
         in _: some MacroExpansionContext) throws -> [SwiftSyntax.AttributeSyntax]
     {
-        let (_, _, _, _, observeFirst) = extractProperty(node)
+        let (_, _, observeFirst, _, _) = extractProperty(node)
         guard let varDecl = member.as(VariableDeclSyntax.self),
               varDecl.isObservable
         else {
@@ -386,7 +386,7 @@ extension ObservableCloudMacros: MemberAttributeMacro {
             if !varDecl.hasAttribute(named: CloudBackedMacro.name),
                !varDecl.hasAttribute(named: ObservableOnlyMacro.name)
             {
-                return ["@\(raw: CloudBackedMacro.name)"]
+                return ["@\(raw: ObservableOnlyMacro.name)"]
             }
         } else {
             // In standard mode, add @CloudBacked to persistent properties

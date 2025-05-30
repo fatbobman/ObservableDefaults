@@ -49,6 +49,18 @@ class MockModelKeyName {
 class MockModelCloud {
     var name: String = "Test"
 
+    @ObservableOnly
+    var observableOnly: String = "ObservableOnly"
+
+    @Ignore
+    var ignore: String = "Ignore"
+}
+
+@ObservableCloud(observeFirst: true)
+class MockModelCloudObserveFirst {
+    @CloudBacked
+    var name: String = "Test"
+
     var observableOnly: String = "ObservableOnly"
 
     @Ignore

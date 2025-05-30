@@ -53,4 +53,12 @@ struct ObservableCloudTests {
         model.name = "Test2"
         #expect(userDefaults.string(forKey: "test_name") == "Test2")
     }
+
+    @Test("Observe First", .testMode)
+    func observeFirst() {
+        let model = MockModelCloudObserveFirst(developmentMode: false)
+        model.observableOnly = "Test2"
+        userDefaults.synchronize()
+        #expect(userDefaults.string(forKey: "observableOnly") == nil)
+    }
 }
