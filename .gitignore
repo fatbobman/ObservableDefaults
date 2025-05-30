@@ -6,3 +6,44 @@ DerivedData/
 .swiftpm/configuration/registries.json
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
+
+# Xcode
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+*.xcodeproj/project.xcworkspace/*
+!*.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+*.xcodeproj/project.xcworkspace/xcshareddata/
+
+# Xcode Workspace
+*.xcworkspace/xcuserdata/
+*.xcworkspace/xcshareddata/UserInterfaceState.xcuserstate
+
+# Xcode Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Xcode Build
+build/
+Build/
+
+# AppCode
+.idea/
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/Build/
+Carthage/Checkouts/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# SwiftUI Previews
+.swiftpm/xcode/
