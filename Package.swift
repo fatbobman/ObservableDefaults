@@ -31,6 +31,10 @@ let package = Package(
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
             ]
         ),
+        .testTarget(
+            name: "ObservableDefaultsTests",
+            dependencies: ["ObservableDefaults"]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )
