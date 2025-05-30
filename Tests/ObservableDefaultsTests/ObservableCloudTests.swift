@@ -61,4 +61,30 @@ struct ObservableCloudTests {
         userDefaults.synchronize()
         #expect(userDefaults.string(forKey: "observableOnly") == nil)
     }
+
+    @Test("Specify Key Name", .testMode)
+    func specifyKeyName() {
+        let model = MockModelCloudKeyName(developmentMode: false)
+        model.renameByBackedKey = "Test2"
+        userDefaults.synchronize()
+        #expect(userDefaults.string(forKey: "rename-by-backed-key") == "Test2")
+
+        model.renameByDefaultsKey = "Test3"
+        userDefaults.synchronize()
+        #expect(userDefaults.string(forKey: "rename-by-defaults-key") == "Test3")
+
+        model.mixKey = "Test4"
+        userDefaults.synchronize()
+        #expect(userDefaults.string(forKey: "mix-key-backed-key") == "Test4")
+    }
+
+    @Test("Ignore Same Value", .testMode)
+    func ignoreSameValueForBackedProperty() {
+        let model = MockModelCloud(developmentMode: true)
+        tracking(model, \.name, .direct, false)
+        model.name = "Test" // same value
+
+        tracking(model, \.observableOnly, .direct, false)
+        model.observableOnly = "ObservableOnly" // same value
+    }
 }

@@ -66,3 +66,21 @@ class MockModelCloudObserveFirst {
     @Ignore
     var ignore: String = "Ignore"
 }
+
+@ObservableCloud
+class MockModelCloudKeyName {
+    @CloudBacked(keyValueStoreKey: "rename-by-backed-key")
+    var renameByBackedKey: String = "Test"
+
+    @CloudKey(keyValueStoreKey: "rename-by-defaults-key")
+    var renameByDefaultsKey: String = "Test"
+
+    /*
+     if both are specified, the CloudBacked will be used
+     if only one is specified, the CloudKey will be used
+     if neither is specified, the property name will be used
+     */
+    @CloudKey(keyValueStoreKey: "mix-key-defaults-key")
+    @CloudBacked(keyValueStoreKey: "mix-key-backed-key")
+    var mixKey: String = "Test"
+}
