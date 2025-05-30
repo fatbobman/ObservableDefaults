@@ -220,46 +220,48 @@ extension CloudBackedMacro: AccessorMacro {
                 _\(raw: identifier) = initialValue
             }
             """
-
+        // swiftformat:disable all
         // Generate getter that retrieves value from NSUbiquitousKeyValueStore or memory storage
         let getAccessor: AccessorDeclSyntax =
             """
             get {
-                access(keyPath: \\.\(identifier))
+                access(keyPath: \\.\(raw: identifier))
                 if _developmentMode_ {
                     return _\(raw: identifier)
                 } else {
                     let key = _prefix + "\(raw: keyString)"
-                    return NSUbiquitousKeyValueStoreWrapper.getValue(key, _\(raw: identifier))
+                    return NSUbiquitousKeyValueStoreWrapper.default.getValue(key, _\(raw: identifier))
                 }
             }
             """
+        // swiftformat:enable all
 
-            // Generate setter that stores value to NSUbiquitousKeyValueStore with proper observation
-            // handling
-            let setAccessor: AccessorDeclSyntax =
-                """
-                set {
-                    if _developmentMode_ {
-                        let currentValue = _\(raw: identifier)
-                        guard shouldSetValue(newValue, currentValue) else { return }
-                        withMutation(keyPath: \\.\(raw: identifier)) {
-                            _\(identifier) = newValue
-                        }
-                    } else {
-                        let key = _prefix + "\(raw: keyString)"
-                        let currentValue = NSUbiquitousKeyValueStoreWrapper.getValue(key, _\(raw: identifier))
-                        guard shouldSetValue(newValue, currentValue) else { return }
-                        NSUbiquitousKeyValueStoreWrapper.setValue(key, newValue)
-                        if _syncImmediately {
-                            _ = NSUbiquitousKeyValueStore.default.synchronize()
-                        }
-                        withMutation(keyPath: \\.\(raw: identifier)) {
-                            _\(identifier) = newValue
-                        }
+        // Generate setter that stores value to NSUbiquitousKeyValueStore with proper observation
+        // handling
+        let setAccessor: AccessorDeclSyntax =
+            """
+            set {
+                if _developmentMode_ {
+                    let currentValue = _\(raw: identifier)
+                    guard shouldSetValue(newValue, currentValue) else { return }
+                    withMutation(keyPath: \\.\(raw: identifier)) {
+                        _\(raw: identifier) = newValue
+                    }
+                } else {
+                    let key = _prefix + "\(raw: keyString)"
+                    let store = NSUbiquitousKeyValueStoreWrapper.default
+                    let currentValue = store.getValue(key, _\(raw: identifier))
+                    guard shouldSetValue(newValue, currentValue) else { return }
+                    store.setValue(key, newValue)
+                    if _syncImmediately {
+                        _ = store.synchronize()
+                    }
+                    withMutation(keyPath: \\.\(raw: identifier)) {
+                        _\(raw: identifier) = newValue
                     }
                 }
-                """
+            }
+            """
 
         return [
             storageRestrictionsSyntax,

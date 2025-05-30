@@ -7,6 +7,7 @@
 // Copyright © 2025 Fatbobman. All rights reserved.
 
 import Foundation
+@testable import ObservableDefaults
 import Observation
 import Testing
 
@@ -22,38 +23,14 @@ extension UserDefaults {
     }
 }
 
-func tracking<Model, Value>(
-    _ model: Model,
-    _ keyPath: KeyPath<Model, Value>,
-    _ source: Source,
-    _ result: Bool = true,
-    sourceLocation: Testing.SourceLocation = #_sourceLocation)
-{
-    withObservationTracking {
-        _ = model[keyPath: keyPath]
-    } onChange: {
-        switch source {
-            case .direct:
-                #expect(
-                    result,
-                    "name should \(result ? "" : "not") be observable by setting value directly",
-                    sourceLocation: sourceLocation)
-            case .userDefaults:
-                #expect(
-                    result,
-                    "name should \(result ? "" : "not") be observable by setting value by UserDefaults",
-                    sourceLocation: sourceLocation)
-            case .notification:
-                #expect(
-                    result,
-                    "name should \(result ? "" : "not") be observable by setting value by Notification",
-                    sourceLocation: sourceLocation)
-        }
+extension UserDefaults {
+    static var mock: UserDefaults {
+        UserDefaults(suiteName: MockUbiquitousKeyValueStore.suiteName)!
+    }
+
+    static func clearMock() {
+        mock.removePersistentDomain(forName: MockUbiquitousKeyValueStore.suiteName)
+        mock.synchronize()
     }
 }
 
-enum Source {
-    case direct
-    case userDefaults
-    case notification
-}

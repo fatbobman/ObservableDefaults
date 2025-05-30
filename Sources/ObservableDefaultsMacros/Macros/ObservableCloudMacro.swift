@@ -274,7 +274,7 @@ extension ObservableCloudMacros: MemberMacro {
                     NotificationCenter.default
                         .addObserver(
                             forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
-                            object: NSUbiquitousKeyValueStore.default,
+                            object: nil,
                             queue: nil,
                             using: cloudStoreDidChange
                         )
