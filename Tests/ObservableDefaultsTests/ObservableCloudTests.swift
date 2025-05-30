@@ -33,52 +33,7 @@ struct ObservableCloudTests {
         model.ignore = "Test2"
     }
 
-    @Test("Response to NSUbiquitousKeyValueStore changes from Notification", .testMode)
-    func responseToNSUbiquitousKeyValueStoreChanges() async throws {
-        let model = MockModelCloud(developmentMode: false)
-        userDefaults.set("Test2", forKey: "name")
-        userDefaults.synchronize()
-        NotificationCenter.default.post(
-            name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
-            object: nil,
-            userInfo: [
-                NSUbiquitousKeyValueStoreChangedKeysKey: ["name"],
-            ])
-        #expect(model.name == "Test2")
-    }
-
-    @Test("Prefix", .testMode)
-    func prefix() {
-        let model = MockModelCloud(prefix: "test_")
-        model.name = "Test2"
-        #expect(userDefaults.string(forKey: "test_name") == "Test2")
-    }
-
-    @Test("Observe First", .testMode)
-    func observeFirst() {
-        let model = MockModelCloudObserveFirst(developmentMode: false)
-        model.observableOnly = "Test2"
-        userDefaults.synchronize()
-        #expect(userDefaults.string(forKey: "observableOnly") == nil)
-    }
-
-    @Test("Specify Key Name", .testMode)
-    func specifyKeyName() {
-        let model = MockModelCloudKeyName(developmentMode: false)
-        model.renameByBackedKey = "Test2"
-        userDefaults.synchronize()
-        #expect(userDefaults.string(forKey: "rename-by-backed-key") == "Test2")
-
-        model.renameByDefaultsKey = "Test3"
-        userDefaults.synchronize()
-        #expect(userDefaults.string(forKey: "rename-by-defaults-key") == "Test3")
-
-        model.mixKey = "Test4"
-        userDefaults.synchronize()
-        #expect(userDefaults.string(forKey: "mix-key-backed-key") == "Test4")
-    }
-
-    @Test("Ignore Same Value", .testMode)
+    @Test("Ignore Same Value")
     func ignoreSameValueForBackedProperty() {
         let model = MockModelCloud(developmentMode: true)
         tracking(model, \.name, .direct, false)
@@ -88,3 +43,52 @@ struct ObservableCloudTests {
         model.observableOnly = "ObservableOnly" // same value
     }
 }
+
+#if swift(>=6.1)
+    extension ObservableCloudTests {
+        @Test("Response to NSUbiquitousKeyValueStore changes from Notification", .testMode)
+        func responseToNSUbiquitousKeyValueStoreChanges() async throws {
+            let model = MockModelCloud(developmentMode: false)
+            userDefaults.set("Test2", forKey: "name")
+            userDefaults.synchronize()
+            NotificationCenter.default.post(
+                name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+                object: nil,
+                userInfo: [
+                    NSUbiquitousKeyValueStoreChangedKeysKey: ["name"],
+                ])
+            #expect(model.name == "Test2")
+        }
+
+        @Test("Prefix", .testMode)
+        func prefix() {
+            let model = MockModelCloud(prefix: "test_")
+            model.name = "Test2"
+            #expect(userDefaults.string(forKey: "test_name") == "Test2")
+        }
+
+        @Test("Observe First", .testMode)
+        func observeFirst() {
+            let model = MockModelCloudObserveFirst(developmentMode: false)
+            model.observableOnly = "Test2"
+            userDefaults.synchronize()
+            #expect(userDefaults.string(forKey: "observableOnly") == nil)
+        }
+
+        @Test("Specify Key Name", .testMode)
+        func specifyKeyName() {
+            let model = MockModelCloudKeyName(developmentMode: false)
+            model.renameByBackedKey = "Test2"
+            userDefaults.synchronize()
+            #expect(userDefaults.string(forKey: "rename-by-backed-key") == "Test2")
+
+            model.renameByDefaultsKey = "Test3"
+            userDefaults.synchronize()
+            #expect(userDefaults.string(forKey: "rename-by-defaults-key") == "Test3")
+
+            model.mixKey = "Test4"
+            userDefaults.synchronize()
+            #expect(userDefaults.string(forKey: "mix-key-backed-key") == "Test4")
+        }
+    }
+#endif
