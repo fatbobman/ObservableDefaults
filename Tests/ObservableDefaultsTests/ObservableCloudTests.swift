@@ -42,6 +42,34 @@ struct ObservableCloudTests {
         tracking(model, \.observableOnly, .direct, false)
         model.observableOnly = "ObservableOnly" // same value
     }
+
+    @Test("WillSet and DidSet for Backed Property in Development Mode")
+    func willSetAndDidSetForBackedPropertyInDevelopmentMode() {
+        let model = MockModelCloud(developmentMode: true)
+        tracking(model, \.setResult, .direct)
+        model.name = "test1"
+        #expect(
+            model.setResult == ["willSet: test1", "didSet: Test"],
+            "setResult should be observable by setting value directly")
+    }
+
+    @Test("WillSet and DidSet for Observable Only Property in Development Mode")
+    func willSetAndDidSetForObservableOnlyPropertyInDevelopmentMode() {
+        let model = MockModelCloud(developmentMode: true)
+        tracking(model, \.setResult, .direct)
+        model.observableOnly = "test1"
+        #expect(
+            model.setResult == ["willSet: test1", "didSet: ObservableOnly"],
+            "setResult should be observable by setting value directly")
+    }
+
+    @Test("WillSet and DidSet for Ignore Property")
+    func willSetAndDidSetForIgnoreProperty() {
+        let model = MockModelCloud(developmentMode: true)
+        tracking(model, \.setResult, .direct)
+        model.ignore = "test1"
+        #expect(model.setResult == ["willSet: test1", "didSet: Ignore"])
+    }
 }
 
 #if swift(>=6.1)
@@ -89,6 +117,34 @@ struct ObservableCloudTests {
             model.mixKey = "Test4"
             userDefaults.synchronize()
             #expect(userDefaults.string(forKey: "mix-key-backed-key") == "Test4")
+        }
+
+        @Test("WillSet and DidSet for Backed Property", .testMode)
+        func willSetAndDidSetForBackedProperty() {
+            let model = MockModelCloud(developmentMode: false)
+            tracking(model, \.setResult, .direct)
+            model.name = "test1"
+            #expect(
+                model.setResult == ["willSet: test1", "didSet: Test"],
+                "setResult should be observable by setting value directly")
+        }
+
+        @Test(
+            "Default value never change after initialization even remove from NSUbiquitousKeyValueStore",
+            .testMode)
+        func defaultValueNeverChange() {
+            let model = MockModelCloud(developmentMode: false)
+            model.name = "Test2"
+            userDefaults.synchronize()
+            userDefaults.removeObject(forKey: "name")
+            userDefaults.synchronize()
+            NotificationCenter.default.post(
+                name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+                object: nil,
+                userInfo: [
+                    NSUbiquitousKeyValueStoreChangedKeysKey: ["name"],
+                ])
+            #expect(model.name == "Test", "initial value never change after initialization")
         }
     }
 #endif

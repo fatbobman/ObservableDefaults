@@ -527,6 +527,43 @@ class MixedSettings {
 
 ## Important Notes
 
+### Default Value Behavior for UserDefaults and iCloud Key-Value Store
+
+All persistent properties (those marked with @DefaultsBacked or @CloudBacked, either explicitly or implicitly) must be declared with default values. The framework captures these declaration-time defaults and maintains them as immutable fallback values throughout the object's lifetime. When keys are missing from the underlying storage (UserDefaults or iCloud Key-Value Store), properties automatically revert to these preserved default values, ensuring consistent behavior regardless of external storage modifications.
+
+```swift
+@ObservableDefaults(autoInit: false) // @ObservableCloud(autoInit: false) is the same
+class User {
+    var username = "guest"      // ← Declaration default: "guest"
+    var age: Int = 18          // ← Declaration default: 18
+    
+    init(username: String, age: Int) {
+        self.username = username  // Current value: "alice", default remains: "guest"
+        self.age = age           // Current value: 25, default remains: 18
+        // ... other initialization code, like observerStarter(observableKeysBlacklist: [])
+    }
+}
+
+let user = User(username: "alice", age: 25)
+
+// Current state:
+// - username current value: "alice"
+// - username default value: "guest" (immutable)
+// - age current value: 25  
+// - age default value: 18 (immutable)
+
+user.username = "bob"  // Changes current value, default value stays "guest"
+
+// If UserDefaults keys are deleted externally:
+UserDefaults.standard.removeObject(forKey: "username")
+UserDefaults.standard.removeObject(forKey: "age")
+
+print(user.username)  // "guest" (reverts to declaration default)
+print(user.age)       // 18 (reverts to declaration default)
+```
+
+> **Recommendation**: Unless you have specific requirements, use `autoInit: true` (default) to generate the standard initializer automatically. This helps avoid the misconception that default values can be modified through custom initializers.
+
 ### General Notes
 
 - **External Changes**: By default, both macros respond to external changes in their respective storage systems

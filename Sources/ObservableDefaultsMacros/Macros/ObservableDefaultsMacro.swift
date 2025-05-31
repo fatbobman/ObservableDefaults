@@ -131,9 +131,11 @@ extension ObservableDefaultsMacros: MemberMacro {
             }
 
         // Generate keyPath mapping for external change handling
-        let keyPathMaps = "[" + metas
+        let keyPathMaps = metas.isEmpty ? "[:]" :
+            "[" + metas
             .map { "\\\(className).\($0.propertyID): \"\($0.userDefaultsKey)\"" }
             .joined(separator: ", ") + "]"
+
         let keyPathMapsSyntax: DeclSyntax =
             """
             private let _defaultsKeyPathMap: [PartialKeyPath<\(raw: className)>: String] = \(

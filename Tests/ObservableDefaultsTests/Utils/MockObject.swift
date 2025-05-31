@@ -11,12 +11,54 @@ import ObservableDefaults
 
 @ObservableDefaults
 class MockModel {
-    var name: String = "Test"
+    var name: String = "Test" {
+        willSet {
+            setResult.append("willSet: \(newValue)")
+        }
+        didSet {
+            setResult.append("didSet: \(oldValue)")
+        }
+    }
+
     var age: Int = 18
+
     @Ignore
-    var ignore: String = "Ignore"
+    var ignore: String = "Ignore" {
+        willSet {
+            setResult.append("willSet: \(newValue)")
+        }
+        didSet {
+            setResult.append("didSet: \(oldValue)")
+        }
+    }
+
     @ObservableOnly
-    var observableOnly: String = "ObservableOnly"
+    var observableOnly: String = "ObservableOnly" {
+        willSet {
+            setResult.append("willSet: \(newValue)")
+        }
+        didSet {
+            setResult.append("didSet: \(oldValue)")
+        }
+    }
+
+    var hello: String {
+        name.uppercased()
+    }
+
+    @Ignore
+    var setResult: [String] = []
+}
+
+@ObservableDefaults(autoInit: false)
+class MockModelAutoInitFalse {
+    var name: String = "Test"
+
+    init(name: String, defaults: UserDefaults) {
+        _userDefaults = defaults
+        self.name = name
+        // observerStarter(observableKeysBlacklist: [])
+    }
 }
 
 @ObservableDefaults(observeFirst: true)
@@ -47,13 +89,37 @@ class MockModelKeyName {
 
 @ObservableCloud
 class MockModelCloud {
-    var name: String = "Test"
+    var name: String = "Test" {
+        willSet {
+            setResult.append("willSet: \(newValue)")
+        }
+        didSet {
+            setResult.append("didSet: \(oldValue)")
+        }
+    }
 
     @ObservableOnly
-    var observableOnly: String = "ObservableOnly"
+    var observableOnly: String = "ObservableOnly" {
+        willSet {
+            setResult.append("willSet: \(newValue)")
+        }
+        didSet {
+            setResult.append("didSet: \(oldValue)")
+        }
+    }
 
     @Ignore
-    var ignore: String = "Ignore"
+    var ignore: String = "Ignore" {
+        willSet {
+            setResult.append("willSet: \(newValue)")
+        }
+        didSet {
+            setResult.append("didSet: \(oldValue)")
+        }
+    }
+
+    @Ignore
+    var setResult: [String] = []
 }
 
 @ObservableCloud(observeFirst: true)
@@ -83,4 +149,15 @@ class MockModelCloudKeyName {
     @CloudKey(keyValueStoreKey: "mix-key-defaults-key")
     @CloudBacked(keyValueStoreKey: "mix-key-backed-key")
     var mixKey: String = "Test"
+}
+
+/// No default value
+@ObservableDefaults(autoInit: false)
+class MockModelNoDefaultValue {
+    @ObservableOnly
+    var noDefaultValue: String = "Test"
+
+    init(noDefaultValue: String) {
+        self.noDefaultValue = noDefaultValue
+    }
 }

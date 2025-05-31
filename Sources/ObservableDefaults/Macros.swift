@@ -29,8 +29,8 @@
 /// ```
 ///
 /// - Note: Properties must have default values and cannot be optional types
-@attached(peer, names: prefixed(`_`))
-@attached(accessor, names: named(get), named(set), named(init))
+@attached(peer, names: prefixed(`_`), arbitrary)
+@attached(accessor, names: named(get), named(set))
 public macro DefaultsBacked(userDefaultsKey: String? = nil) = #externalMacro(
     module: "ObservableDefaultsMacros",
     type: "DefaultsBackedMacro")
@@ -282,8 +282,8 @@ public macro ObservableDefaults(
 /// - Important: NSUbiquitousKeyValueStore has a 1MB total storage limit and 1024 key limit
 /// - Note: Changes are automatically observed across devices via NotificationCenter integration
 /// - Warning: Changing property names or custom keys after deployment may cause data loss
-@attached(peer, names: prefixed(`_`))
-@attached(accessor, names: named(get), named(set), named(init))
+@attached(peer, names: prefixed(`_`), arbitrary)
+@attached(accessor, names: named(get), named(set))
 public macro CloudBacked(keyValueStoreKey: String? = nil) = #externalMacro(
     module: "ObservableDefaultsMacros",
     type: "CloudBackedMacro")

@@ -162,4 +162,56 @@ struct ObservableDefaultsTests {
         tracking(model, \.observableOnly, .direct, false)
         model.observableOnly = "ObservableOnly" // same value
     }
+
+    @Test("WillSet and DidSet for Backed Property")
+    func willSetAndDidSetForBackedProperty() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let model = MockModel(userDefaults: userDefaults)
+
+        tracking(model, \.setResult, .direct)
+        model.name = "test1"
+        #expect(
+            model.setResult == ["willSet: test1", "didSet: Test"],
+            "setResult should be observable by setting value directly")
+    }
+
+    @Test("WillSet and DidSet for Observable Only Property")
+    func willSetAndDidSetForObservableOnlyProperty() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let model = MockModel(userDefaults: userDefaults)
+
+        tracking(model, \.setResult, .direct)
+        model.observableOnly = "test1"
+        #expect(
+            model.setResult == ["willSet: test1", "didSet: ObservableOnly"],
+            "setResult should be observable by setting value directly")
+    }
+
+    @Test("WillSet and DidSet for Ignore Property")
+    func willSetAndDidSetForIgnoreProperty() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let model = MockModel(userDefaults: userDefaults)
+
+        tracking(model, \.setResult, .direct)
+        model.ignore = "test1"
+        #expect(model.setResult == ["willSet: test1", "didSet: Ignore"])
+    }
+
+    @Test("Default value never change after initialization even remove from UserDefaults")
+    func defaultValueNeverChange() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let model = MockModel(userDefaults: userDefaults)
+        model.name = "Test2"
+        userDefaults.removeObject(forKey: "name")
+        #expect(model.name == "Test", "initial value never change after initialization")
+    }
+
+    @Test(
+        "Default value never change after initialization even remove from UserDefaults, default value from initializer")
+    func defaultValueNeverChangeFromInitializer() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let model = MockModelAutoInitFalse(name: "Test5", defaults: userDefaults)
+        // model.name = "Test6"
+        #expect(model.name == "Test5", "initial value never change after initialization")
+    }
 }

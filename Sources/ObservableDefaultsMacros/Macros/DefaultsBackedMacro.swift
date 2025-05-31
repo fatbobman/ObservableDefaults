@@ -67,12 +67,10 @@ extension DefaultsBackedMacro: AccessorMacro {
     {
         guard let property = declaration.as(VariableDeclSyntax.self),
               let binding = property.bindings.first,
-              let identifier = binding.pattern.as(IdentifierPatternSyntax.self),
-              // Extract property name
-              binding.accessorBlock == nil // Ensure property doesn't already have custom accessors
+              let identifier = binding.pattern.as(IdentifierPatternSyntax.self)
         else { return [] }
 
-        // Use property name as default UserDefaults key
+        // Property name as default UserDefaults key if no custom key is provided
         var keyString: String = identifier.trimmedDescription
 
         // Validate that the property can be persisted to UserDefaults
@@ -123,23 +121,17 @@ extension DefaultsBackedMacro: AccessorMacro {
             keyString = extractedKey
         }
 
-        let storageRestrictionsSyntax: AccessorDeclSyntax =
-            """
-            @storageRestrictions(initializes: _\(raw: identifier))
-            init(initialValue) {
-                _\(raw: identifier) = initialValue
-            }
-            """
-
+        // swiftformat:disable all
         // Generate getter that retrieves value from UserDefaults
         let getAccessor: AccessorDeclSyntax =
             """
             get {
                 access(keyPath: \\.\(identifier))
                 let key = _prefix + "\(raw: keyString)"
-                return UserDefaultsWrapper.getValue(key, _\(identifier), _userDefaults)
+                return UserDefaultsWrapper.getValue(key, \(raw: defaultValuePrefixed)\(raw: identifier), _userDefaults)
             }
             """
+        // swiftformat:enable all
 
         // Generate setter that stores value to UserDefaults with proper observation handling
         let setAccessor: AccessorDeclSyntax =
@@ -156,15 +148,16 @@ extension DefaultsBackedMacro: AccessorMacro {
                 ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
                     withMutation(keyPath: \\.\(identifier)) {
                         UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
+                         _\(raw: identifier) = newValue
                     }
                 } else {
                     UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
+                    _\(raw: identifier) = newValue
                 }
             }
             """
 
         return [
-            storageRestrictionsSyntax,
             getAccessor,
             setAccessor,
         ]
@@ -198,13 +191,31 @@ extension DefaultsBackedMacro: PeerMacro {
         in _: some MacroExpansionContext) throws -> [DeclSyntax]
     {
         guard let property = declaration.as(VariableDeclSyntax.self),
+              let binding = property.bindings.first,
+              let identifier = binding.pattern.as(IdentifierPatternSyntax.self),
               property.isPersistent
         else {
             return []
         }
 
-        // Generate private storage property with underscore prefix
+        // Generate private storage property with underscore prefix, for willSet and didSet
         let storage = DeclSyntax(property.privatePrefixed("_"))
-        return [storage]
+
+        // swiftformat:disable all
+        // Generate default value storage property with double underscore prefix
+        let defaultStorage: DeclSyntax =
+            """
+            // initial value storage, never change after initialization
+            private let \(raw:defaultValuePrefixed)\(raw: identifier) \(raw: binding.initializer!.description)
+            """
+        // swiftformat:enable all
+
+        return [storage, defaultStorage]
     }
 }
+
+/// The prefix for the default value storage property.
+///
+/// This prefix is used to distinguish the default value storage property from the regular storage
+/// property.
+let defaultValuePrefixed = "_default_value_of_"

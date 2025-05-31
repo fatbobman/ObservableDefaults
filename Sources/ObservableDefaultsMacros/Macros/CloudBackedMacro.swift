@@ -157,12 +157,10 @@ extension CloudBackedMacro: AccessorMacro {
         // Validate and extract property information
         guard let property = declaration.as(VariableDeclSyntax.self),
               let binding = property.bindings.first,
-              let identifier = binding.pattern.as(IdentifierPatternSyntax.self),
-              // Ensure property doesn't already have custom accessors
-              binding.accessorBlock == nil
+              let identifier = binding.pattern.as(IdentifierPatternSyntax.self)
         else { return [] }
 
-        // Use property name as default NSUbiquitousKeyValueStore key
+        // Property name as default NSUbiquitousKeyValueStore key if no custom key is provided
         var keyString: String = identifier.trimmedDescription
 
         // Validate that the property can be persisted to NSUbiquitousKeyValueStore
@@ -213,13 +211,6 @@ extension CloudBackedMacro: AccessorMacro {
             keyString = extractedKey
         }
 
-        let storageRestrictionsSyntax: AccessorDeclSyntax =
-            """
-            @storageRestrictions(initializes: _\(raw: identifier))
-            init(initialValue) {
-                _\(raw: identifier) = initialValue
-            }
-            """
         // swiftformat:disable all
         // Generate getter that retrieves value from NSUbiquitousKeyValueStore or memory storage
         let getAccessor: AccessorDeclSyntax =
@@ -230,7 +221,7 @@ extension CloudBackedMacro: AccessorMacro {
                     return _\(raw: identifier)
                 } else {
                     let key = _prefix + "\(raw: keyString)"
-                    return NSUbiquitousKeyValueStoreWrapper.default.getValue(key, _\(raw: identifier))
+                    return NSUbiquitousKeyValueStoreWrapper.default.getValue(key, \(raw: defaultValuePrefixed)\(raw: identifier))
                 }
             }
             """
@@ -264,7 +255,6 @@ extension CloudBackedMacro: AccessorMacro {
             """
 
         return [
-            storageRestrictionsSyntax,
             getAccessor,
             setAccessor,
         ]
@@ -307,6 +297,8 @@ extension CloudBackedMacro: PeerMacro {
     {
         // Only generate storage for valid persistent properties
         guard let property = declaration.as(VariableDeclSyntax.self),
+              let binding = property.bindings.first,
+              let identifier = binding.pattern.as(IdentifierPatternSyntax.self),
               property.isPersistent
         else {
             return []
@@ -314,6 +306,16 @@ extension CloudBackedMacro: PeerMacro {
 
         // Generate private storage property with underscore prefix
         let storage = DeclSyntax(property.privatePrefixed("_"))
-        return [storage]
+
+        // swiftformat:disable all
+        // Generate default value storage property with double underscore prefix
+        let defaultStorage: DeclSyntax =
+            """
+            // initial value storage, never change after initialization
+            private let \(raw:defaultValuePrefixed)\(raw: identifier) \(raw: binding.initializer!.description)
+            """
+        // swiftformat:enable all
+
+        return [storage, defaultStorage]
     }
 }
