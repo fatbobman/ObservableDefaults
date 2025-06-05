@@ -18,5 +18,5 @@
             "program": "${workspaceFolder:ObservableDefaults}/.build/release/ObservableDefaultsClient",
             "preLaunchTask": "swift: Build Release ObservableDefaultsClient"
         }
-    ]
+    ]--enable-experimental-prebuilts
 }
