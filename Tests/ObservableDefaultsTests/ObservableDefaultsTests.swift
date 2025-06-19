@@ -259,4 +259,36 @@ struct ObservableDefaultsTests {
         userDefaults.removeObject(forKey: "optionalWithoutInitializer")
         #expect(model.optionalWithoutInitializer == nil, "optionalWithoutInitializer should revert to default (nil) when removed from UserDefaults")
     }
+
+    @Test("Codable Type with Static Properties Support")
+    func codableTypeWithStaticPropertiesSupport() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let model = MockModelCodable(userDefaults: userDefaults)
+        
+        // Test initial values with static properties
+        #expect(model.style == .style1, "style should start as .style1")
+        #expect(model.explicitStyle == .style2, "explicitStyle should start as .style2")
+        
+        // Test setting values
+        tracking(model, \.style, .direct)
+        model.style = .style3
+        #expect(model.style == .style3, "style should be set to .style3")
+        
+        tracking(model, \.explicitStyle, .direct)
+        model.explicitStyle = .style1
+        #expect(model.explicitStyle == .style1, "explicitStyle should be set to .style1")
+        
+        // Test external UserDefaults changes with Codable types
+        tracking(model, \.style, .userDefaults)
+        let style2Data = try! JSONEncoder().encode(FontStyle.style2)
+        userDefaults.set(style2Data, forKey: "style")
+        #expect(model.style == .style2, "style should be updated from UserDefaults")
+        
+        // Test removing values (should revert to default)
+        userDefaults.removeObject(forKey: "style")
+        #expect(model.style == .style1, "style should revert to default (.style1) when removed from UserDefaults")
+        
+        userDefaults.removeObject(forKey: "explicitStyle")
+        #expect(model.explicitStyle == .style2, "explicitStyle should revert to default (.style2) when removed from UserDefaults")
+    }
 }

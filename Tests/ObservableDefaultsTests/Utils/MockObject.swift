@@ -151,6 +151,41 @@ class MockModelCloudKeyName {
     var mixKey: String = "Test"
 }
 
+/// Test Codable types
+struct FontStyle: CodableUserDefaultsPropertyListValue, CodableCloudPropertyListValue, Hashable, Identifiable {
+    let size: CGFloat
+    let weight: Weight
+    let id: Int
+
+    static let style1 = FontStyle(size: 20, weight: .bold, id: 1)
+    static let style2 = FontStyle(size: 30, weight: .regular, id: 2)
+    static let style3 = FontStyle(size: 40, weight: .heavy, id: 3)
+
+    enum Weight: Int, Codable {
+        case bold, regular, heavy
+    }
+}
+
+/// Codable type with static properties test
+@ObservableDefaults
+class MockModelCodable {
+    var style: FontStyle = .style1
+    var explicitStyle: FontStyle = FontStyle.style2
+    
+    @Ignore
+    var setResult: [String] = []
+}
+
+/// Codable type with static properties test for Cloud
+@ObservableCloud
+class MockModelCloudCodable {
+    var style: FontStyle = .style1
+    var explicitStyle: FontStyle = FontStyle.style2
+    
+    @Ignore
+    var setResult: [String] = []
+}
+
 /// Optional support for Cloud
 @ObservableCloud
 class MockModelCloudOptional {
@@ -198,8 +233,8 @@ class MockModelNoDefaultValue {
 /// Optional support
 @ObservableDefaults
 class MockModelOptional {
-    var name: String?
-    var optionalName: String? {
+    var name: String? = nil
+    var optionalName: String? = nil {
         willSet {
             setResult.append("willSet: \(String(describing: newValue))")
         }
@@ -210,7 +245,7 @@ class MockModelOptional {
 
     var optionalAge: Int? = 25
 
-    var optionalWithoutInitializer: Double?
+    var optionalWithoutInitializer: Double? = nil
 
     @DefaultsKey(userDefaultsKey: "custom-optional-key")
     var optionalWithCustomKey: Bool? = true

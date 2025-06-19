@@ -220,11 +220,22 @@ extension DefaultsBackedMacro: PeerMacro {
                     private let \(raw:defaultValuePrefixed)\(raw: identifier): \(raw: binding.typeAnnotation?.type.description ?? "Optional<Any>") = nil
                     """
             } else {
-                defaultStorage =
-                    """
-                    // initial value storage, never change after initialization
-                    private let \(raw:defaultValuePrefixed)\(raw: identifier) \(raw: initializerDescription)
-                    """
+                // Check if we need to add type annotation for type context
+                if let typeAnnotation = binding.typeAnnotation {
+                    // Has explicit type annotation, add it to ensure type context
+                    defaultStorage =
+                        """
+                        // initial value storage, never change after initialization
+                        private let \(raw:defaultValuePrefixed)\(raw: identifier): \(raw: typeAnnotation.type.description) \(raw: initializerDescription)
+                        """
+                } else {
+                    // No type annotation, use initializer as-is (may fail for ambiguous cases)
+                    defaultStorage =
+                        """
+                        // initial value storage, never change after initialization
+                        private let \(raw:defaultValuePrefixed)\(raw: identifier) \(raw: initializerDescription)
+                        """
+                }
             }
         } else if isOptionalType {
             // Optional type without initializer defaults to nil

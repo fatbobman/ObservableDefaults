@@ -278,4 +278,73 @@ struct ObservableCloudTests {
         #expect(model.optionalAge == 30, "optionalAge should revert to default (30) when removed from cloud store")
     }
     #endif
+    
+    @Test("Codable Type with Static Properties Support in Development Mode")
+    func codableTypeWithStaticPropertiesSupportInDevelopmentMode() {
+        let model = MockModelCloudCodable(developmentMode: true)
+        
+        // Test initial values with static properties
+        #expect(model.style == .style1, "style should start as .style1")
+        #expect(model.explicitStyle == .style2, "explicitStyle should start as .style2")
+        
+        // Test setting values
+        tracking(model, \.style, .direct)
+        model.style = .style3
+        #expect(model.style == .style3, "style should be set to .style3")
+        
+        tracking(model, \.explicitStyle, .direct)
+        model.explicitStyle = .style1
+        #expect(model.explicitStyle == .style1, "explicitStyle should be set to .style1")
+        
+        // Test creating new instances to verify they work
+        let newStyle = FontStyle(size: 50, weight: .bold, id: 4)
+        model.style = newStyle
+        #expect(model.style == newStyle, "style should be set to custom instance")
+    }
+    
+    #if !DEBUG
+    @Test("Codable Type with Static Properties Support in Production Mode", .testMode)
+    func codableTypeWithStaticPropertiesSupportInProductionMode() {
+        let model = MockModelCloudCodable(developmentMode: false)
+        
+        // Test initial values with static properties
+        #expect(model.style == .style1, "style should start as .style1")
+        #expect(model.explicitStyle == .style2, "explicitStyle should start as .style2")
+        
+        // Test setting values that persist to mock store
+        tracking(model, \.style, .direct)
+        model.style = .style3
+        #expect(model.style == .style3, "style should be set to .style3 in production mode")
+        
+        // Test that Codable values persist through mock NSUbiquitousKeyValueStore
+        let storedData = userDefaults.data(forKey: "style")
+        #expect(storedData != nil, "style should be stored as Data in mock store")
+        
+        if let data = storedData {
+            let decodedStyle = try? JSONDecoder().decode(FontStyle.self, from: data)
+            #expect(decodedStyle == .style3, "stored style should decode to .style3")
+        }
+        
+        // Test external changes simulation with Codable types
+        let style1Data = try! JSONEncoder().encode(FontStyle.style1)
+        userDefaults.set(style1Data, forKey: "style")
+        NotificationCenter.default.post(
+            name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+            object: nil,
+            userInfo: [
+                NSUbiquitousKeyValueStoreChangedKeysKey: ["style"],
+            ])
+        #expect(model.style == .style1, "style should be updated from external change")
+        
+        // Test removing values (should revert to default)
+        userDefaults.removeObject(forKey: "style")
+        NotificationCenter.default.post(
+            name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+            object: nil,
+            userInfo: [
+                NSUbiquitousKeyValueStoreChangedKeysKey: ["style"],
+            ])
+        #expect(model.style == .style1, "style should revert to default (.style1) when removed from cloud store")
+    }
+    #endif
 #endif
