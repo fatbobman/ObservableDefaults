@@ -31,6 +31,7 @@ Don't miss out on the latest updates and excellent articles about Swift, SwiftUI
 - **Customizable Behavior**: Fine-grained control through additional macros and parameters
 - **Custom Keys and Prefixes**: Support for property-specific storage keys and global prefixes
 - **Codable Support**: Complex data persistence for both local and cloud storage
+- **Optional Type Support**: Full support for Optional properties with nil values
 
 ## Installation
 
@@ -53,6 +54,7 @@ import ObservableDefaults
 class Settings {
     var name: String = "Fatbobman"
     var age: Int = 20
+    var nickname: String? = nil  // Optional support
 }
 ```
 
@@ -76,6 +78,7 @@ class CloudSettings {
     var number = 1
     var color: Colors = .red
     var style: FontStyle = .style1
+    var cloudName: String? = nil  // Optional support
 }
 ```
 
@@ -338,6 +341,31 @@ public class CloudSettings {
 
     @Ignore
     public var cache = "cache"                    // Neither observable nor persisted
+}
+```
+
+### Supporting Optional Types
+
+Both macros fully support Optional properties:
+
+```swift
+@ObservableDefaults
+class SettingsWithOptionals {
+    var username: String? = nil
+    var age: Int? = 25
+    var isEnabled: Bool? = true
+    
+    @DefaultsKey(userDefaultsKey: "custom-optional-key")
+    var customOptional: String? = nil
+}
+
+@ObservableCloud
+class CloudSettingsWithOptionals {
+    var cloudUsername: String? = nil
+    var preferences: [String]? = nil
+    
+    @CloudKey(keyValueStoreKey: "user-settings")
+    var userSettings: [String: String]? = nil
 }
 ```
 

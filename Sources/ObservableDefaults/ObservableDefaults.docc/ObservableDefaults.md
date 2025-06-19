@@ -19,6 +19,7 @@ This enables precise and efficient responsiveness to data changes, whether they 
 - **Customizable Behavior**: Fine-grained control through additional macros and parameters
 - **Custom Keys and Prefixes**: Support for property-specific storage keys and global prefixes
 - **Codable Support**: Complex data persistence for both local and cloud storage
+- **Optional Type Support**: Full support for Optional properties with nil values
 
 ## UserDefaults Integration with @ObservableDefaults
 
@@ -31,6 +32,7 @@ import ObservableDefaults
 class Settings {
     var name: String = "Fatbobman"
     var age: Int = 20
+    var nickname: String? = nil  // Optional support
 }
 ```
 
@@ -71,6 +73,7 @@ class CloudSettings {
     var username: String = "Fatbobman"
     var theme: String = "light"
     var isFirstLaunch: Bool = true
+    var cloudNotes: String? = nil  // Optional support
 }
 ```
 
@@ -297,11 +300,48 @@ ObservableDefaults supports all types that conform to the respective property li
 - `String`, `Int`, `Double`, `Float`, `Bool`
 - `Date`, `Data`, `URL`
 - All integer types (`Int8`, `Int16`, `Int32`, `Int64`, `UInt`, etc.)
+- `Optional<T>` where `T` is any supported type
 
 ### Collection Types
 
 - `Array<Element>` where `Element` conforms to the property list value protocol
 - `Dictionary<String, Value>` where `Value` conforms to the property list value protocol
+- `Optional<Collection>` for optional arrays and dictionaries
+
+### Optional Types
+
+Both `@ObservableDefaults` and `@ObservableCloud` fully support Optional properties:
+
+```swift
+@ObservableDefaults
+class SettingsWithOptionals {
+    var username: String? = nil
+    var age: Int? = 25
+    var isEnabled: Bool? = true
+    var data: Data? = nil
+    
+    @DefaultsKey(userDefaultsKey: "custom-optional-key")
+    var customOptional: String? = nil
+}
+
+@ObservableCloud
+class CloudSettingsWithOptionals {
+    var cloudUsername: String? = nil
+    var preferences: [String]? = nil
+    var lastSync: Date? = nil
+    
+    @CloudKey(keyValueStoreKey: "user-settings")
+    var userSettings: [String: String]? = nil
+}
+```
+
+**Optional Type Behavior:**
+
+- Optional properties can be declared with or without explicit `= nil` initialization
+- When set to `nil`, the property is effectively removed from storage
+- When storage keys are missing, Optional properties automatically return their default values (usually `nil`)
+- Optional properties work with custom keys, prefixes, and all storage modes
+- Complex Optional types like `[String]?` and `[String: Any]?` are fully supported
 
 ### Custom Types
 
