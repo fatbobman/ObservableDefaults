@@ -253,3 +253,25 @@ class MockModelOptional {
     @Ignore
     var setResult: [String] = []
 }
+
+/// MainActor support for Cloud
+@MainActor
+@ObservableCloud
+class MockModelCloudMainActor {
+    var name: String = "Test" {
+        willSet {
+            setResult.append("willSet: \(newValue)")
+        }
+        didSet {
+            setResult.append("didSet: \(oldValue)")
+        }
+    }
+    
+    var count: Int = 0
+    
+    @CloudKey(keyValueStoreKey: "main-actor-custom-key")
+    var customKey: String = "CustomValue"
+    
+    @Ignore
+    var setResult: [String] = []
+}

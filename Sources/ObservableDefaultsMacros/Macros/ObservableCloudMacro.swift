@@ -117,6 +117,17 @@ extension ObservableCloudMacros: MemberMacro {
         guard let classDecl = declaration as? ClassDeclSyntax else {
             fatalError("@ObservableCloud can only be applied to classes")
         }
+
+        // Check if the class has @MainActor attribute
+        let hasMainActor = classDecl.attributes.contains(where: { attribute in
+            if case let .attribute(attr) = attribute,
+               let identifierType = attr.attributeName.as(IdentifierTypeSyntax.self)
+            {
+                return identifierType.name.text == "MainActor"
+            }
+            return false
+        })
+        
         let persistentProperties = classDecl.memberBlock.members
             .compactMap { member -> VariableDeclSyntax? in
                 guard let varDecl = member.decl.as(VariableDeclSyntax.self),
@@ -184,9 +195,18 @@ extension ObservableCloudMacros: MemberMacro {
         let caseCode = metas.enumerated().map { index, meta in
             let caseIndent = index == 0 ? "" : "                "
             // swiftformat:disable all
-            return """
-                \(caseIndent)case prefix + "\(meta.keyValueStoreKey)": host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
-                """
+            if hasMainActor {
+                return """
+                    \(caseIndent)case prefix + "\(meta.keyValueStoreKey)": 
+                    \(caseIndent)    MainActor.assumeIsolated {
+                    \(caseIndent)        host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
+                    \(caseIndent)    }
+                    """
+            } else {
+                return """
+                    \(caseIndent)case prefix + "\(meta.keyValueStoreKey)": host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
+                    """
+            }
             // swiftformat:enable all
         }.joined(separator: "\n")
 
@@ -228,6 +248,26 @@ extension ObservableCloudMacros: MemberMacro {
             private var _prefix: String = \(raw: prefixStr)\(raw: emptyStr)
             """
 
+        // Generate helper methods for value comparison
+        let shouldSetValueSyntax: DeclSyntax =
+            """
+            private nonisolated func shouldSetValue<T>(_ lhs: T, _ rhs: T) -> Bool {
+               true
+            }
+
+            private nonisolated func shouldSetValue<T: Equatable>(_ lhs: T, _ rhs: T) -> Bool {
+               lhs != rhs
+            }
+
+            private nonisolated func shouldSetValue<T: AnyObject>(_ lhs: T, _ rhs: T) -> Bool {
+               lhs !== rhs
+            }
+
+            private nonisolated func shouldSetValue<T: Equatable & AnyObject>(_ lhs: T, _ rhs: T) -> Bool {
+                lhs != rhs
+            }
+            """
+
         // Generate initializer when autoInit is enabled
         let initFunctionSyntax: DeclSyntax =
             """
@@ -253,57 +293,112 @@ extension ObservableCloudMacros: MemberMacro {
             """
 
         // Generate NotificationCenter observer class for NSUbiquitousKeyValueStore changes
-        let observerFunctionSyntax: DeclSyntax =
-            """
-            private var _cloudObserver: CloudObservation?
+        let observerFunctionSyntax: DeclSyntax
+        if hasMainActor {
+            observerFunctionSyntax =
+                """
+                private var _cloudObserver: CloudObservation?
 
-            /// Manages NSUbiquitousKeyValueStore change observation for external cloud updates.
-            ///
-            /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
-            private final class CloudObservation: @unchecked Sendable {
-                let host: \(className)
-                let prefix: String
+                /// Manages NSUbiquitousKeyValueStore change observation for external cloud updates.
+                ///
+                /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
+                private final class CloudObservation: @unchecked Sendable {
+                    let host: \(className)
+                    let prefix: String
 
-                /// Initializes the observation with the specified parameters.
-                /// - Parameters:
-                ///   - host: The host instance to observe
-                ///   - prefix: The prefix for the NSUbiquitousKeyValueStore keys
-                init(host: \(className), prefix: String) {
-                    self.host = host
-                    self.prefix = prefix
-                    NotificationCenter.default
-                        .addObserver(
-                            forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
-                            object: nil,
-                            queue: nil,
-                            using: cloudStoreDidChange
-                        )
-                }
-
-                /// Handles cloud store changes from external sources.
-                /// - Parameter notification: The notification containing changed keys information
-                @Sendable
-                private func cloudStoreDidChange(_ notification: Notification) {
-                    guard let userInfo = notification.userInfo,
-                        let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
-                    else {
-                        return
+                    /// Initializes the observation with the specified parameters.
+                    /// - Parameters:
+                    ///   - host: The host instance to observe
+                    ///   - prefix: The prefix for the NSUbiquitousKeyValueStore keys
+                    init(host: \(className), prefix: String) {
+                        self.host = host
+                        self.prefix = prefix
+                        NotificationCenter.default
+                            .addObserver(
+                                forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+                                object: nil,
+                                queue: .main,
+                                using: cloudStoreDidChange
+                            )
                     }
 
-                    for key in changedKeys {
-                        switch key {
-                            \(raw: caseCode)
-                            default:
-                                break
+                    /// Handles cloud store changes from external sources.
+                    /// - Parameter notification: The notification containing changed keys information
+                    @Sendable
+                    private func cloudStoreDidChange(_ notification: Notification) {
+                        guard let userInfo = notification.userInfo,
+                            let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
+                        else {
+                            return
+                        }
+
+                        for key in changedKeys {
+                            switch key {
+                                \(raw: caseCode)
+                                default:
+                                    break
+                            }
                         }
                     }
-                }
 
-                deinit {
-                    NotificationCenter.default.removeObserver(self)
+                    deinit {
+                        NotificationCenter.default.removeObserver(self)
+                    }
                 }
-            }
-            """
+                """
+        } else {
+            observerFunctionSyntax =
+                """
+                private var _cloudObserver: CloudObservation?
+
+                /// Manages NSUbiquitousKeyValueStore change observation for external cloud updates.
+                ///
+                /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
+                private final class CloudObservation: @unchecked Sendable {
+                    let host: \(className)
+                    let prefix: String
+
+                    /// Initializes the observation with the specified parameters.
+                    /// - Parameters:
+                    ///   - host: The host instance to observe
+                    ///   - prefix: The prefix for the NSUbiquitousKeyValueStore keys
+                    init(host: \(className), prefix: String) {
+                        self.host = host
+                        self.prefix = prefix
+                        NotificationCenter.default
+                            .addObserver(
+                                forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+                                object: nil,
+                                queue: nil,
+                                using: cloudStoreDidChange
+                            )
+                    }
+
+                    /// Handles cloud store changes from external sources.
+                    /// - Parameter notification: The notification containing changed keys information
+                    @Sendable
+                    private func cloudStoreDidChange(_ notification: Notification) {
+                        guard let userInfo = notification.userInfo,
+                            let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
+                        else {
+                            return
+                        }
+
+                        for key in changedKeys {
+                            switch key {
+                                \(raw: caseCode)
+                                default:
+                                    break
+                            }
+                        }
+                    }
+
+                    deinit {
+                        NotificationCenter.default.removeObserver(self)
+                    }
+                }
+                """
+        }
 
         return [
             registrarSyntax,

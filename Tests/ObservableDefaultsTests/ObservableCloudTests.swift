@@ -347,4 +347,78 @@ struct ObservableCloudTests {
         #expect(model.style == .style1, "style should revert to default (.style1) when removed from cloud store")
     }
     #endif
+    
+    @MainActor
+    @Test("MainActor Support in Development Mode")
+    func mainActorSupportInDevelopmentMode() async {
+        let model = MockModelCloudMainActor(developmentMode: true)
+        
+        // Test initial values
+        #expect(model.name == "Test", "name should start as Test")
+        #expect(model.count == 0, "count should start as 0")
+        #expect(model.customKey == "CustomValue", "customKey should start as CustomValue")
+        
+        // Test setting values (should work without key path compilation errors)
+        tracking(model, \.name, .direct)
+        model.name = "MainActorTest"
+        #expect(model.name == "MainActorTest", "name should be set to MainActorTest")
+        
+        tracking(model, \.count, .direct)
+        model.count = 42
+        #expect(model.count == 42, "count should be set to 42")
+        
+        tracking(model, \.customKey, .direct)
+        model.customKey = "UpdatedValue"
+        #expect(model.customKey == "UpdatedValue", "customKey should be set to UpdatedValue")
+        
+        // Test willSet/didSet functionality
+        #expect(model.setResult.contains("willSet: MainActorTest"), "willSet should be called for name")
+        #expect(model.setResult.contains("didSet: Test"), "didSet should be called for name")
+    }
+    
+    #if !DEBUG
+    @MainActor
+    @Test("MainActor Support in Production Mode", .testMode)
+    func mainActorSupportInProductionMode() async {
+        let model = MockModelCloudMainActor(developmentMode: false)
+        
+        // Test initial values
+        #expect(model.name == "Test", "name should start as Test")
+        #expect(model.count == 0, "count should start as 0")
+        #expect(model.customKey == "CustomValue", "customKey should start as CustomValue")
+        
+        // Test setting values that persist to mock store
+        tracking(model, \.name, .direct)
+        model.name = "MainActorProductionTest"
+        #expect(model.name == "MainActorProductionTest", "name should be set in production mode")
+        
+        tracking(model, \.count, .direct)
+        model.count = 100
+        #expect(model.count == 100, "count should be set to 100 in production mode")
+        
+        // Test that values persist through mock NSUbiquitousKeyValueStore
+        #expect(userDefaults.string(forKey: "name") == "MainActorProductionTest", 
+                "name should be stored in mock store")
+        #expect(userDefaults.integer(forKey: "count") == 100, 
+                "count should be stored in mock store")
+        
+        // Test custom key
+        model.customKey = "MainActorCustom"
+        #expect(userDefaults.string(forKey: "main-actor-custom-key") == "MainActorCustom",
+                "customKey should be stored with custom key")
+        
+        // Test external changes simulation
+        userDefaults.set("ExternalMainActorName", forKey: "name")
+        NotificationCenter.default.post(
+            name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+            object: nil,
+            userInfo: [
+                NSUbiquitousKeyValueStoreChangedKeysKey: ["name"],
+            ])
+        
+        // Give some time for the async Task to complete
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        #expect(model.name == "ExternalMainActorName", "name should be updated from external change")
+    }
+    #endif
 #endif
