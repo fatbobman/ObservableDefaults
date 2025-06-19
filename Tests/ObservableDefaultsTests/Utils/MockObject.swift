@@ -275,3 +275,25 @@ class MockModelCloudMainActor {
     @Ignore
     var setResult: [String] = []
 }
+
+/// MainActor support for UserDefaults
+@MainActor
+@ObservableDefaults
+class MockModelMainActor {
+    var name: String = "Test" {
+        willSet {
+            setResult.append("willSet: \(newValue)")
+        }
+        didSet {
+            setResult.append("didSet: \(oldValue)")
+        }
+    }
+    
+    var count: Int = 0
+    
+    @DefaultsKey(userDefaultsKey: "main-actor-custom-key")
+    var customKey: String = "CustomValue"
+    
+    @Ignore
+    var setResult: [String] = []
+}

@@ -291,4 +291,51 @@ struct ObservableDefaultsTests {
         userDefaults.removeObject(forKey: "explicitStyle")
         #expect(model.explicitStyle == .style2, "explicitStyle should revert to default (.style2) when removed from UserDefaults")
     }
+    
+    @MainActor
+    @Test("MainActor Support")
+    func mainActorSupport() async {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let model = MockModelMainActor(userDefaults: userDefaults)
+        
+        // Test initial values
+        #expect(model.name == "Test", "name should start as Test")
+        #expect(model.count == 0, "count should start as 0")
+        #expect(model.customKey == "CustomValue", "customKey should start as CustomValue")
+        
+        // Test setting values (should work without key path compilation errors)
+        tracking(model, \.name, .direct)
+        model.name = "MainActorTest"
+        #expect(model.name == "MainActorTest", "name should be set to MainActorTest")
+        
+        tracking(model, \.count, .direct)
+        model.count = 42
+        #expect(model.count == 42, "count should be set to 42")
+        
+        tracking(model, \.customKey, .direct)
+        model.customKey = "UpdatedValue"
+        #expect(model.customKey == "UpdatedValue", "customKey should be set to UpdatedValue")
+        
+        // Test willSet/didSet functionality
+        #expect(model.setResult.contains("willSet: MainActorTest"), "willSet should be called for name")
+        #expect(model.setResult.contains("didSet: Test"), "didSet should be called for name")
+        
+        // Test that values persist to UserDefaults
+        #expect(userDefaults.string(forKey: "name") == "MainActorTest", 
+                "name should be stored in UserDefaults")
+        #expect(userDefaults.integer(forKey: "count") == 42, 
+                "count should be stored in UserDefaults")
+        
+        // Test custom key
+        #expect(userDefaults.string(forKey: "main-actor-custom-key") == "UpdatedValue",
+                "customKey should be stored with custom key")
+        
+        // Test external changes
+        tracking(model, \.name, .userDefaults)
+        userDefaults.set("ExternalMainActorName", forKey: "name")
+        
+        // Give some time for the async dispatch to complete
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        #expect(model.name == "ExternalMainActorName", "name should be updated from external change")
+    }
 }

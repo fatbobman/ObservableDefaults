@@ -69,6 +69,22 @@ extension DefaultsBackedMacro: AccessorMacro {
               let binding = property.bindings.first,
               let identifier = binding.pattern.as(IdentifierPatternSyntax.self)
         else { return [] }
+        
+        // Check if the containing class has @MainActor attribute
+        var hasMainActor = false
+        for context in context.lexicalContext {
+            if let classContext = context.as(ClassDeclSyntax.self) {
+                hasMainActor = classContext.attributes.contains(where: { attribute in
+                    if case let .attribute(attr) = attribute,
+                       let identifierType = attr.attributeName.as(IdentifierTypeSyntax.self)
+                    {
+                        return identifierType.name.text == "MainActor"
+                    }
+                    return false
+                })
+                break
+            }
+        }
 
         // Property name as default UserDefaults key if no custom key is provided
         var keyString: String = identifier.trimmedDescription
@@ -128,28 +144,56 @@ extension DefaultsBackedMacro: AccessorMacro {
         // swiftformat:enable all
 
         // Generate setter that stores value to UserDefaults with proper observation handling
-        let setAccessor: AccessorDeclSyntax =
-            """
-            set {
-                let key = _prefix + "\(raw: keyString)"
-                let currentValue = UserDefaultsWrapper.getValue(key, _\(identifier), _userDefaults)
-                // Only set the value if it has changed, reduce the view re-evaluation
-                guard shouldSetValue(newValue, currentValue) else {
-                    return
-                }
-                if _isExternalNotificationDisabled ||
-                _ignoredKeyPathsForExternalUpdates.contains(\\.\(identifier)) ||
-                ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-                    withMutation(keyPath: \\.\(identifier)) {
-                        UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
-                         _\(raw: identifier) = newValue
+        let setAccessor: AccessorDeclSyntax
+        if hasMainActor {
+            setAccessor =
+                """
+                set {
+                    let key = _prefix + "\(raw: keyString)"
+                    let currentValue = UserDefaultsWrapper.getValue(key, _\(identifier), _userDefaults)
+                    // Only set the value if it has changed, reduce the view re-evaluation
+                    guard shouldSetValue(newValue, currentValue) else {
+                        return
                     }
-                } else {
-                    UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
-                    _\(raw: identifier) = newValue
+                    if _isExternalNotificationDisabled ||
+                    _ignoredKeyPathsForExternalUpdates.contains(\\.\(identifier)) ||
+                    ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+                        MainActor.assumeIsolated {
+                            withMutation(keyPath: \\.\(identifier)) {
+                                UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
+                                 _\(raw: identifier) = newValue
+                            }
+                        }
+                    } else {
+                        UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
+                        _\(raw: identifier) = newValue
+                    }
                 }
-            }
-            """
+                """
+        } else {
+            setAccessor =
+                """
+                set {
+                    let key = _prefix + "\(raw: keyString)"
+                    let currentValue = UserDefaultsWrapper.getValue(key, _\(identifier), _userDefaults)
+                    // Only set the value if it has changed, reduce the view re-evaluation
+                    guard shouldSetValue(newValue, currentValue) else {
+                        return
+                    }
+                    if _isExternalNotificationDisabled ||
+                    _ignoredKeyPathsForExternalUpdates.contains(\\.\(identifier)) ||
+                    ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+                        withMutation(keyPath: \\.\(identifier)) {
+                            UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
+                             _\(raw: identifier) = newValue
+                        }
+                    } else {
+                        UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
+                        _\(raw: identifier) = newValue
+                    }
+                }
+                """
+        }
 
         return [
             getAccessor,
