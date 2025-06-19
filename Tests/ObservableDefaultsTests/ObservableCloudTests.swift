@@ -147,4 +147,135 @@ struct ObservableCloudTests {
             #expect(model.name == "Test", "initial value never change after initialization")
         }
     }
+    
+    @Test("Optional Property Support in Development Mode")
+    func optionalPropertySupportInDevelopmentMode() {
+        let model = MockModelCloudOptional(developmentMode: true)
+        
+        // Test initial values
+        #expect(model.name == nil, "name should start as nil")
+        #expect(model.optionalName == nil, "optionalName should start as nil")
+        #expect(model.optionalAge == 30, "optionalAge should start as 30")
+        #expect(model.optionalWithoutInitializer == nil, "optionalWithoutInitializer should start as nil")
+        #expect(model.optionalWithCustomKey == false, "optionalWithCustomKey should start as false")
+        #expect(model.optionalInt64 == Int64(9223372036854775807), "optionalInt64 should start as max Int64")
+        #expect(model.optionalFloat == Float(3.14), "optionalFloat should start as 3.14")
+        #expect(model.optionalBool == true, "optionalBool should start as true")
+        #expect(model.optionalData == "CloudTest".data(using: .utf8), "optionalData should start with CloudTest data")
+        #expect(model.optionalDate == Date(timeIntervalSince1970: 1640995200), "optionalDate should start as 2022-01-01")
+        
+        // Test setting values
+        tracking(model, \.optionalName, .direct)
+        model.optionalName = "CloudTestName"
+        #expect(model.optionalName == "CloudTestName", "optionalName should be set to CloudTestName")
+        
+        tracking(model, \.optionalAge, .direct)
+        model.optionalAge = nil
+        #expect(model.optionalAge == nil, "optionalAge should be set to nil in development mode")
+        
+        // Test setting back to default value
+        model.optionalAge = 30
+        #expect(model.optionalAge == 30, "optionalAge should be set back to 30")
+        
+        tracking(model, \.optionalWithoutInitializer, .direct)
+        model.optionalWithoutInitializer = 2.718
+        #expect(model.optionalWithoutInitializer == 2.718, "optionalWithoutInitializer should be set to 2.718")
+        
+        // Test setting different types to nil (in development mode, they actually become nil)
+        model.optionalInt64 = nil
+        #expect(model.optionalInt64 == nil, "optionalInt64 should be nil in development mode")
+        
+        model.optionalFloat = nil
+        #expect(model.optionalFloat == nil, "optionalFloat should be nil in development mode")
+        
+        model.optionalBool = nil
+        #expect(model.optionalBool == nil, "optionalBool should be nil in development mode")
+        
+        model.optionalData = nil
+        #expect(model.optionalData == nil, "optionalData should be nil in development mode")
+        
+        model.optionalDate = nil
+        #expect(model.optionalDate == nil, "optionalDate should be nil in development mode")
+        
+        // Test setting new values
+        model.optionalInt64 = 12345
+        #expect(model.optionalInt64 == 12345, "optionalInt64 should be set to new value")
+        
+        model.optionalFloat = Float(2.718)
+        #expect(model.optionalFloat == Float(2.718), "optionalFloat should be set to new value")
+        
+        model.optionalBool = false
+        #expect(model.optionalBool == false, "optionalBool should be set to false")
+        
+        let newData = "NewCloudTest".data(using: .utf8)
+        model.optionalData = newData
+        #expect(model.optionalData == newData, "optionalData should be set to new value")
+        
+        let newDate = Date(timeIntervalSince1970: 1672531200) // 2023-01-01
+        model.optionalDate = newDate
+        #expect(model.optionalDate == newDate, "optionalDate should be set to new value")
+    }
+    
+    #if !DEBUG
+    @Test("Optional Property Support in Production Mode", .testMode)
+    func optionalPropertySupportInProductionMode() {
+        let model = MockModelCloudOptional(developmentMode: false)
+        
+        // Test initial values
+        #expect(model.name == nil, "name should start as nil")
+        #expect(model.optionalName == nil, "optionalName should start as nil")
+        #expect(model.optionalAge == 30, "optionalAge should start as 30")
+        #expect(model.optionalWithoutInitializer == nil, "optionalWithoutInitializer should start as nil")
+        #expect(model.optionalWithCustomKey == false, "optionalWithCustomKey should start as false")
+        
+        // Test setting values that persist to mock store
+        tracking(model, \.optionalName, .direct)
+        model.optionalName = "ProductionCloudName"
+        #expect(model.optionalName == "ProductionCloudName", "optionalName should be set in production mode")
+        
+        tracking(model, \.optionalAge, .direct)
+        model.optionalAge = 25
+        #expect(model.optionalAge == 25, "optionalAge should be set to 25 in production mode")
+        
+        // Test that values persist through mock NSUbiquitousKeyValueStore
+        #expect(userDefaults.object(forKey: "optionalName") as? String == "ProductionCloudName", 
+                "optionalName should be stored in mock store")
+        #expect(userDefaults.object(forKey: "optionalAge") as? Int == 25, 
+                "optionalAge should be stored in mock store")
+        
+        // Test custom key
+        model.optionalWithCustomKey = true
+        #expect(userDefaults.object(forKey: "cloud-custom-optional-key") as? Bool == true,
+                "optionalWithCustomKey should be stored with custom key")
+        
+        // Test external changes simulation
+        userDefaults.set("ExternalCloudName", forKey: "optionalName")
+        NotificationCenter.default.post(
+            name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+            object: nil,
+            userInfo: [
+                NSUbiquitousKeyValueStoreChangedKeysKey: ["optionalName"],
+            ])
+        #expect(model.optionalName == "ExternalCloudName", "optionalName should be updated from external change")
+        
+        // Test removing values (should revert to default)
+        userDefaults.removeObject(forKey: "optionalName")
+        NotificationCenter.default.post(
+            name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+            object: nil,
+            userInfo: [
+                NSUbiquitousKeyValueStoreChangedKeysKey: ["optionalName"],
+            ])
+        #expect(model.optionalName == nil, "optionalName should revert to default (nil) when removed from cloud store")
+        
+        userDefaults.removeObject(forKey: "optionalAge")
+        NotificationCenter.default.post(
+            name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+            object: nil,
+            userInfo: [
+                NSUbiquitousKeyValueStoreChangedKeysKey: ["optionalAge"],
+            ])
+        #expect(model.optionalAge == 30, "optionalAge should revert to default (30) when removed from cloud store")
+    }
+    #endif
 #endif

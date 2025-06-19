@@ -151,6 +151,39 @@ class MockModelCloudKeyName {
     var mixKey: String = "Test"
 }
 
+/// Optional support for Cloud
+@ObservableCloud
+class MockModelCloudOptional {
+    var name: String?
+    var optionalName: String? = nil {
+        willSet {
+            setResult.append("willSet: \(String(describing: newValue))")
+        }
+        didSet {
+            setResult.append("didSet: \(String(describing: oldValue))")
+        }
+    }
+    
+    var optionalAge: Int? = 30
+    
+    var optionalWithoutInitializer: Double?
+    
+    @CloudKey(keyValueStoreKey: "cloud-custom-optional-key")
+    var optionalWithCustomKey: Bool? = false
+    
+    // Test Int64 specific support
+    var optionalInt64: Int64? = Int64(9223372036854775807)
+    
+    // Test different basic types
+    var optionalFloat: Float? = Float(3.14)
+    var optionalBool: Bool? = true
+    var optionalData: Data? = "CloudTest".data(using: .utf8)
+    var optionalDate: Date? = Date(timeIntervalSince1970: 1640995200) // 2022-01-01
+    
+    @Ignore
+    var setResult: [String] = []
+}
+
 /// No default value
 @ObservableDefaults(autoInit: false)
 class MockModelNoDefaultValue {
