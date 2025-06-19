@@ -34,8 +34,8 @@ import SwiftSyntaxMacros
 /// }
 /// ```
 ///
-/// - Note: Properties marked with `@DefaultsBacked` must have default values and cannot be optional
-/// types
+/// - Note: Properties marked with `@DefaultsBacked` must have default values. Optional types are
+/// supported and can omit default values (defaulting to nil)
 public enum DefaultsBackedMacro {
     /// The name of the macro as used in source code
     static let name: String = "DefaultsBacked"
@@ -82,30 +82,24 @@ extension DefaultsBackedMacro: AccessorMacro {
             return []
         }
 
+        // Check if the property is optional to handle initialization differently
+        var isOptionalType = false
+        if let typeAnnotation = binding.typeAnnotation {
+            let typeSyntax = typeAnnotation.type
+            let typeName = typeSyntax.description.trimmingCharacters(in: .whitespacesAndNewlines)
+            isOptionalType = typeSyntax.is(OptionalTypeSyntax.self) ||
+                typeSyntax.is(ImplicitlyUnwrappedOptionalTypeSyntax.self) ||
+                typeName.contains("Optional")
+        }
+
         // Ensure the property has a default value (required for UserDefaults integration)
-        if binding.initializer == nil {
+        // Optional types can have no initializer (defaults to nil)
+        if binding.initializer == nil && !isOptionalType {
             let diagnostic = Diagnostic.initializerRequired(
                 property: property,
                 macroType: .observableDefaults)
             context.diagnose(diagnostic)
             return []
-        }
-
-        // Validate that the property is not optional (optional types are not supported)
-        if let typeAnnotation = binding.typeAnnotation {
-            let typeSyntax = typeAnnotation.type
-            let typeName = typeSyntax.description.trimmingCharacters(in: .whitespacesAndNewlines)
-            if typeSyntax.is(OptionalTypeSyntax.self) ||
-                typeSyntax.is(ImplicitlyUnwrappedOptionalTypeSyntax.self) ||
-                typeName.contains("Optional")
-            {
-                let diagnostic = Diagnostic.optionalTypeNotSupported(
-                    property: property,
-                    typeName: typeName,
-                    macroType: .observableDefaults)
-                context.diagnose(diagnostic)
-                return []
-            }
         }
 
         // Check for custom UserDefaults key specified via @DefaultsBacked(userDefaultsKey:) or
@@ -198,16 +192,55 @@ extension DefaultsBackedMacro: PeerMacro {
             return []
         }
 
+        // Check if the property is optional
+        var isOptionalType = false
+        if let typeAnnotation = binding.typeAnnotation {
+            let typeSyntax = typeAnnotation.type
+            let typeName = typeSyntax.description.trimmingCharacters(in: .whitespacesAndNewlines)
+            isOptionalType = typeSyntax.is(OptionalTypeSyntax.self) ||
+                typeSyntax.is(ImplicitlyUnwrappedOptionalTypeSyntax.self) ||
+                typeName.contains("Optional")
+        }
+
         // Generate private storage property with underscore prefix, for willSet and didSet
         let storage = DeclSyntax(property.privatePrefixed("_"))
 
         // swiftformat:disable all
         // Generate default value storage property with double underscore prefix
-        let defaultStorage: DeclSyntax =
-            """
-            // initial value storage, never change after initialization
-            private let \(raw:defaultValuePrefixed)\(raw: identifier) \(raw: binding.initializer!.description)
-            """
+        let defaultStorage: DeclSyntax
+        if let initializer = binding.initializer {
+            // Has explicit initializer
+            let initializerDescription = initializer.description
+            // Check if initializer is just "= nil" without type annotation
+            if isOptionalType && initializerDescription.trimmingCharacters(in: .whitespacesAndNewlines) == "= nil" {
+                // Add type annotation for "= nil" cases
+                defaultStorage =
+                    """
+                    // initial value storage, never change after initialization
+                    private let \(raw:defaultValuePrefixed)\(raw: identifier): \(raw: binding.typeAnnotation?.type.description ?? "Optional<Any>") = nil
+                    """
+            } else {
+                defaultStorage =
+                    """
+                    // initial value storage, never change after initialization
+                    private let \(raw:defaultValuePrefixed)\(raw: identifier) \(raw: initializerDescription)
+                    """
+            }
+        } else if isOptionalType {
+            // Optional type without initializer defaults to nil
+            defaultStorage =
+                """
+                // initial value storage, never change after initialization
+                private let \(raw:defaultValuePrefixed)\(raw: identifier): \(raw: binding.typeAnnotation?.type.description ?? "Optional<Any>") = nil
+                """
+        } else {
+            // This should not happen due to earlier validation, but provide a fallback
+            defaultStorage =
+                """
+                // initial value storage, never change after initialization
+                private let \(raw:defaultValuePrefixed)\(raw: identifier): Any? = nil
+                """
+        }
         // swiftformat:enable all
 
         return [storage, defaultStorage]

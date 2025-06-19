@@ -161,3 +161,27 @@ class MockModelNoDefaultValue {
         self.noDefaultValue = noDefaultValue
     }
 }
+
+/// Optional support
+@ObservableDefaults
+class MockModelOptional {
+    var name: String?
+    var optionalName: String? {
+        willSet {
+            setResult.append("willSet: \(String(describing: newValue))")
+        }
+        didSet {
+            setResult.append("didSet: \(String(describing: oldValue))")
+        }
+    }
+
+    var optionalAge: Int? = 25
+
+    var optionalWithoutInitializer: Double?
+
+    @DefaultsKey(userDefaultsKey: "custom-optional-key")
+    var optionalWithCustomKey: Bool? = true
+
+    @Ignore
+    var setResult: [String] = []
+}

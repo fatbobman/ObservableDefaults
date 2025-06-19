@@ -139,3 +139,11 @@ extension Array: UserDefaultsPropertyListValue where Element: UserDefaultsProper
 /// storable
 extension Dictionary: UserDefaultsPropertyListValue where Key == String,
 Value: UserDefaultsPropertyListValue {}
+
+// MARK: - Optional Types
+
+/// Optional conforms to UserDefaultsPropertyListValue when its wrapped type also conforms to
+/// UserDefaultsPropertyListValue.
+/// This allows optional property list compatible types to be stored directly in UserDefaults.
+/// - Note: The wrapped type must be property list compatible for the optional to be storable
+extension Optional: UserDefaultsPropertyListValue where Wrapped: UserDefaultsPropertyListValue {}

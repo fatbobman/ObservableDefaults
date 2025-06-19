@@ -97,21 +97,4 @@ extension Diagnostic {
                         ])))))
     }
 
-    static func optionalTypeNotSupported(
-        property: VariableDeclSyntax,
-        typeName: String,
-        macroType: MacroType) -> Diagnostic
-    {
-        createDiagnostic(
-            node: property,
-            message: "\(macroType.rawValue) does not support optional types",
-            fixItMessage: "Use a non-optional type",
-            fixIt: FixIt.Change.replace(
-                oldNode: Syntax(property.bindings.first!.typeAnnotation!.type),
-                newNode: Syntax(
-                    TypeSyntax(stringLiteral: typeName.replacingOccurrences(of: "?", with: "")
-                        .replacingOccurrences(of: "!", with: "")
-                        .replacingOccurrences(of: "Optional<", with: "")
-                        .replacingOccurrences(of: ">", with: "")))))
-    }
 }

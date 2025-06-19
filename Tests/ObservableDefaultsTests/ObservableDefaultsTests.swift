@@ -214,4 +214,49 @@ struct ObservableDefaultsTests {
         // model.name = "Test6"
         #expect(model.name == "Test5", "initial value never change after initialization")
     }
+
+    @Test("Optional Property Support")
+    func optionalPropertySupport() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let model = MockModelOptional(userDefaults: userDefaults)
+
+        // Test initial values
+        #expect(model.optionalName == nil, "optionalName should start as nil")
+        #expect(model.optionalAge == 25, "optionalAge should start as 25")
+        #expect(model.optionalWithoutInitializer == nil, "optionalWithoutInitializer should start as nil")
+        #expect(model.optionalWithCustomKey == true, "optionalWithCustomKey should start as true")
+        #expect(model.name == nil, "name should start as nil")
+
+        // Test setting values
+        tracking(model, \.optionalName, .direct)
+        model.optionalName = "TestName"
+        #expect(model.optionalName == "TestName", "optionalName should be set to TestName")
+
+        tracking(model, \.optionalAge, .direct)
+        model.optionalAge = nil
+        #expect(model.optionalAge == 25, "optionalAge should revert to default value (25) when set to nil")
+
+        tracking(model, \.optionalWithoutInitializer, .direct)
+        model.optionalWithoutInitializer = 3.14
+        #expect(model.optionalWithoutInitializer == 3.14, "optionalWithoutInitializer should be set to 3.14")
+
+        // Test external UserDefaults changes
+        tracking(model, \.optionalName, .userDefaults)
+        userDefaults.set("ExternalName", forKey: "optionalName")
+        #expect(model.optionalName == "ExternalName", "optionalName should be updated from UserDefaults")
+
+        tracking(model, \.optionalWithCustomKey, .userDefaults)
+        userDefaults.set(false, forKey: "custom-optional-key")
+        #expect(model.optionalWithCustomKey == false, "optionalWithCustomKey should be updated from UserDefaults with custom key")
+
+        // Test removing values (should revert to default)
+        userDefaults.removeObject(forKey: "optionalName")
+        #expect(model.optionalName == nil, "optionalName should revert to default (nil) when removed from UserDefaults")
+
+        userDefaults.removeObject(forKey: "optionalAge")
+        #expect(model.optionalAge == 25, "optionalAge should revert to default (25) when removed from UserDefaults")
+
+        userDefaults.removeObject(forKey: "optionalWithoutInitializer")
+        #expect(model.optionalWithoutInitializer == nil, "optionalWithoutInitializer should revert to default (nil) when removed from UserDefaults")
+    }
 }
