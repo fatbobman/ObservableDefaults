@@ -11,11 +11,11 @@
 
 import Foundation
 
-/// A type-safe wrapper for optional Codable values that can be stored in UserDefaults.
+/// A type-safe wrapper for optional Codable values that can be stored in UserDefaults and iCloud Key-Value Store.
 ///
 /// `Nullable<T>` is designed to solve the issue where Swift's built-in `Optional<T>` type
-/// doesn't work correctly with custom Codable types in ObservableDefaults. When you try to
-/// use optional Codable types like `User?`, the compiler selects the wrong method overload,
+/// doesn't work correctly with custom Codable types in both @ObservableDefaults and @ObservableCloud.
+/// When you try to use optional Codable types like `User?`, the compiler selects the wrong method overload,
 /// causing runtime crashes with "Attempt to insert non-property list object" errors.
 ///
 /// ## The Problem
@@ -26,7 +26,7 @@ import Foundation
 ///     var age: Int
 /// }
 ///
-/// @ObservableDefaults
+/// @ObservableDefaults  // or @ObservableCloud
 /// class Settings {
 ///     var user: User? = nil  // ❌ Crashes at runtime!
 /// }
@@ -35,7 +35,7 @@ import Foundation
 /// ## The Solution
 ///
 /// ```swift
-/// @ObservableDefaults
+/// @ObservableDefaults  // or @ObservableCloud
 /// class Settings {
 ///     var user: Nullable<User> = Nullable.none  // ✅ Works perfectly!
 /// }
@@ -45,7 +45,7 @@ import Foundation
 ///
 /// ### Basic Usage
 /// ```swift
-/// @ObservableDefaults
+/// @ObservableDefaults  // Works with both @ObservableDefaults and @ObservableCloud
 /// class AppSettings {
 ///     var currentUser: Nullable<User> = Nullable.none
 ///     var userPreferences: Nullable<UserPrefs> = Nullable.none
@@ -90,9 +90,10 @@ import Foundation
 ///
 /// ## Why This Works
 ///
-/// Unlike Swift's built-in `Optional<T>`, `Nullable<T>` directly conforms to
-/// `CodableUserDefaultsPropertyListValue`, ensuring the compiler always selects
-/// the correct JSON encoding/decoding methods instead of attempting direct storage.
+/// Unlike Swift's built-in `Optional<T>`, `Nullable<T>` directly conforms to both
+/// `CodableUserDefaultsPropertyListValue` and `CodableCloudPropertyListValue`, ensuring 
+/// the compiler always selects the correct JSON encoding/decoding methods instead of 
+/// attempting direct storage for both local UserDefaults and iCloud Key-Value Store.
 ///
 /// ## Performance Notes
 ///
@@ -101,9 +102,9 @@ import Foundation
 /// - **Type safety**: Full compile-time type checking maintained
 ///
 /// - Important: Only use for custom Codable types. Basic types like `Int?`, `String?` work fine with regular optionals
-/// - Note: This type is specifically designed for @ObservableDefaults integration
+/// - Note: This type is specifically designed for both @ObservableDefaults and @ObservableCloud integration
 /// - Warning: Do not use this for non-Codable types
-public enum Nullable<T: Codable & Equatable>: CodableUserDefaultsPropertyListValue {
+public enum Nullable<T: Codable & Equatable>: CodableUserDefaultsPropertyListValue, CodableCloudPropertyListValue {
     /// Represents the absence of a value (equivalent to `nil`)
     case none
     

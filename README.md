@@ -477,13 +477,14 @@ let user = settings.currentUser.valueOrDefault(defaultUser)
 
 - Basic optional types (`String?`, `Int?`, etc.) work fine with regular optionals
 - Custom Codable optional types (`User?`) cause compiler method selection conflicts
-- `Nullable<T>` directly conforms to `CodableUserDefaultsPropertyListValue`, ensuring correct JSON encoding/decoding
-- The same principle applies to both `@ObservableDefaults` and `@ObservableCloud`
+- `Nullable<T>` directly conforms to both `CodableUserDefaultsPropertyListValue` and `CodableCloudPropertyListValue`, ensuring correct JSON encoding/decoding
+- For `@ObservableDefaults`: Using `User?` causes runtime crashes with "Attempt to insert non-property list object"
+- For `@ObservableCloud`: Using `User?` causes silent value loss (values become nil after assignment)
 
 **This limitation only affects custom Codable structures:**
 - ✅ `String?`, `Int?`, `Bool?` - work with regular optionals
 - ✅ `Priority?` (enum with rawValue) - work with regular optionals  
-- ❌ `User?` (custom Codable struct) - must use `Nullable<User>`
+- ❌ `User?` (custom Codable struct) - must use `Nullable<User>` to avoid issues
 
 ### Integrating with Other Observable Objects
 
