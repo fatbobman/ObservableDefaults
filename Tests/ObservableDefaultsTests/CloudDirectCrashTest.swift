@@ -8,63 +8,41 @@ struct CloudCrashUser: Codable, CodableCloudPropertyListValue, Equatable {
     var age: Int
 }
 
-// Test the issue: Does @ObservableCloud also crash with optional Codable types?
-@ObservableCloud(developmentMode: false)  // Use real iCloud store to test the issue
+// Test optional Codable types with real iCloud store
+@ObservableCloud(developmentMode: false)  // Use real iCloud store to test
 class CloudSettingsWithOptionalCrashUser {
-    var user: CloudCrashUser? = nil  // This might crash like UserDefaults
+    var user: CloudCrashUser? = nil  // This should work now with our solution
 }
 
-@ObservableCloud(developmentMode: false)
-class CloudSettingsWithNullableCrashUser {
-    var user: Nullable<CloudCrashUser> = Nullable.none  // This should work
-}
-
-@Test("Test if ObservableCloud crashes with optional Codable types")
-func testObservableCloudOptionalCodableCrash() async throws {
+@Test("Test if ObservableCloud works with optional Codable types using real iCloud")
+func testObservableCloudOptionalCodableWorksWithRealICloud() async throws {
     let settings = CloudSettingsWithOptionalCrashUser()
     
     // Initial nil should work
     #expect(settings.user == nil)
     
-    // This assignment might trigger a crash similar to UserDefaults
+    // This assignment should work without issues
     let testUser = CloudCrashUser(name: "John", age: 30)
     
     print("About to assign CloudCrashUser? to @ObservableCloud...")
     
-    // Test assignment - this might crash or have other issues
+    // Test assignment - this should work with our solution
     settings.user = testUser
     
-    print("Assignment completed!")
+    print("Assignment completed successfully!")
     print("User value: \(String(describing: settings.user))")
+    
+    // Verify it works
+    #expect(settings.user?.name == "John")
+    #expect(settings.user?.age == 30)
     
     // Try to read it back
     let retrievedUser = settings.user
     print("Retrieved user: \(String(describing: retrievedUser))")
-}
-
-@Test("Test that Nullable works with real iCloud ObservableCloud")  
-func testNullableWithRealObservableCloud() async throws {
-    let settings = CloudSettingsWithNullableCrashUser()
-    
-    // Initial nil should work
-    #expect(settings.user.value == nil)
-    
-    // This assignment should work fine
-    let testUser = CloudCrashUser(name: "Alice", age: 25)
-    settings.user = Nullable.from(value: testUser)
-    
-    print("Assigned Nullable<CloudCrashUser> successfully")
-    print("User: \(settings.user)")
-    
-    // Verify it works
-    #expect(settings.user.value?.name == "Alice")
-    #expect(settings.user.value?.age == 25)
-    #expect(settings.user.hasValue)
     
     // Test setting to nil
-    settings.user = Nullable.none
-    #expect(settings.user.value == nil)
-    #expect(!settings.user.hasValue)
+    settings.user = nil
+    #expect(settings.user == nil)
     
-    print("✅ Nullable solution works with real ObservableCloud!")
+    print("✅ Optional Codable types work with real ObservableCloud!")
 }

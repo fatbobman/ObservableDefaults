@@ -136,6 +136,31 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
         }
     }
 
+    /// Gets an optional Codable value from the ubiquitous key-value store.
+    /// This method is used for optional custom types that can be encoded/decoded using JSON.
+    /// - Parameters:
+    ///   - key: The key to get the value for
+    ///   - defaultValue: The default optional value to return if the key is not found or decoding fails
+    /// - Returns: The decoded optional value from the store, or the default value if the key is not found or
+    /// decoding fails
+    public func getValue<Value>(
+        _ key: String,
+        _ defaultValue: Value?) -> Value?
+    where Value: CodableCloudPropertyListValue {
+        // Get the data from NSUbiquitousKeyValueStore
+        guard let data = store.data(forKey: key) else {
+            return defaultValue
+        }
+
+        do {
+            // Attempt to decode the data using JSONDecoder
+            return try JSONDecoder().decode(Value?.self, from: data)
+        } catch {
+            // Return default value if decoding fails
+            return defaultValue
+        }
+    }
+
     /// Gets a Int64 value from the ubiquitous key-value store.
     /// This method is specifically for non-optional Int64 values.
     /// - Parameters:
@@ -231,6 +256,28 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     {
         // Encode the value to JSON data
         guard let data = try? JSONEncoder().encode(newValue) else { return }
+        // Store the encoded data
+        store.set(data, forKey: key)
+    }
+
+    /// Sets an optional Codable value in the ubiquitous key-value store.
+    /// This method encodes custom types to JSON data before storing.
+    /// - Parameters:
+    ///   - key: The key to set the value for
+    ///   - newValue: The new optional Codable value to store (nil will remove the key)
+    /// - Note: If encoding fails, the method silently returns without storing anything
+    public func setValue<Value>(
+        _ key: String,
+        _ newValue: Value?)
+    where Value: CodableCloudPropertyListValue {
+        // Handle nil value by removing the key
+        guard let value = newValue else {
+            store.removeObject(forKey: key)
+            return
+        }
+        
+        // Encode the value to JSON data
+        guard let data = try? JSONEncoder().encode(value) else { return }
         // Store the encoded data
         store.set(data, forKey: key)
     }

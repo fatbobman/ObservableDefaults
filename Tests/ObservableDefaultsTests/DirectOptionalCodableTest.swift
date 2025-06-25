@@ -10,16 +10,11 @@ struct DirectUser: Codable, CodableUserDefaultsPropertyListValue, Equatable {
 
 @ObservableDefaults
 class SettingsWithOptionalUser {
-    var user: DirectUser? = nil  // This should crash
+    var user: DirectUser? = nil  // This should work now with PR #11 solution
 }
 
-@ObservableDefaults  
-class SettingsWithNullableUser {
-    var user: Nullable<DirectUser> = Nullable.none  // This should work
-}
-
-@Test("Demonstrate UserDefaults optional Codable crash")
-func testUserDefaultsOptionalCodableCrash() async throws {
+@Test("Demonstrate UserDefaults optional Codable works")
+func testUserDefaultsOptionalCodableWorks() async throws {
     // Clean UserDefaults
     let userDefaults = UserDefaults.standard
     userDefaults.removeObject(forKey: "user")
@@ -29,42 +24,24 @@ func testUserDefaultsOptionalCodableCrash() async throws {
     // Initial nil should work
     #expect(settings.user == nil)
     
-    // This assignment should trigger the crash
+    // This assignment should work without crash
     let testUser = DirectUser(name: "John", age: 30)
     
-    print("About to assign DirectUser? - this may crash...")
+    print("About to assign DirectUser? - this should work now...")
     
-    // This is where the "Attempt to insert non-property list object" crash should occur
+    // This should work with the PR #11 solution
     settings.user = testUser
     
-    print("Assignment completed without crash - unexpected!")
+    print("Assignment completed successfully!")
     print("User value: \(String(describing: settings.user))")
-}
-
-@Test("Demonstrate Nullable solution works for UserDefaults")
-func testNullableSolutionForUserDefaults() async throws {
-    // Clean UserDefaults  
-    let userDefaults = UserDefaults.standard
-    userDefaults.removeObject(forKey: "user")
-    
-    let settings = SettingsWithNullableUser()
-    
-    // Initial nil should work
-    #expect(settings.user.value == nil)
-    
-    // This assignment should work fine
-    let testUser = DirectUser(name: "Alice", age: 25)
-    settings.user = Nullable.from(value: testUser)
     
     // Verify it works
-    #expect(settings.user.value?.name == "Alice")
-    #expect(settings.user.value?.age == 25)
-    #expect(settings.user.hasValue)
+    #expect(settings.user?.name == "John")
+    #expect(settings.user?.age == 30)
     
-    // Test setting to nil
-    settings.user = Nullable.none
-    #expect(settings.user.value == nil)
-    #expect(!settings.user.hasValue)
+    // Test setting back to nil
+    settings.user = nil
+    #expect(settings.user == nil)
     
-    print("✅ Nullable solution works perfectly for UserDefaults!")
+    print("✅ Optional Codable types work perfectly with native Swift syntax!")
 }

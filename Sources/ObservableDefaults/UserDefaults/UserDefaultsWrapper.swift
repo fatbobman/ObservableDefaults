@@ -144,6 +144,33 @@ public struct UserDefaultsWrapper<Value> {
         }
     }
 
+    /// Gets an optional Codable value from the user defaults store.
+    /// This method is used for optional custom types that can be encoded/decoded using JSON.
+    /// - Parameters:
+    ///   - key: The key to get the value for
+    ///   - defaultValue: The default optional value to return if the key is not found or decoding fails
+    ///   - store: The user defaults store to get the value from
+    /// - Returns: The decoded optional value from the user defaults store, or the default value if the key
+    /// is not found or decoding fails
+    public nonisolated static func getValue(
+        _ key: String,
+        _ defaultValue: Value?,
+        _ store: UserDefaults) -> Value?
+    where Value: CodableUserDefaultsPropertyListValue {
+        // Get the data from UserDefaults
+        guard let data = store.data(forKey: key) else {
+            return defaultValue
+        }
+
+        do {
+            // Attempt to decode the data using JSONDecoder
+            return try JSONDecoder().decode(Value?.self, from: data)
+        } catch {
+            // Return default value if decoding fails
+            return defaultValue
+        }
+    }
+
     // MARK: - Set Values
 
     /// Sets a RawRepresentable value in the user defaults store.
@@ -214,7 +241,7 @@ public struct UserDefaultsWrapper<Value> {
         // Store the encoded data
         store.set(data, forKey: key)
     }
-    
+
     /// Sets a optional Codable value in the user defaults store.
     /// This method encodes custom types to JSON data before storing.
     /// - Parameters:
