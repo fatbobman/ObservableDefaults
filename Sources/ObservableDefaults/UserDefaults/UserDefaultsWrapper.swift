@@ -224,8 +224,12 @@ public struct UserDefaultsWrapper<Value> {
     /// - Note: If encoding fails, the method silently returns without storing anything
     public nonisolated static func setValue(_ key: String, _ newValue: Value?, _ store: UserDefaults)
     where Value: CodableUserDefaultsPropertyListValue {
+        guard let value = newValue else {
+            store.removeObject(forKey: key)
+            return
+        }
         // Encode the value to JSON data
-        guard let data = try? JSONEncoder().encode(newValue) else { return }
+        guard let data = try? JSONEncoder().encode(value) else { return }
         // Store the encoded data
         store.set(data, forKey: key)
     }
