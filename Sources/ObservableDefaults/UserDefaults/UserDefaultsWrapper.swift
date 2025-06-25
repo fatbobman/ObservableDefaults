@@ -70,17 +70,17 @@ public struct UserDefaultsWrapper<Value> {
     ///   - store: The user defaults store to get the value from
     /// - Returns: The optional enum value from the user defaults store, or the default value if the
     /// key is not found or conversion fails
-    public nonisolated static func getValue<R>(
+    public nonisolated static func getValue(
         _ key: String,
-        _ defaultValue: Value,
-        _ store: UserDefaults) -> Value
-    where Value == R?, R: RawRepresentable, R.RawValue: UserDefaultsPropertyListValue {
+        _ defaultValue: Value?,
+        _ store: UserDefaults) -> Value?
+    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue {
         // Attempt to get the raw value from UserDefaults
-        guard let rawValue = store.object(forKey: key) as? R.RawValue else {
+        guard let rawValue = store.object(forKey: key) as? Value.RawValue else {
             return defaultValue
         }
         // Try to create the enum from the raw value, fallback to default if it fails
-        return R(rawValue: rawValue) ?? defaultValue
+        return Value(rawValue: rawValue) ?? defaultValue
     }
 
     /// Gets a basic property list value from the user defaults store.
@@ -108,13 +108,13 @@ public struct UserDefaultsWrapper<Value> {
     ///   - store: The user defaults store to get the value from
     /// - Returns: The optional value from the user defaults store, or the default value if the key
     /// is not found or type casting fails
-    public nonisolated static func getValue<R>(
+    public nonisolated static func getValue(
         _ key: String,
-        _ defaultValue: Value,
-        _ store: UserDefaults) -> Value
-    where Value == R?, R: UserDefaultsPropertyListValue {
+        _ defaultValue: Value?,
+        _ store: UserDefaults) -> Value?
+    where Value: UserDefaultsPropertyListValue {
         // Directly cast the object to the expected type, return nil or default if casting fails
-        store.object(forKey: key) as? R ?? defaultValue
+        store.object(forKey: key) as? (Value?) ?? defaultValue
     }
 
     /// Gets a Codable value from the user defaults store.
@@ -164,11 +164,11 @@ public struct UserDefaultsWrapper<Value> {
     ///   - key: The key to set the value for
     ///   - newValue: The new optional enum value to store (nil will remove the key)
     ///   - store: The user defaults store to set the value in
-    public nonisolated static func setValue<R>(
+    public nonisolated static func setValue(
         _ key: String,
-        _ newValue: Value,
+        _ newValue: Value?,
         _ store: UserDefaults)
-    where Value == R?, R: RawRepresentable, R.RawValue: UserDefaultsPropertyListValue {
+    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue {
         // Store the raw value of the optional enum (nil if the enum is nil)
         store.set(newValue?.rawValue, forKey: key)
     }
@@ -191,11 +191,11 @@ public struct UserDefaultsWrapper<Value> {
     ///   - key: The key to set the value for
     ///   - newValue: The new optional value to store (nil will remove the key)
     ///   - store: The user defaults store to set the value in
-    public nonisolated static func setValue<R>(
+    public nonisolated static func setValue(
         _ key: String,
-        _ newValue: Value,
+        _ newValue: Value?,
         _ store: UserDefaults)
-    where Value == R?, R: UserDefaultsPropertyListValue {
+    where Value: UserDefaultsPropertyListValue {
         // Store the optional value (nil will remove the key)
         store.set(newValue, forKey: key)
     }
@@ -211,6 +211,25 @@ public struct UserDefaultsWrapper<Value> {
     where Value: CodableUserDefaultsPropertyListValue {
         // Encode the value to JSON data
         guard let data = try? JSONEncoder().encode(newValue) else { return }
+        // Store the encoded data
+        store.set(data, forKey: key)
+    }
+    
+    /// Sets a optional Codable value in the user defaults store.
+    /// This method encodes custom types to JSON data before storing.
+    /// - Parameters:
+    ///   - key: The key to set the value for
+    ///   - newValue: The new optional Codable value to store (nil will remove the key)
+    ///   - store: The user defaults store to set the value in
+    /// - Note: If encoding fails, the method silently returns without storing anything
+    public nonisolated static func setValue(_ key: String, _ newValue: Value?, _ store: UserDefaults)
+    where Value: CodableUserDefaultsPropertyListValue {
+        guard let value = newValue else {
+            store.removeObject(forKey: key)
+            return
+        }
+        // Encode the value to JSON data
+        guard let data = try? JSONEncoder().encode(value) else { return }
         // Store the encoded data
         store.set(data, forKey: key)
     }
