@@ -18,7 +18,7 @@ ObservableDefaults 的创建就是为了解决这些挑战，通过提供完整�
 
 ---
 
-不要错过关于 Swift、SwiftUI、Core Data 和 SwiftData 的最新更新和优秀文章。订阅 **[肥仔 John 的 Swift 周报](https://weekly.fatbobman.com)** 并直接在您的收件箱中接收每周见解和有价值的内容。
+不要错过关于 Swift、SwiftUI、Core Data 和 SwiftData 的最新更新和优秀文章。订阅 **[肘子的 Swift 周报](https://weekly.fatbobman.com)** 并直接在您的收件箱中接收每周见解和有价值的内容。
 
 ---
 
