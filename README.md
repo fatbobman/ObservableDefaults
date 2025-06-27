@@ -1,5 +1,7 @@
 # ObservableDefaults
 
+English | [中文](README_zh.md)
+
 ![Swift 6](https://img.shields.io/badge/Swift-6-orange?logo=swift) ![iOS](https://img.shields.io/badge/iOS-17.0+-green) ![macOS](https://img.shields.io/badge/macOS-14.0+-green) ![watchOS](https://img.shields.io/badge/watchOS-10.0+-green) ![visionOS](https://img.shields.io/badge/visionOS-1.0+-green) ![tvOS](https://img.shields.io/badge/tvOS-17.0+-green) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/fatbobman/ObservableDefaults)
 
 > Seamless SwiftUI + Observation + UserDefaults + iCloud Key-Value Store integration
@@ -58,7 +60,7 @@ class Settings {
 }
 ```
 
-https://github.com/user-attachments/assets/469d55e8-7468-44ac-b591-804c40815724
+<https://github.com/user-attachments/assets/469d55e8-7468-44ac-b591-804c40815724>
 
 This macro automatically:
 
@@ -82,7 +84,7 @@ class CloudSettings {
 }
 ```
 
-https://github.com/user-attachments/assets/7e8dcf6b-3c8f-4bd3-8083-ff3c4a6bd6b0
+<https://github.com/user-attachments/assets/7e8dcf6b-3c8f-4bd3-8083-ff3c4a6bd6b0>
 
 [Demo Code](https://gist.github.com/fatbobman/5ab86c35ac8cee93c8ac6ac4228a28a9)
 
