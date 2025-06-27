@@ -127,7 +127,7 @@ extension ObservableCloudMacros: MemberMacro {
             }
             return false
         })
-        
+
         let persistentProperties = classDecl.memberBlock.members
             .compactMap { member -> VariableDeclSyntax? in
                 guard let varDecl = member.decl.as(VariableDeclSyntax.self),
@@ -197,7 +197,7 @@ extension ObservableCloudMacros: MemberMacro {
             // swiftformat:disable all
             if hasMainActor {
                 return """
-                    \(caseIndent)case prefix + "\(meta.keyValueStoreKey)": 
+                    \(caseIndent)case prefix + "\(meta.keyValueStoreKey)":
                     \(caseIndent)    MainActor.assumeIsolated {
                     \(caseIndent)        host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
                     \(caseIndent)    }
@@ -293,111 +293,108 @@ extension ObservableCloudMacros: MemberMacro {
             """
 
         // Generate NotificationCenter observer class for NSUbiquitousKeyValueStore changes
-        let observerFunctionSyntax: DeclSyntax
-        if hasMainActor {
-            observerFunctionSyntax =
-                """
-                private var _cloudObserver: CloudObservation?
+        let observerFunctionSyntax: DeclSyntax = if hasMainActor {
+            """
+            private var _cloudObserver: CloudObservation?
 
-                /// Manages NSUbiquitousKeyValueStore change observation for external cloud updates.
-                ///
-                /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
-                private final class CloudObservation: @unchecked Sendable {
-                    let host: \(className)
-                    let prefix: String
+            /// Manages NSUbiquitousKeyValueStore change observation for external cloud updates.
+            ///
+            /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
+            private final class CloudObservation: @unchecked Sendable {
+                let host: \(className)
+                let prefix: String
 
-                    /// Initializes the observation with the specified parameters.
-                    /// - Parameters:
-                    ///   - host: The host instance to observe
-                    ///   - prefix: The prefix for the NSUbiquitousKeyValueStore keys
-                    init(host: \(className), prefix: String) {
-                        self.host = host
-                        self.prefix = prefix
-                        NotificationCenter.default
-                            .addObserver(
-                                forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
-                                object: nil,
-                                queue: .main,
-                                using: cloudStoreDidChange
-                            )
+                /// Initializes the observation with the specified parameters.
+                /// - Parameters:
+                ///   - host: The host instance to observe
+                ///   - prefix: The prefix for the NSUbiquitousKeyValueStore keys
+                init(host: \(className), prefix: String) {
+                    self.host = host
+                    self.prefix = prefix
+                    NotificationCenter.default
+                        .addObserver(
+                            forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+                            object: nil,
+                            queue: .main,
+                            using: cloudStoreDidChange
+                        )
+                }
+
+                /// Handles cloud store changes from external sources.
+                /// - Parameter notification: The notification containing changed keys information
+                @Sendable
+                private func cloudStoreDidChange(_ notification: Foundation.Notification) {
+                    guard let userInfo = notification.userInfo,
+                        let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
+                    else {
+                        return
                     }
 
-                    /// Handles cloud store changes from external sources.
-                    /// - Parameter notification: The notification containing changed keys information
-                    @Sendable
-                    private func cloudStoreDidChange(_ notification: Notification) {
-                        guard let userInfo = notification.userInfo,
-                            let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
-                        else {
-                            return
+                    for key in changedKeys {
+                        switch key {
+                            \(raw: caseCode)
+                            default:
+                                break
                         }
-
-                        for key in changedKeys {
-                            switch key {
-                                \(raw: caseCode)
-                                default:
-                                    break
-                            }
-                        }
-                    }
-
-                    deinit {
-                        NotificationCenter.default.removeObserver(self)
                     }
                 }
-                """
+
+                deinit {
+                    NotificationCenter.default.removeObserver(self)
+                }
+            }
+            """
         } else {
-            observerFunctionSyntax =
-                """
-                private var _cloudObserver: CloudObservation?
+            """
+            private var _cloudObserver: CloudObservation?
 
-                /// Manages NSUbiquitousKeyValueStore change observation for external cloud updates.
-                ///
-                /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
-                private final class CloudObservation: @unchecked Sendable {
-                    let host: \(className)
-                    let prefix: String
+            /// Manages NSUbiquitousKeyValueStore change observation for external cloud updates.
+            ///
+            /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
+            private final class CloudObservation: @unchecked Sendable {
+                let host: \(className)
+                let prefix: String
 
-                    /// Initializes the observation with the specified parameters.
-                    /// - Parameters:
-                    ///   - host: The host instance to observe
-                    ///   - prefix: The prefix for the NSUbiquitousKeyValueStore keys
-                    init(host: \(className), prefix: String) {
-                        self.host = host
-                        self.prefix = prefix
-                        NotificationCenter.default
-                            .addObserver(
-                                forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
-                                object: nil,
-                                queue: nil,
-                                using: cloudStoreDidChange
-                            )
+                /// Initializes the observation with the specified parameters.
+                /// - Parameters:
+                ///   - host: The host instance to observe
+                ///   - prefix: The prefix for the NSUbiquitousKeyValueStore keys
+                init(host: \(className), prefix: String) {
+                    self.host = host
+                    self.prefix = prefix
+                    NotificationCenter.default
+                        .addObserver(
+                            forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+                            object: nil,
+                            queue: nil,
+                            using: cloudStoreDidChange
+                        )
+                }
+
+                /// Handles cloud store changes from external sources.
+                /// - Parameter notification: The notification containing changed keys information
+                @Sendable
+                private func cloudStoreDidChange(_ notification: Foundation.Notification) {
+                    guard let userInfo = notification.userInfo,
+                        let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
+                    else {
+                        return
                     }
 
-                    /// Handles cloud store changes from external sources.
-                    /// - Parameter notification: The notification containing changed keys information
-                    @Sendable
-                    private func cloudStoreDidChange(_ notification: Notification) {
-                        guard let userInfo = notification.userInfo,
-                            let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
-                        else {
-                            return
+                    for key in changedKeys {
+                        switch key {
+                            \(raw: caseCode)
+                            default:
+                                break
                         }
-
-                        for key in changedKeys {
-                            switch key {
-                                \(raw: caseCode)
-                                default:
-                                    break
-                            }
-                        }
-                    }
-
-                    deinit {
-                        NotificationCenter.default.removeObserver(self)
                     }
                 }
-                """
+
+                deinit {
+                    NotificationCenter.default.removeObserver(self)
+                }
+            }
+            """
         }
 
         return [

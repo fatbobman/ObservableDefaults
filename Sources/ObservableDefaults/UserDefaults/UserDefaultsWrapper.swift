@@ -113,8 +113,12 @@ public struct UserDefaultsWrapper<Value> {
         _ defaultValue: Value?,
         _ store: UserDefaults) -> Value?
     where Value: UserDefaultsPropertyListValue {
-        // Directly cast the object to the expected type, return nil or default if casting fails
-        store.object(forKey: key) as? (Value?) ?? defaultValue
+        // Check if the key exists first
+        guard let object = store.object(forKey: key) else {
+            return defaultValue
+        }
+        // Try to cast to the expected type, fallback to default if casting fails
+        return object as? Value ?? defaultValue
     }
 
     /// Gets a Codable value from the user defaults store.

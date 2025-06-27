@@ -220,10 +220,10 @@ struct ObservableDefaultsTests {
         let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
         let model = MockModelOptional(userDefaults: userDefaults)
 
-        // Test initial values
+        // Test initial values - these should match the default values defined in MockModelOptional
         #expect(model.optionalName == nil, "optionalName should start as nil")
         #expect(model.optionalAge == 25, "optionalAge should start as 25")
-        #expect(model.optionalWithoutInitializer == nil, "optionalWithoutInitializer should start as nil")
+        #expect(model.optionalWithoutInitializer == nil, "optionalWithoutInitializer should start as nil") 
         #expect(model.optionalWithCustomKey == true, "optionalWithCustomKey should start as true")
         #expect(model.name == nil, "name should start as nil")
 
