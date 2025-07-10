@@ -203,10 +203,10 @@ extension ObservableDefaultsMacros: MemberMacro {
         let userDefaultStoreSyntax: DeclSyntax = suiteName != nil ?
             """
             private var _userDefaults: Foundation.UserDefaults = {
-                if let userDefaults = Foundation.UserDefaults(suiteName: \(raw: suiteName!)) {
+                if let userDefaults = Foundation.UserDefaults(suiteName: "\(raw: suiteName!)") {
                     return userDefaults
                 } else {
-                    let suiteName = \(raw: suiteName ?? "")
+                    let suiteName = "\(raw: suiteName!)"
                     assertionFailure("Failed to create UserDefaults with suiteName: \\(suiteName), falling back to UserDefaults.standard.")
                     return Foundation.UserDefaults.standard
                 }
@@ -234,13 +234,12 @@ extension ObservableDefaultsMacros: MemberMacro {
             """
 
         // Generate prefix property for UserDefaults keys
-        let prefixStr = prefix != nil ? prefix! : ""
-        let emptyStr = prefixStr == "" ? "\"\"" : ""
+        let prefixValue = prefix != nil ? "\"\(prefix!)\"" : "\"\""
         let prefixSyntax: DeclSyntax =
             """
             /// Prefix for the UserDefaults key. The default value is an empty string.
             /// Note: The prefix must not contain '.' characters.
-            private var _prefix: String = \(raw: prefixStr)\(raw: emptyStr)
+            private var _prefix: String = \(raw: prefixValue)
             """
 
         // Generate initializer when autoInit is enabled
@@ -585,11 +584,13 @@ extension ObservableDefaultsMacros {
                 } else if argument.label?.text == ObservableDefaultsMacros.suiteName,
                           let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self)
                 {
-                    suiteName = stringLiteral.trimmedDescription
+                    suiteName = stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content
+                        .text
                 } else if argument.label?.text == ObservableDefaultsMacros.prefix,
                           let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self)
                 {
-                    prefix = stringLiteral.trimmedDescription
+                    prefix = stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content
+                        .text
                 } else if argument.label?.text == ObservableDefaultsMacros.observeFirst,
                           let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {

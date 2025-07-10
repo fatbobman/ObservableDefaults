@@ -239,13 +239,12 @@ extension ObservableCloudMacros: MemberMacro {
             """
 
         // Generate prefix property for NSUbiquitousKeyValueStore keys
-        let prefixStr = prefix != nil ? prefix! : ""
-        let emptyStr = prefixStr == "" ? "\"\"" : ""
+        let prefixValue = prefix != nil ? "\"\(prefix!)\"" : "\"\""
         let prefixSyntax: DeclSyntax =
             """
             /// Prefix for the NSUbiquitousKeyValueStore key. The default value is an empty string.
             /// Note: The prefix must not contain '.' characters.
-            private var _prefix: String = \(raw: prefixStr)\(raw: emptyStr)
+            private var _prefix: String = \(raw: prefixValue)
             """
 
         // Generate helper methods for value comparison
@@ -526,7 +525,8 @@ extension ObservableCloudMacros {
                 } else if argument.label?.text == ObservableCloudMacros.prefix,
                           let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self)
                 {
-                    prefix = stringLiteral.trimmedDescription
+                    prefix = stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content
+                        .text
                 } else if argument.label?.text == ObservableCloudMacros.observeFirst,
                           let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
