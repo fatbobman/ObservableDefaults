@@ -239,12 +239,11 @@ extension ObservableCloudMacros: MemberMacro {
             """
 
         // Generate prefix property for NSUbiquitousKeyValueStore keys
-        let prefixValue = prefix != nil ? "\"\(prefix!)\"" : "\"\""
         let prefixSyntax: DeclSyntax =
             """
             /// Prefix for the NSUbiquitousKeyValueStore key. The default value is an empty string.
             /// Note: The prefix must not contain '.' characters.
-            private var _prefix: String = \(raw: prefixValue)
+            private var _prefix: String = "\(raw: prefix)"
             """
 
         // Generate helper methods for value comparison
@@ -505,13 +504,13 @@ extension ObservableCloudMacros {
     /// - Returns: A tuple containing all extracted parameter values
     static func extractProperty(_ node: AttributeSyntax) -> (
         autoInit: Bool,
-        prefix: String?,
+        prefix: String,
         observeFirst: Bool,
         syncImmediately: Bool,
         developementMode: Bool)
     {
         var autoInit = true
-        var prefix: String?
+        var prefix = ""
         var observeFirst = false
         var syncImmediately = false
         var developmentMode = false
@@ -525,8 +524,9 @@ extension ObservableCloudMacros {
                 } else if argument.label?.text == ObservableCloudMacros.prefix,
                           let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self)
                 {
-                    prefix = stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content
-                        .text
+                    let rawPrefix = stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content
+                        .text ?? ""
+                    prefix = rawPrefix.trimmingCharacters(in: .whitespacesAndNewlines)
                 } else if argument.label?.text == ObservableCloudMacros.observeFirst,
                           let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {

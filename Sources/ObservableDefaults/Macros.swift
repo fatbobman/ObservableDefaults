@@ -209,8 +209,8 @@ public macro ObservableOnly() = #externalMacro(
 public macro ObservableDefaults(
     autoInit: Bool = true,
     ignoreExternalChanges: Bool = false,
-    suiteName: String? = nil,
-    prefix: String? = nil,
+    suiteName: String = "",
+    prefix: String = "",
     observeFirst: Bool = false) = #externalMacro(
     module: "ObservableDefaultsMacros",
     type: "ObservableDefaultsMacros")
@@ -490,7 +490,7 @@ public macro CloudKey(keyValueStoreKey: String? = nil) = #externalMacro(
 @attached(memberAttribute)
 public macro ObservableCloud(
     autoInit: Bool = true,
-    prefix: String? = nil,
+    prefix: String = "",
     observeFirst: Bool = false,
     syncImmediately: Bool = false,
     developmentMode: Bool = false) = #externalMacro(

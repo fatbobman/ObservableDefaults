@@ -200,13 +200,13 @@ extension ObservableDefaultsMacros: MemberMacro {
             """
 
         // Generate UserDefaults instance (standard or custom suite)
-        let userDefaultStoreSyntax: DeclSyntax = suiteName != nil ?
+        let userDefaultStoreSyntax: DeclSyntax = !suiteName.isEmpty ?
             """
             private var _userDefaults: Foundation.UserDefaults = {
-                if let userDefaults = Foundation.UserDefaults(suiteName: "\(raw: suiteName!)") {
+                if let userDefaults = Foundation.UserDefaults(suiteName: "\(raw: suiteName)") {
                     return userDefaults
                 } else {
-                    let suiteName = "\(raw: suiteName!)"
+                    let suiteName = "\(raw: suiteName)"
                     assertionFailure("Failed to create UserDefaults with suiteName: \\(suiteName), falling back to UserDefaults.standard.")
                     return Foundation.UserDefaults.standard
                 }
@@ -234,12 +234,11 @@ extension ObservableDefaultsMacros: MemberMacro {
             """
 
         // Generate prefix property for UserDefaults keys
-        let prefixValue = prefix != nil ? "\"\(prefix!)\"" : "\"\""
         let prefixSyntax: DeclSyntax =
             """
             /// Prefix for the UserDefaults key. The default value is an empty string.
             /// Note: The prefix must not contain '.' characters.
-            private var _prefix: String = \(raw: prefixValue)
+            private var _prefix: String = "\(raw: prefix)"
             """
 
         // Generate initializer when autoInit is enabled
@@ -560,14 +559,14 @@ extension ObservableDefaultsMacros {
     /// - Returns: A tuple containing all extracted parameter values
     static func extractProperty(_ node: AttributeSyntax) -> (
         autoInit: Bool,
-        suiteName: String?,
-        prefix: String?,
+        suiteName: String,
+        prefix: String,
         ignoreExternalChanges: Bool,
         observeFirst: Bool)
     {
         var autoInit = true
-        var suiteName: String?
-        var prefix: String?
+        var suiteName = ""
+        var prefix = ""
         var ignoreExternalChanges = false
         var observeFirst = false
 
@@ -584,13 +583,15 @@ extension ObservableDefaultsMacros {
                 } else if argument.label?.text == ObservableDefaultsMacros.suiteName,
                           let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self)
                 {
-                    suiteName = stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content
-                        .text
+                    let rawSuiteName = stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content
+                        .text ?? ""
+                    suiteName = rawSuiteName.trimmingCharacters(in: .whitespacesAndNewlines)
                 } else if argument.label?.text == ObservableDefaultsMacros.prefix,
                           let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self)
                 {
-                    prefix = stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content
-                        .text
+                    let rawPrefix = stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content
+                        .text ?? ""
+                    prefix = rawPrefix.trimmingCharacters(in: .whitespacesAndNewlines)
                 } else if argument.label?.text == ObservableDefaultsMacros.observeFirst,
                           let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
