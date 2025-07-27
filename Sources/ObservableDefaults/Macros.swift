@@ -170,6 +170,7 @@ public macro ObservableOnly() = #externalMacro(
 /// - `suiteName`: Custom UserDefaults suite name (default: nil, uses standard)
 /// - `prefix`: Prefix for all UserDefaults keys (default: nil, must not contain '.')
 /// - `observeFirst`: Enables Observe First mode (default: false)
+/// - `defaultIsolationIsMainActor`: Set to true when project's defaultIsolation is MainActor (default: false)
 ///
 /// Generated initializer (when autoInit is true):
 /// ```swift
@@ -211,7 +212,8 @@ public macro ObservableDefaults(
     ignoreExternalChanges: Bool = false,
     suiteName: String = "",
     prefix: String = "",
-    observeFirst: Bool = false) = #externalMacro(
+    observeFirst: Bool = false,
+    defaultIsolationIsMainActor: Bool = false) = #externalMacro(
     module: "ObservableDefaultsMacros",
     type: "ObservableDefaultsMacros")
 
@@ -493,6 +495,7 @@ public macro ObservableCloud(
     prefix: String = "",
     observeFirst: Bool = false,
     syncImmediately: Bool = false,
-    developmentMode: Bool = false) = #externalMacro(
+    developmentMode: Bool = false,
+    defaultIsolationIsMainActor: Bool = false) = #externalMacro(
     module: "ObservableDefaultsMacros",
     type: "ObservableCloudMacros")
