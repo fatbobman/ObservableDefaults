@@ -445,6 +445,69 @@ struct ContentView: View {
 
 ## Important Notes
 
+### Using with SwiftUI #Preview
+
+When using `@ObservableCloud` classes with SwiftUI's `#Preview` and `@Previewable`, you may encounter an error: "cannot be constructed because it has no accessible initializers". This is because `@Previewable` requires a parameter-less initializer. Here are two solutions:
+
+#### Solution 1: Add a Convenience Initializer
+
+```swift
+@ObservableCloud
+class CloudSettings {
+    var item: Bool = true
+    
+    // Add this convenience initializer for Preview support
+    convenience init() {
+        self.init(prefix: nil, syncImmediately: false, developmentMode: true)
+    }
+}
+
+#Preview {
+    @Previewable var settings = CloudSettings()
+    ContentView()
+        .environment(settings)
+}
+```
+
+Note: Setting `developmentMode: true` in the convenience initializer ensures the Preview uses memory storage instead of requiring CloudKit, which is ideal for Preview environments.
+
+#### Solution 2: Use a Singleton Pattern
+
+```swift
+@ObservableCloud
+class CloudSettings {
+    var item: Bool = true
+    
+    static let shared = CloudSettings()
+}
+
+#Preview {
+    @Previewable var settings = CloudSettings.shared
+    ContentView()
+        .environment(settings)
+}
+```
+
+### CI/CD Configuration
+
+When using ObservableDefaults in CI/CD environments, you may need to add the `-skipMacroValidation` flag to your build commands to avoid macro validation issues:
+
+```bash
+# For Swift CLI
+swift build -Xswiftc -skipMacroValidation
+swift test -Xswiftc -skipMacroValidation
+
+# For xcodebuild
+xcodebuild build OTHER_SWIFT_FLAGS="-skipMacroValidation"
+
+# For fastlane
+build_app(
+  xcargs: "OTHER_SWIFT_FLAGS='-skipMacroValidation'"
+)
+```
+
+This flag helps bypass macro validation in CI environments where the full macro compilation context might not be available.
+
 ### Default Value Behavior for UserDefaults and iCloud Key-Value Store
 
 All persistent properties (those marked with @DefaultsBacked or @CloudBacked, either explicitly or implicitly) must be declared with default values. The framework captures these declaration-time defaults and maintains them as immutable fallback values throughout the object's lifetime. When keys are missing from the underlying storage (UserDefaults or iCloud Key-Value Store), properties automatically revert to these preserved default values, ensuring consistent behavior regardless of external storage modifications.

@@ -445,6 +445,69 @@ struct ContentView: View {
 
 ## 重要说明
 
+### 在 SwiftUI #Preview 中使用
+
+当在 SwiftUI 的 `#Preview` 和 `@Previewable` 中使用 `@ObservableCloud` 类时，您可能会遇到错误："cannot be constructed because it has no accessible initializers"。这是因为 `@Previewable` 需要一个无参数的初始化器。以下是两种解决方案：
+
+#### 解决方案 1：添加便捷初始化器
+
+```swift
+@ObservableCloud
+class CloudSettings {
+    var item: Bool = true
+    
+    // 为 Preview 支持添加这个便捷初始化器
+    convenience init() {
+        self.init(prefix: nil, syncImmediately: false, developmentMode: true)
+    }
+}
+
+#Preview {
+    @Previewable var settings = CloudSettings()
+    ContentView()
+        .environment(settings)
+}
+```
+
+注意：在便捷初始化器中设置 `developmentMode: true` 可确保 Preview 使用内存存储而不需要 CloudKit，这对于 Preview 环境来说是理想的。
+
+#### 解决方案 2：使用单例模式
+
+```swift
+@ObservableCloud
+class CloudSettings {
+    var item: Bool = true
+    
+    static let shared = CloudSettings()
+}
+
+#Preview {
+    @Previewable var settings = CloudSettings.shared
+    ContentView()
+        .environment(settings)
+}
+```
+
+### CI/CD 配置
+
+在 CI/CD 环境中使用 ObservableDefaults 时，您可能需要在构建命令中添加 `-skipMacroValidation` 标志以避免宏验证问题：
+
+```bash
+# 对于 Swift CLI
+swift build -Xswiftc -skipMacroValidation
+swift test -Xswiftc -skipMacroValidation
+
+# 对于 xcodebuild
+xcodebuild build OTHER_SWIFT_FLAGS="-skipMacroValidation"
+
+# 对于 fastlane
+build_app(
+  xcargs: "OTHER_SWIFT_FLAGS='-skipMacroValidation'"
+)
+```
+
+此标志有助于在 CI 环境中绕过宏验证，在这些环境中可能无法提供完整的宏编译上下文。
+
 ### UserDefaults 和 iCloud Key-Value Store 的默认值行为
 
 所有持久化属性（那些明确或隐式标记为 @DefaultsBacked 或 @CloudBacked 的属性）必须用默认值声明。框架捕获这些声明时的默认值，并在对象的整个生命周期内将它们保持为不可变的回退值。当底层存储（UserDefaults 或 iCloud Key-Value Store）中缺少键时，属性会自动恢复到这些保留的默认值，确保行为一致，无论外部存储修改如何。
