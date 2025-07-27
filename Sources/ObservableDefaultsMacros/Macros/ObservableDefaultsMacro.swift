@@ -66,6 +66,8 @@ public enum ObservableDefaultsMacros {
     static let prefix: String = "prefix"
     /// Parameter for enabling Observe First mode
     static let observeFirst: String = "observeFirst"
+    /// Parameter for indicating when project's defaultIsolation is set to MainActor
+    static let defaultIsolationIsMainActor: String = "defaultIsolationIsMainActor"
 }
 
 // swiftlint: disable line_length
@@ -100,15 +102,15 @@ extension ObservableDefaultsMacros: MemberMacro {
             IdentifierPatternSyntax(identifier: .init(stringLiteral: "\(identifier.name.trimmed)"))
 
         // Extract macro parameters
-        let (autoInit, suiteName, prefix, ignoreExternalChanges, _) = extractProperty(node)
+        let (autoInit, suiteName, prefix, ignoreExternalChanges, _, defaultIsolationIsMainActor) = extractProperty(node)
 
         // Find all properties that should be persisted to UserDefaults
         guard let classDecl = declaration as? ClassDeclSyntax else {
             fatalError("@ObservableDefaults can only be applied to classes")
         }
 
-        // Check if the class has @MainActor attribute
-        let hasMainActor = classDecl.attributes.contains(where: { attribute in
+        // Check if the class has @MainActor attribute or if defaultIsolation is MainActor
+        let hasExplicitMainActor = classDecl.attributes.contains(where: { attribute in
             if case let .attribute(attr) = attribute,
                let identifierType = attr.attributeName.as(IdentifierTypeSyntax.self)
             {
@@ -116,6 +118,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             }
             return false
         })
+        let hasMainActor = hasExplicitMainActor || defaultIsolationIsMainActor
         let persistentProperties = classDecl.memberBlock.members
             .compactMap { member -> VariableDeclSyntax? in
                 guard let varDecl = member.decl.as(VariableDeclSyntax.self),
@@ -356,6 +359,7 @@ extension ObservableDefaultsMacros: MemberMacro {
                         }
                 }
 
+                \(raw: defaultIsolationIsMainActor ? "@MainActor" : "")
                 deinit {
                     if let observer = notificationObserver {
                         NotificationCenter.default.removeObserver(observer)
@@ -518,7 +522,7 @@ extension ObservableDefaultsMacros: MemberAttributeMacro {
         providingAttributesFor member: some DeclSyntaxProtocol,
         in _: some MacroExpansionContext) throws -> [SwiftSyntax.AttributeSyntax]
     {
-        let (_, _, _, _, observeFirst) = extractProperty(node)
+        let (_, _, _, _, observeFirst, _) = extractProperty(node)
         guard let varDecl = member.as(VariableDeclSyntax.self),
               varDecl.isObservable
         else {
@@ -553,6 +557,7 @@ extension ObservableDefaultsMacros {
     /// - `prefix`: Prefix for all UserDefaults keys (default: nil, no prefix)
     /// - `ignoreExternalChanges`: Whether to ignore external UserDefaults changes (default: false)
     /// - `observeFirst`: Whether to enable Observe First mode (default: false)
+/// - `defaultIsolationIsMainActor`: Whether project's defaultIsolation is MainActor (default: false)
     ///
     /// - Parameter node: The attribute syntax containing the parameters
     /// - Returns: A tuple containing all extracted parameter values
@@ -561,13 +566,15 @@ extension ObservableDefaultsMacros {
         suiteName: String,
         prefix: String,
         ignoreExternalChanges: Bool,
-        observeFirst: Bool)
+        observeFirst: Bool,
+        defaultIsolationIsMainActor: Bool)
     {
         var autoInit = true
         var suiteName = ""
         var prefix = ""
         var ignoreExternalChanges = false
         var observeFirst = false
+        var defaultIsolationIsMainActor = false
 
         if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
             for argument in argumentList {
@@ -595,10 +602,14 @@ extension ObservableDefaultsMacros {
                           let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
                     observeFirst = booleanLiteral.literal.text == "true"
+                } else if argument.label?.text == ObservableDefaultsMacros.defaultIsolationIsMainActor,
+                          let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
+                {
+                    defaultIsolationIsMainActor = booleanLiteral.literal.text == "true"
                 }
             }
         }
-        return (autoInit, suiteName, prefix, ignoreExternalChanges, observeFirst)
+        return (autoInit, suiteName, prefix, ignoreExternalChanges, observeFirst, defaultIsolationIsMainActor)
     }
 }
 
