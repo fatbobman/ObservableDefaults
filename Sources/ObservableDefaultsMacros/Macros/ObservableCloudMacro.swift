@@ -301,6 +301,7 @@ extension ObservableCloudMacros: MemberMacro {
             private final class CloudObservation: @unchecked Sendable {
                 let host: \(className)
                 let prefix: String
+                private var notificationObserver: NSObjectProtocol?
 
                 /// Initializes the observation with the specified parameters.
                 /// - Parameters:
@@ -309,36 +310,36 @@ extension ObservableCloudMacros: MemberMacro {
                 init(host: \(className), prefix: String) {
                     self.host = host
                     self.prefix = prefix
-                    NotificationCenter.default
+
+                    notificationObserver = NotificationCenter.default
                         .addObserver(
                             forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
                             object: nil,
-                            queue: .main,
-                            using: cloudStoreDidChange
-                        )
-                }
+                            queue: .main
+                        ) { [weak host, prefix] notification in
+                            guard let host else { return }
+                            
+                            guard let userInfo = notification.userInfo,
+                                let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
+                            else {
+                                return
+                            }
 
-                /// Handles cloud store changes from external sources.
-                /// - Parameter notification: The notification containing changed keys information
-                @Sendable
-                private func cloudStoreDidChange(_ notification: Foundation.Notification) {
-                    guard let userInfo = notification.userInfo,
-                        let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
-                    else {
-                        return
-                    }
-
-                    for key in changedKeys {
-                        switch key {
-                            \(raw: caseCode)
-                            default:
-                                break
+                            for key in changedKeys {
+                                switch key {
+                                \(raw: caseCode)
+                                default:
+                                    break
+                                }
+                            }
                         }
-                    }
                 }
 
+                \(raw: defaultIsolationIsMainActor ? "@MainActor" : "")
                 deinit {
-                    NotificationCenter.default.removeObserver(self)
+                    if let observer = notificationObserver {
+                        NotificationCenter.default.removeObserver(observer)
+                    }
                 }
             }
             """
