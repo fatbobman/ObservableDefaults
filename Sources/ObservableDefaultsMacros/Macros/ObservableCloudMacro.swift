@@ -75,8 +75,6 @@ public enum ObservableCloudMacros {
     static let syncImmediately: String = "syncImmediately"
     /// Parameter for enabling development mode (uses memory storage instead of cloud)
     static let developmentMode: String = "developmentMode"
-    /// Parameter for indicating when project's defaultIsolation is set to MainActor
-    static let defaultIsolationIsMainActor: String = "defaultIsolationIsMainActor"
 }
 
 extension ObservableCloudMacros: MemberMacro {
@@ -113,16 +111,15 @@ extension ObservableCloudMacros: MemberMacro {
             prefix,
             _,
             syncImmediately,
-            developmentMode,
-            defaultIsolationIsMainActor) = extractProperty(node)
+            developmentMode) = extractProperty(node)
 
         // Find all properties that should be persisted to NSUbiquitousKeyValueStore
         guard let classDecl = declaration as? ClassDeclSyntax else {
             fatalError("@ObservableCloud can only be applied to classes")
         }
 
-        // Check if the class has @MainActor attribute or if defaultIsolation is MainActor
-        let hasExplicitMainActor = classDecl.attributes.contains(where: { attribute in
+        // Check if the class has @MainActor attribute
+        let hasMainActor = classDecl.attributes.contains(where: { attribute in
             if case let .attribute(attr) = attribute,
                let identifierType = attr.attributeName.as(IdentifierTypeSyntax.self)
             {
@@ -130,7 +127,6 @@ extension ObservableCloudMacros: MemberMacro {
             }
             return false
         })
-        let hasMainActor = hasExplicitMainActor || defaultIsolationIsMainActor
 
         let persistentProperties = classDecl.memberBlock.members
             .compactMap { member -> VariableDeclSyntax? in
@@ -467,7 +463,7 @@ extension ObservableCloudMacros: MemberAttributeMacro {
         providingAttributesFor member: some DeclSyntaxProtocol,
         in _: some MacroExpansionContext) throws -> [SwiftSyntax.AttributeSyntax]
     {
-        let (_, _, observeFirst, _, _, _) = extractProperty(node)
+        let (_, _, observeFirst, _, _) = extractProperty(node)
         guard let varDecl = member.as(VariableDeclSyntax.self),
               varDecl.isObservable
         else {
@@ -511,15 +507,13 @@ extension ObservableCloudMacros {
         prefix: String,
         observeFirst: Bool,
         syncImmediately: Bool,
-        developementMode: Bool,
-        defaultIsolationIsMainActor: Bool)
+        developementMode: Bool)
     {
         var autoInit = true
         var prefix = ""
         var observeFirst = false
         var syncImmediately = false
         var developmentMode = false
-        var defaultIsolationIsMainActor = false
 
         if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
             for argument in argumentList {
@@ -545,13 +539,9 @@ extension ObservableCloudMacros {
                           let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
                     developmentMode = booleanLiteral.literal.text == "true"
-                } else if argument.label?.text == ObservableCloudMacros.defaultIsolationIsMainActor,
-                          let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
-                {
-                    defaultIsolationIsMainActor = booleanLiteral.literal.text == "true"
                 }
             }
         }
-        return (autoInit, prefix, observeFirst, syncImmediately, developmentMode, defaultIsolationIsMainActor)
+        return (autoInit, prefix, observeFirst, syncImmediately, developmentMode)
     }
 }
