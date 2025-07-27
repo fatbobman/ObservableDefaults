@@ -545,6 +545,35 @@ print(user.age)       // 18（恢复到声明默认值）
 
 > **建议**: 除非您有特定要求，否则使用 `autoInit: true`（默认）来自动生成标准初始化器。这有助于避免认为可以通过自定义初始化器修改默认值的误解。
 
+### Swift 6 和默认 Actor 隔离
+
+**重要**: 如果您的项目或目标将 `defaultIsolation` 设置为 `MainActor`，您**必须**将 `defaultIsolationIsMainActor` 参数设置为 `true` 以获得正确的 Swift 6 并发兼容性：
+
+```swift
+// 对于 defaultIsolation = MainActor 的项目
+@ObservableDefaults(defaultIsolationIsMainActor: true)
+class Settings {
+    var name: String = "Fatbobman"
+    var age: Int = 20
+}
+
+@ObservableCloud(defaultIsolationIsMainActor: true)
+class CloudSettings {
+    var username: String = "Fatbobman"
+    var theme: String = "light"
+}
+```
+
+**为什么需要这个参数**:
+- Swift 6 的 `defaultIsolation MainActor` 设置影响编译器如何处理并发
+- 如果没有此参数，您可能在 MainActor 环境中遇到 `@Sendable` 冲突
+- 该参数确保正确的通知处理和 deinit 隔离
+
+**何时使用**:
+- ✅ 您的项目在构建设置中将 `defaultIsolation` 设置为 `MainActor`
+- ✅ 您遇到了 Swift 6 并发编译错误
+- ❌ 您的项目使用默认的 `nonisolated` 设置（不需要参数）
+
 ### 一般说明
 
 - **外部变化**: 默认情况下，两个宏都响应其各自存储系统中的外部变化。

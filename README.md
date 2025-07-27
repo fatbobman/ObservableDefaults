@@ -545,6 +545,35 @@ print(user.age)       // 18 (reverts to declaration default)
 
 > **Recommendation**: Unless you have specific requirements, use `autoInit: true` (default) to generate the standard initializer automatically. This helps avoid the misconception that default values can be modified through custom initializers.
 
+### Swift 6 and Default Actor Isolation
+
+**Important**: If your project or target has `defaultIsolation` set to `MainActor`, you **must** set the `defaultIsolationIsMainActor` parameter to `true` for proper Swift 6 concurrency compatibility:
+
+```swift
+// For projects with defaultIsolation = MainActor
+@ObservableDefaults(defaultIsolationIsMainActor: true)
+class Settings {
+    var name: String = "Fatbobman"
+    var age: Int = 20
+}
+
+@ObservableCloud(defaultIsolationIsMainActor: true)
+class CloudSettings {
+    var username: String = "Fatbobman"
+    var theme: String = "light"
+}
+```
+
+**Why this is required**:
+- Swift 6's `defaultIsolation MainActor` setting affects how the compiler handles concurrency
+- Without this parameter, you may encounter `@Sendable` conflicts in MainActor environments
+- The parameter ensures proper notification handling and deinit isolation
+
+**When to use**:
+- ✅ Your project has `defaultIsolation` set to `MainActor` in build settings
+- ✅ You're experiencing Swift 6 concurrency compilation errors
+- ❌ Your project uses the default `nonisolated` setting (parameter not needed)
+
 ### General Notes
 
 - **External Changes**: By default, both macros respond to external changes in their respective storage systems.
