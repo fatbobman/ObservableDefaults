@@ -545,7 +545,7 @@ print(user.age)       // 18（恢复到声明默认值）
 
 > **建议**: 除非您有特定要求，否则使用 `autoInit: true`（默认）来自动生成标准初始化器。这有助于避免认为可以通过自定义初始化器修改默认值的误解。
 
-### Swift 6 和默认 Actor 隔离
+### Swift 6.2 和默认 Actor 隔离
 
 **重要**: 如果您的项目或目标将 `defaultIsolation` 设置为 `MainActor`，您**必须**将 `defaultIsolationIsMainActor` 参数设置为 `true` 以获得正确的 Swift 6 并发兼容性：
 
@@ -565,7 +565,7 @@ class CloudSettings {
 ```
 
 **为什么需要这个参数**:
-- Swift 6 的 `defaultIsolation MainActor` 设置影响编译器如何处理并发
+- Swift 6.2 的 `defaultIsolation MainActor` 设置影响编译器如何处理并发
 - 如果没有此参数，您可能在 MainActor 环境中遇到 `@Sendable` 冲突
 - 该参数确保正确的通知处理和 deinit 隔离
 
