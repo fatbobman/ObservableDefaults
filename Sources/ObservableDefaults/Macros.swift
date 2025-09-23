@@ -183,7 +183,7 @@ public macro ObservableOnly() = #externalMacro(
 /// ```
 ///
 /// - Important: Can only be applied to classes, not structs
-/// - Note: Supports Codable types via CodableUserDefaultsPropertyListValue protocol
+/// - Note: Supports Codable types
 @attached(
     member,
     names: named(_$observationRegistrar),

@@ -11,9 +11,6 @@ import Foundation
 /// Protocol for types that can be stored in NSUbiquitousKeyValueStore
 public protocol CloudPropertyListValue {}
 
-/// Protocol for Codable types that can be stored in NSUbiquitousKeyValueStore
-public protocol CodableCloudPropertyListValue: CloudPropertyListValue, Codable {}
-
 // Extensions for basic types supported by NSUbiquitousKeyValueStore
 extension String: CloudPropertyListValue {}
 extension Int: CloudPropertyListValue {}

@@ -48,7 +48,7 @@ import SwiftSyntaxMacros
 /// - Property type must conform to appropriate protocols:
 ///   - `CloudPropertyListValue` for basic types (String, Int, Bool, etc.)
 ///   - `RawRepresentable` for enums with CloudPropertyListValue raw values
-///   - `CodableCloudPropertyListValue` for custom Codable types
+///   - `Codable` for custom Codable types
 ///
 /// ## Generated Code
 ///

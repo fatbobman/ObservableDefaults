@@ -3,7 +3,7 @@ import ObservableDefaults
 import Testing
 
 // Test structures
-struct CloudCrashUser: Codable, CodableCloudPropertyListValue, Equatable {
+struct CloudCrashUser: Codable, Equatable {
     var name: String
     var age: Int
 }

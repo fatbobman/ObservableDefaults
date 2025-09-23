@@ -347,7 +347,7 @@ class CloudSettingsWithOptionals {
 
 #### UserDefaults with Codable
 
-For custom types with UserDefaults, implement `CodableUserDefaultsPropertyListValue`:
+For custom types with UserDefaults, implement `Codable`:
 
 ```swift
 @ObservableDefaults
@@ -355,7 +355,7 @@ class LocalStore {
     var people: People = .init(name: "fat", age: 10)
 }
 
-struct People: CodableUserDefaultsPropertyListValue {
+struct People: Codable {
     var name: String
     var age: Int
 }
@@ -363,7 +363,7 @@ struct People: CodableUserDefaultsPropertyListValue {
 
 #### Cloud Storage with Codable
 
-For custom types with cloud storage, implement `CodableCloudPropertyListValue`:
+For custom types with cloud storage, implement `Codable`:
 
 ```swift
 @ObservableCloud
@@ -371,7 +371,7 @@ class CloudStore {
     var userProfile: UserProfile = .init(name: "fat", preferences: .init())
 }
 
-struct UserProfile: CodableCloudPropertyListValue {
+struct UserProfile: Codable {
     var name: String
     var preferences: UserPreferences
 }

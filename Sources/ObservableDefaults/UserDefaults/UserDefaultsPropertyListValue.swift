@@ -32,12 +32,6 @@ import Foundation
 /// - Note: All conforming types must also be Equatable to support value comparison
 public protocol UserDefaultsPropertyListValue: Equatable {}
 
-/// A protocol that combines UserDefaultsPropertyListValue with Codable support.
-/// This allows custom types to be encoded/decoded as JSON and stored in UserDefaults.
-/// - Note: Types conforming to this protocol can be automatically serialized to Data
-///   and stored in UserDefaults using JSON encoding/decoding
-public protocol CodableUserDefaultsPropertyListValue: UserDefaultsPropertyListValue, Codable {}
-
 // MARK: - Data Types
 
 /// NSData conforms to UserDefaultsPropertyListValue as it's a fundamental property list type
