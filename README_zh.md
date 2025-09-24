@@ -408,6 +408,25 @@ struct UserPreferences: Codable {
 }
 ```
 
+### Enum RawRepresentable 支持
+
+当枚举的 `RawValue` 本身就是属性列表支持的类型（例如 `String`、`Int` 等）时，宏会自动通过 rawValue 进行持久化：
+
+```swift
+enum Theme: String {
+    case light
+    case dark
+    case system
+}
+
+@ObservableDefaults
+class AppearanceSettings {
+    var theme: Theme = Theme.system
+}
+```
+
+由于这些枚举依赖 `RawRepresentable` 存储，请避免为它们额外声明 `Codable`，否则会在生成的存取器中出现重载歧义。如果需要自定义编码，可在更高层的 `Codable` 模型中包装该枚举，而不是直接让枚举本身符合 `Codable`。
+
 ### 与其他 Observable 对象集成
 
 建议将存储数据与主应用程序状态分开管理：

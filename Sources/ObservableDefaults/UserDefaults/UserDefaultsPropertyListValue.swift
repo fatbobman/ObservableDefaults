@@ -32,6 +32,12 @@ import Foundation
 /// - Note: All conforming types must also be Equatable to support value comparison
 public protocol UserDefaultsPropertyListValue: Equatable {}
 
+/// Compatibility shim: legacy projects may still conform to this typealias.
+///
+/// New code can simply conform to `Codable`—this remains only to avoid breaking
+/// existing code and may be removed in a future major release.
+public typealias CodableUserDefaultsPropertyListValue = Codable
+
 // MARK: - Data Types
 
 /// NSData conforms to UserDefaultsPropertyListValue as it's a fundamental property list type

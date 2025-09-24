@@ -408,6 +408,25 @@ struct UserPreferences: Codable {
 }
 ```
 
+### Enum RawRepresentable Types
+
+Enums whose `RawValue` already conforms to the property-list set (for example `String`, `Int`, etc.) are persisted automatically via their raw value:
+
+```swift
+enum Theme: String {
+    case light
+    case dark
+    case system
+}
+
+@ObservableDefaults
+class AppearanceSettings {
+    var theme: Theme = Theme.system
+}
+```
+
+Because these enums are handled through `RawRepresentable`, avoid adding an explicit `Codable` conformance to the same type—doing so can introduce ambiguous overloads in the generated storage accessors. If you need custom encoding, wrap the enum in another `Codable` type instead of conforming the enum itself.
+
 ### Integrating with Other Observable Objects
 
 It's recommended to manage storage data separately from your main application state:
