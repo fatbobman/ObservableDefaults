@@ -32,15 +32,22 @@ extension VariableDeclSyntax {
         })
     }
 
+    // Check if the variable is static
+    var isStatic: Bool {
+        modifiers.contains { modifier in
+            modifier.name.tokenKind == .keyword(.static)
+        }
+    }
+
     // Only observable, not persistent
     var isObservable: Bool {
-        isMutableAndNotComputed && !hasAttribute(named: IgnoreMacro.name)
+        isMutableAndNotComputed && !hasAttribute(named: IgnoreMacro.name) && !isStatic
     }
 
     // Persistent
     var isPersistent: Bool {
         isMutableAndNotComputed && !hasAttribute(named: IgnoreMacro.name) &&
-            !hasAttribute(named: ObservableOnlyMacro.name)
+            !hasAttribute(named: ObservableOnlyMacro.name) && !isStatic
     }
 
     // Get the identifier of the variable

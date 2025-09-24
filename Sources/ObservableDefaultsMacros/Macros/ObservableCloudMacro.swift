@@ -271,12 +271,14 @@ extension ObservableCloudMacros: MemberMacro {
             """
 
         // Generate initializer when autoInit is enabled
+        let developmentModeDefault = developmentMode ? "true" : "false"
+
         let initFunctionSyntax: DeclSyntax =
             """
             public init(
                 prefix: String? = nil,
                 syncImmediately: Bool = false,
-                developmentMode: Bool = false
+                developmentMode: Bool = \(raw: developmentModeDefault)
             ) {
                 if let prefix {
                     _prefix = prefix
