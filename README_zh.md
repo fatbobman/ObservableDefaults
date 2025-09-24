@@ -383,7 +383,7 @@ class LocalStore {
     var people: People = .init(name: "fat", age: 10)
 }
 
-struct People: CodableUserDefaultsPropertyListValue {
+struct People: Codable {
     var name: String
     var age: Int
 }
@@ -397,7 +397,7 @@ class CloudStore {
     var userProfile: UserProfile = .init(name: "fat", preferences: .init())
 }
 
-struct UserProfile: CodableCloudPropertyListValue {
+struct UserProfile: Codable {
     var name: String
     var preferences: UserPreferences
 }

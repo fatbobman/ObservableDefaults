@@ -3,16 +3,16 @@ import ObservableDefaults
 import Testing
 
 // Test structures for Cloud
-struct CloudUser: Codable, CodableCloudPropertyListValue, Equatable {
+struct CloudUser: Codable, Equatable {
     var name: String
     var age: Int
 }
 
-struct CloudImage: Codable, CodableCloudPropertyListValue, Equatable {
+struct CloudImage: Codable, Equatable {
     var raw: Data
 }
 
-struct CloudUserWithImage: Codable, CodableCloudPropertyListValue, Equatable {
+struct CloudUserWithImage: Codable, Equatable {
     var name: String
     var image: CloudImage
 }

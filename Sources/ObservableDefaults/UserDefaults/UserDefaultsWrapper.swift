@@ -33,7 +33,7 @@ import Foundation
 /// - Optional RawRepresentable types
 /// - UserDefaultsPropertyListValue types (basic types like String, Int, etc.)
 /// - Optional UserDefaultsPropertyListValue types
-/// - CodableUserDefaultsPropertyListValue types (custom types that can be encoded/decoded)
+/// - Codable types (custom types that can be encoded/decoded)
 public struct UserDefaultsWrapper<Value> {
     /// Private initializer to prevent instantiation since this struct only provides static methods
     private init() {}
@@ -121,6 +121,48 @@ public struct UserDefaultsWrapper<Value> {
         return object as? Value ?? defaultValue
     }
 
+    /// Gets a basic property list value from the user defaults store.
+    /// This method is used for custom types that can be encoded/decoded using JSON.
+    /// - Parameters:
+    ///   - key: The key to get the value for
+    ///   - defaultValue: The default value to return if the key is not found or decoding fails
+    ///   - store: The user defaults store to get the value from
+    /// - Returns: The decoded value from the user defaults store, or the default value if the key
+    /// is not found or decoding fails
+    public nonisolated static func getValue(
+        _ key: String,
+        _ defaultValue: Value,
+        _ store: UserDefaults) -> Value
+    where Value: UserDefaultsPropertyListValue & Codable {
+        // Check if the key exists first
+        guard let object = store.object(forKey: key) else {
+            return defaultValue
+        }
+        // Try to cast to the expected type, fallback to default if casting fails
+        return object as? Value ?? defaultValue
+    }
+
+    /// Gets an optional basic property list value from the user defaults store.
+    /// This method is used for optional custom types that can be encoded/decoded using JSON.
+    /// - Parameters:
+    ///   - key: The key to get the value for
+    ///   - defaultValue: The default optional value to return if the key is not found or decoding fails
+    ///   - store: The user defaults store to get the value from
+    /// - Returns: The decoded optional value from the user defaults store, or the default value if the key
+    /// is not found or decoding fails
+    public nonisolated static func getValue(
+        _ key: String,
+        _ defaultValue: Value?,
+        _ store: UserDefaults) -> Value?
+    where Value: UserDefaultsPropertyListValue & Codable {
+        // Check if the key exists first
+        guard let object = store.object(forKey: key) else {
+            return defaultValue
+        }
+        // Try to cast to the expected type, fallback to default if casting fails
+        return object as? Value ?? defaultValue
+    }
+
     /// Gets a Codable value from the user defaults store.
     /// This method is used for custom types that can be encoded/decoded using JSON.
     /// - Parameters:
@@ -133,7 +175,7 @@ public struct UserDefaultsWrapper<Value> {
         _ key: String,
         _ defaultValue: Value,
         _ store: UserDefaults) -> Value
-    where Value: CodableUserDefaultsPropertyListValue {
+    where Value: Codable {
         // Get the data from UserDefaults
         guard let data = store.data(forKey: key) else {
             return defaultValue
@@ -160,7 +202,7 @@ public struct UserDefaultsWrapper<Value> {
         _ key: String,
         _ defaultValue: Value?,
         _ store: UserDefaults) -> Value?
-    where Value: CodableUserDefaultsPropertyListValue {
+    where Value: Codable {
         // Get the data from UserDefaults
         guard let data = store.data(forKey: key) else {
             return defaultValue
@@ -231,6 +273,33 @@ public struct UserDefaultsWrapper<Value> {
         store.set(newValue, forKey: key)
     }
 
+    /// Sets a basic property list value in the user defaults store.
+    /// This method stores basic types like String, Int, Bool, etc.
+    /// - Parameters:
+    ///   - key: The key to set the value for
+    ///   - newValue: The new value to store
+    ///   - store: The user defaults store to set the value in
+    public nonisolated static func setValue(_ key: String, _ newValue: Value, _ store: UserDefaults)
+    where Value: UserDefaultsPropertyListValue & Codable {
+        // Directly store the value
+        store.set(newValue, forKey: key)
+    }
+
+    /// Sets an optional basic property list value in the user defaults store.
+    /// This method stores optional basic types like String?, Int?, Bool?, etc.
+    /// - Parameters:
+    ///   - key: The key to set the value for
+    ///   - newValue: The new optional value to store (nil will remove the key)
+    ///   - store: The user defaults store to set the value in
+    public nonisolated static func setValue(
+        _ key: String,
+        _ newValue: Value?,
+        _ store: UserDefaults)
+    where Value: UserDefaultsPropertyListValue & Codable {
+        // Store the optional value (nil will remove the key)
+        store.set(newValue, forKey: key)
+    }
+
     /// Sets a Codable value in the user defaults store.
     /// This method encodes custom types to JSON data before storing.
     /// - Parameters:
@@ -239,7 +308,7 @@ public struct UserDefaultsWrapper<Value> {
     ///   - store: The user defaults store to set the value in
     /// - Note: If encoding fails, the method silently returns without storing anything
     public nonisolated static func setValue(_ key: String, _ newValue: Value, _ store: UserDefaults)
-    where Value: CodableUserDefaultsPropertyListValue {
+    where Value: Codable {
         // Encode the value to JSON data
         guard let data = try? JSONEncoder().encode(newValue) else { return }
         // Store the encoded data
@@ -254,7 +323,7 @@ public struct UserDefaultsWrapper<Value> {
     ///   - store: The user defaults store to set the value in
     /// - Note: If encoding fails, the method silently returns without storing anything
     public nonisolated static func setValue(_ key: String, _ newValue: Value?, _ store: UserDefaults)
-    where Value: CodableUserDefaultsPropertyListValue {
+    where Value: Codable {
         guard let value = newValue else {
             store.removeObject(forKey: key)
             return

@@ -152,7 +152,7 @@ class MockModelCloudKeyName {
 }
 
 /// Test Codable types
-struct FontStyle: CodableUserDefaultsPropertyListValue, CodableCloudPropertyListValue, Hashable, Identifiable {
+struct FontStyle: Codable, Hashable, Identifiable {
     let size: CGFloat
     let weight: Weight
     let id: Int

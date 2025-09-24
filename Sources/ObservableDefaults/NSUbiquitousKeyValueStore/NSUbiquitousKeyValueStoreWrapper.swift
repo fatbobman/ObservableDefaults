@@ -15,7 +15,7 @@ import Foundation
 /// - Optional RawRepresentable types
 /// - CloudPropertyListValue types (basic types like String, Int, etc.)
 /// - Optional CloudPropertyListValue types
-/// - CodableCloudPropertyListValue types (custom types that can be encoded/decoded)
+/// - Codable types (custom types that can be encoded/decoded)
 public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// The default instance of NSUbiquitousKeyValueStoreWrapper.
     public static let `default` = NSUbiquitousKeyValueStoreWrapper()
@@ -111,6 +111,35 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
         store.object(forKey: key) as? R ?? defaultValue
     }
 
+    /// Gets a basic property list value from the ubiquitous key-value store.
+    /// This method is used for basic types like String, Int, Bool, etc.
+    /// - Parameters:
+    ///   - key: The key to get the value for
+    ///   - defaultValue: The default value to return if the key is not found or type casting fails
+    /// - Returns: The value from the store, or the default value if the key is not found or type
+    /// casting fails
+    public func getValue<Value>(
+        _ key: String,
+        _ defaultValue: Value) -> Value
+    where Value: CloudPropertyListValue & Codable {
+        // Directly cast the object to the expected type, fallback to default if casting fails
+        store.object(forKey: key) as? Value ?? defaultValue
+    }
+
+    /// Gets an optional basic property list value from the ubiquitous key-value store.
+    /// This method handles optional basic types like String?, Int?, Bool?, etc.
+    /// - Parameters:
+    ///   - key: The key to get the value for
+    ///   - defaultValue: The default value to return if the key is not found or type casting fails
+    /// - Returns: The optional value from the store, or the default value if the key is not found
+    /// or type casting fails
+    public func getValue<R>(
+        _ key: String,
+        _ defaultValue: R?) -> R?
+    where R: CloudPropertyListValue & Codable {
+        store.object(forKey: key) as? R ?? defaultValue
+    }
+
     /// Gets a Codable value from the ubiquitous key-value store.
     /// This method is used for custom types that can be encoded/decoded using JSON.
     /// - Parameters:
@@ -121,7 +150,7 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     public func getValue<Value>(
         _ key: String,
         _ defaultValue: Value) -> Value
-    where Value: CodableCloudPropertyListValue {
+    where Value: Codable {
         // Get the data from NSUbiquitousKeyValueStore
         guard let data = store.data(forKey: key) else {
             return defaultValue
@@ -146,7 +175,7 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     public func getValue<Value>(
         _ key: String,
         _ defaultValue: Value?) -> Value?
-    where Value: CodableCloudPropertyListValue {
+    where Value: Codable {
         // Get the data from NSUbiquitousKeyValueStore
         guard let data = store.data(forKey: key) else {
             return defaultValue
@@ -219,9 +248,9 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// - Parameters:
     ///   - key: The key to set the value for
     ///   - newValue: The new value to store
-    public func setValue(
+    public func setValue<Value: CloudPropertyListValue>(
         _ key: String,
-        _ newValue: some CloudPropertyListValue)
+        _ newValue: Value)
     {
         // Directly store the value
         store.set(newValue, forKey: key)
@@ -232,9 +261,39 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// - Parameters:
     ///   - key: The key to set the value for
     ///   - newValue: The new optional value to store (nil will remove the key)
-    public func setValue(
+    public func setValue<Value: CloudPropertyListValue>(
         _ key: String,
-        _ newValue: (some CloudPropertyListValue)?)
+        _ newValue: Value?)
+    {
+        // Store the optional value (nil will remove the key)
+        if let newValue {
+            store.set(newValue, forKey: key)
+        } else {
+            store.removeObject(forKey: key)
+        }
+    }
+
+    /// Sets a basic property list value in the ubiquitous key-value store.
+    /// This method stores basic types like String, Int, Bool, etc.
+    /// - Parameters:
+    ///   - key: The key to set the value for
+    ///   - newValue: The new value to store
+    public func setValue<Value: CloudPropertyListValue & Codable>(
+        _ key: String,
+        _ newValue: Value)
+    {
+        // Directly store the value
+        store.set(newValue, forKey: key)
+    }
+
+    /// Sets an optional basic property list value in the ubiquitous key-value store.
+    /// This method stores optional basic types like String?, Int?, Bool?, etc.
+    /// - Parameters:
+    ///   - key: The key to set the value for
+    ///   - newValue: The new optional value to store (nil will remove the key)
+    public func setValue<Value: CloudPropertyListValue & Codable>(
+        _ key: String,
+        _ newValue: Value?)
     {
         // Store the optional value (nil will remove the key)
         if let newValue {
@@ -250,10 +309,9 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     ///   - key: The key to set the value for
     ///   - newValue: The new Codable value to store
     /// - Note: If encoding fails, the method silently returns without storing anything
-    public func setValue(
+    public func setValue<Value: Codable>(
         _ key: String,
-        _ newValue: some CodableCloudPropertyListValue)
-    {
+        _ newValue: Value) {
         // Encode the value to JSON data
         guard let data = try? JSONEncoder().encode(newValue) else { return }
         // Store the encoded data
@@ -266,10 +324,10 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     ///   - key: The key to set the value for
     ///   - newValue: The new optional Codable value to store (nil will remove the key)
     /// - Note: If encoding fails, the method silently returns without storing anything
-    public func setValue<Value>(
+    public func setValue<Value: Codable>(
         _ key: String,
         _ newValue: Value?)
-    where Value: CodableCloudPropertyListValue {
+    {
         // Handle nil value by removing the key
         guard let value = newValue else {
             store.removeObject(forKey: key)

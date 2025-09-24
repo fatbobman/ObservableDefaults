@@ -112,7 +112,7 @@ Both macros detect `@MainActor` attributes and generate appropriate isolation:
 ### UserDefaults Types
 - Basic: `String`, `Int`, `Bool`, `Double`, `Float`, `Data`, `URL`, `[String]`, `[Any]`
 - RawRepresentable: Enums with basic raw values
-- Codable: Custom types via `CodableUserDefaultsPropertyListValue`
+- Codable: Custom types via `Codable`
 - Optionals: All above types as optionals
 
 ### iCloud Types

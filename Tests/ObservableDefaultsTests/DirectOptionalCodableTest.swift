@@ -3,7 +3,7 @@ import ObservableDefaults
 import Testing
 
 // Test the original issue directly
-struct DirectUser: Codable, CodableUserDefaultsPropertyListValue, Equatable {
+struct DirectUser: Codable, Equatable {
     var name: String
     var age: Int
 }

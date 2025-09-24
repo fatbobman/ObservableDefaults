@@ -85,5 +85,6 @@ func emptyParameters() {
 func emptyPrefixCloud() {
     let test = Test6()
     test.emptyPrefix = "updated"
+    let value = test.emptyPrefix == "updated"
     #expect(test.emptyPrefix == "updated")
 }
