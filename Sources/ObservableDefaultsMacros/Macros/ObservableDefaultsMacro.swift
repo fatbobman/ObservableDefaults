@@ -94,7 +94,7 @@ extension ObservableDefaultsMacros: MemberMacro {
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
         conformingTo protocols: [TypeSyntax],
-        in _: some MacroExpansionContext) throws -> [DeclSyntax]
+        in context: some MacroExpansionContext) throws -> [DeclSyntax]
     {
         guard let identifier = declaration.asProtocol(NamedDeclSyntax.self) else { return [] }
 
@@ -102,7 +102,23 @@ extension ObservableDefaultsMacros: MemberMacro {
             IdentifierPatternSyntax(identifier: .init(stringLiteral: "\(identifier.name.trimmed)"))
 
         // Extract macro parameters
-        let (autoInit, suiteName, prefix, ignoreExternalChanges, _, defaultIsolationIsMainActor) = extractProperty(node)
+        let (
+            autoInit,
+            suiteName,
+            prefix,
+            ignoreExternalChanges,
+            _,
+            defaultIsolationIsMainActor,
+            suiteNameExpression
+        ) = extractProperty(node)
+
+        if suiteName.isEmpty, let suiteNameExpression {
+            context.diagnose(
+                .stringLiteralRequired(
+                    expression: suiteNameExpression,
+                    argumentName: ObservableDefaultsMacros.suiteName,
+                    attributeName: "@\(ObservableDefaultsMacros.name)"))
+        }
 
         // Find all properties that should be persisted to UserDefaults
         guard let classDecl = declaration as? ClassDeclSyntax else {
@@ -522,7 +538,7 @@ extension ObservableDefaultsMacros: MemberAttributeMacro {
         providingAttributesFor member: some DeclSyntaxProtocol,
         in _: some MacroExpansionContext) throws -> [SwiftSyntax.AttributeSyntax]
     {
-        let (_, _, _, _, observeFirst, _) = extractProperty(node)
+        let (_, _, _, _, observeFirst, _, _) = extractProperty(node)
         guard let varDecl = member.as(VariableDeclSyntax.self),
               varDecl.isObservable
         else {
@@ -567,7 +583,8 @@ extension ObservableDefaultsMacros {
         prefix: String,
         ignoreExternalChanges: Bool,
         observeFirst: Bool,
-        defaultIsolationIsMainActor: Bool)
+        defaultIsolationIsMainActor: Bool,
+        invalidSuiteNameExpression: ExprSyntax?)
     {
         var autoInit = true
         var suiteName = ""
@@ -575,6 +592,7 @@ extension ObservableDefaultsMacros {
         var ignoreExternalChanges = false
         var observeFirst = false
         var defaultIsolationIsMainActor = false
+        var invalidSuiteNameExpression: ExprSyntax?
 
         if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
             for argument in argumentList {
@@ -586,12 +604,14 @@ extension ObservableDefaultsMacros {
                           let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
                     ignoreExternalChanges = booleanLiteral.literal.text == "true"
-                } else if argument.label?.text == ObservableDefaultsMacros.suiteName,
-                          let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self)
-                {
-                    let rawSuiteName = stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content
-                        .text ?? ""
-                    suiteName = rawSuiteName.trimmingCharacters(in: .whitespacesAndNewlines)
+                } else if argument.label?.text == ObservableDefaultsMacros.suiteName {
+                    if let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self) {
+                        let rawSuiteName = stringLiteral.segments.first?
+                            .as(StringSegmentSyntax.self)?.content.text ?? ""
+                        suiteName = rawSuiteName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    } else {
+                        invalidSuiteNameExpression = argument.expression
+                    }
                 } else if argument.label?.text == ObservableDefaultsMacros.prefix,
                           let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self)
                 {
@@ -609,7 +629,7 @@ extension ObservableDefaultsMacros {
                 }
             }
         }
-        return (autoInit, suiteName, prefix, ignoreExternalChanges, observeFirst, defaultIsolationIsMainActor)
+        return (autoInit, suiteName, prefix, ignoreExternalChanges, observeFirst, defaultIsolationIsMainActor, invalidSuiteNameExpression)
     }
 }
 

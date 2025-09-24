@@ -88,6 +88,8 @@ extension DefaultsBackedMacro: AccessorMacro {
 
         // Property name as default UserDefaults key if no custom key is provided
         var keyString: String = identifier.trimmedDescription
+        var customKeyExpression: ExprSyntax?
+        var customKeyAttributeName: String?
 
         // Validate that the property can be persisted to UserDefaults
         guard property.isPersistent else {
@@ -121,6 +123,20 @@ extension DefaultsBackedMacro: AccessorMacro {
         // Check for custom UserDefaults key specified via @DefaultsBacked(userDefaultsKey:) or
         // @DefaultsKey(userDefaultsKey:)
         // @DefaultsBacked takes precedence if both are present
+        if let expression = property.attributes.expression(
+            forAttribute: DefaultsBackedMacro.name,
+            argument: DefaultsBackedMacro.key)
+        {
+            customKeyExpression = expression
+            customKeyAttributeName = "@\(DefaultsBackedMacro.name)"
+        } else if let expression = property.attributes.expression(
+            forAttribute: DefaultsKeyMacro.name,
+            argument: DefaultsKeyMacro.key)
+        {
+            customKeyExpression = expression
+            customKeyAttributeName = "@\(DefaultsKeyMacro.name)"
+        }
+
         if let extractedKey: String = property.attributes.extractValue(
             forAttribute: DefaultsBackedMacro.name,
             argument: DefaultsBackedMacro.key) ??
@@ -129,6 +145,14 @@ extension DefaultsBackedMacro: AccessorMacro {
                 argument: DefaultsKeyMacro.key)
         {
             keyString = extractedKey
+        } else if let expression = customKeyExpression,
+                  let attributeName = customKeyAttributeName
+        {
+            context.diagnose(
+                .stringLiteralRequired(
+                    expression: expression,
+                    argumentName: DefaultsBackedMacro.key,
+                    attributeName: attributeName))
         }
 
         // swiftformat:disable all

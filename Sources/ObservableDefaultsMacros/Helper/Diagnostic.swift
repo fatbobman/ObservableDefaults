@@ -97,4 +97,14 @@ extension Diagnostic {
                         ])))))
     }
 
+    static func stringLiteralRequired(
+        expression: ExprSyntax,
+        argumentName: String,
+        attributeName: String) -> Diagnostic
+    {
+        createDiagnostic(
+            node: expression,
+            message: "\(attributeName) parameter '\(argumentName)' must be a string literal")
+    }
+
 }

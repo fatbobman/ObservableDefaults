@@ -179,6 +179,21 @@ extension AttributeListSyntax {
         }
         return nil
     }
+
+    func expression(
+        forAttribute attributeName: String,
+        argument argumentName: String) -> ExprSyntax?
+    {
+        for attribute in self {
+            if let expression = attribute.expression(
+                forAttribute: attributeName,
+                argument: argumentName)
+            {
+                return expression
+            }
+        }
+        return nil
+    }
 }
 
 extension AttributeListSyntax.Element {
@@ -228,6 +243,25 @@ extension AttributeListSyntax.Element {
             return booleanLiteral.literal.tokenKind == .keyword(.true)
         }
         // More types can be added as needed
+        return nil
+    }
+
+    func expression(
+        forAttribute attributeName: String,
+        argument argumentName: String) -> ExprSyntax?
+    {
+        guard case let .attribute(attributeNode) = self,
+              let identifierType = attributeNode.attributeName.as(IdentifierTypeSyntax.self),
+              identifierType.name.text == attributeName,
+              let arguments = attributeNode.arguments?.as(LabeledExprListSyntax.self)
+        else {
+            return nil
+        }
+
+        for argument in arguments where argument.label?.text == argumentName {
+            return argument.expression
+        }
+
         return nil
     }
 }
