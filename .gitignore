@@ -47,3 +47,6 @@ fastlane/test_output
 
 # SwiftUI Previews
 .swiftpm/xcode/
+
+# Swift Module Cache
+.swift-module-cache/
