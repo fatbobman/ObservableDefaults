@@ -66,6 +66,8 @@ public enum ObservableDefaultsMacros {
     static let prefix: String = "prefix"
     /// Parameter for enabling Observe First mode
     static let observeFirst: String = "observeFirst"
+    /// Parameter for limiting observations to specific UserDefaults instance
+    static let limitToInstance: String = "limitToInstance"
     /// Parameter for indicating when project's defaultIsolation is set to MainActor
     static let defaultIsolationIsMainActor: String = "defaultIsolationIsMainActor"
 }
@@ -108,6 +110,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             prefix,
             ignoreExternalChanges,
             _,
+            limitToInstance,
             defaultIsolationIsMainActor,
             suiteNameExpression
         ) = extractProperty(node)
@@ -351,7 +354,7 @@ extension ObservableDefaultsMacros: MemberMacro {
                     notificationObserver = NotificationCenter.default
                         .addObserver(
                             forName: UserDefaults.didChangeNotification,
-                            object: userDefaults,
+                            object: \(raw: limitToInstance ? "userDefaults" : "nil"),
                             queue: .main
                         ) { [weak host, prefix, observableKeysBlacklist] notification in
                             guard let host else { return }
@@ -412,7 +415,7 @@ extension ObservableDefaultsMacros: MemberMacro {
                     NotificationCenter.default
                         .addObserver(
                             forName: UserDefaults.didChangeNotification,
-                            object: userDefaults,
+                            object: \(raw: limitToInstance ? "userDefaults" : "nil"),
                             queue: nil,
                             using: userDefaultsDidChange
                         )
@@ -538,7 +541,7 @@ extension ObservableDefaultsMacros: MemberAttributeMacro {
         providingAttributesFor member: some DeclSyntaxProtocol,
         in _: some MacroExpansionContext) throws -> [SwiftSyntax.AttributeSyntax]
     {
-        let (_, _, _, _, observeFirst, _, _) = extractProperty(node)
+        let (_, _, _, _, observeFirst, _, _, _) = extractProperty(node)
         guard let varDecl = member.as(VariableDeclSyntax.self),
               varDecl.isObservable
         else {
@@ -583,6 +586,7 @@ extension ObservableDefaultsMacros {
         prefix: String,
         ignoreExternalChanges: Bool,
         observeFirst: Bool,
+        limitToInstance: Bool,
         defaultIsolationIsMainActor: Bool,
         invalidSuiteNameExpression: ExprSyntax?)
     {
@@ -591,6 +595,7 @@ extension ObservableDefaultsMacros {
         var prefix = ""
         var ignoreExternalChanges = false
         var observeFirst = false
+        var limitToInstance = true
         var defaultIsolationIsMainActor = false
         var invalidSuiteNameExpression: ExprSyntax?
 
@@ -622,6 +627,10 @@ extension ObservableDefaultsMacros {
                           let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
                     observeFirst = booleanLiteral.literal.text == "true"
+                } else if argument.label?.text == ObservableDefaultsMacros.limitToInstance,
+                          let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
+                {
+                    limitToInstance = booleanLiteral.literal.text == "true"
                 } else if argument.label?.text == ObservableDefaultsMacros.defaultIsolationIsMainActor,
                           let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
@@ -629,7 +638,7 @@ extension ObservableDefaultsMacros {
                 }
             }
         }
-        return (autoInit, suiteName, prefix, ignoreExternalChanges, observeFirst, defaultIsolationIsMainActor, invalidSuiteNameExpression)
+        return (autoInit, suiteName, prefix, ignoreExternalChanges, observeFirst, limitToInstance, defaultIsolationIsMainActor, invalidSuiteNameExpression)
     }
 }
 

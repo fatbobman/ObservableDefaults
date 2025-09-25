@@ -146,10 +146,23 @@ public macro ObservableOnly() = #externalMacro(
 ///     ignoreExternalChanges: false,
 ///     suiteName: "group.myapp",
 ///     prefix: "myApp_",
-///     observeFirst: false
+///     observeFirst: false,
+///     limitToInstance: true
 /// )
 /// class Settings {
 ///     // Properties automatically managed
+/// }
+/// ```
+///
+/// Cross-process synchronization (App Groups):
+/// ```swift
+/// @ObservableDefaults(
+///     suiteName: "group.myapp",
+///     prefix: "widget_",  // Use unique prefix to avoid key conflicts
+///     limitToInstance: false  // Enable cross-process notifications
+/// )
+/// class WidgetSettings {
+///     var sharedData: String = "shared"  // Syncs across app and widgets
 /// }
 /// ```
 ///
@@ -170,6 +183,7 @@ public macro ObservableOnly() = #externalMacro(
 /// - `suiteName`: Custom UserDefaults suite name (default: nil, uses standard)
 /// - `prefix`: Prefix for all UserDefaults keys (default: nil, must not contain '.')
 /// - `observeFirst`: Enables Observe First mode (default: false)
+/// - `limitToInstance`: Limits observations to the specific UserDefaults instance. Set to false for App Group cross-process synchronization (default: true)
 /// - `defaultIsolationIsMainActor`: Set to true when project's defaultIsolation is MainActor (default: false)
 ///
 /// Generated initializer (when autoInit is true):
@@ -213,6 +227,7 @@ public macro ObservableDefaults(
     suiteName: String = "",
     prefix: String = "",
     observeFirst: Bool = false,
+    limitToInstance: Bool = true,
     defaultIsolationIsMainActor: Bool = false) = #externalMacro(
     module: "ObservableDefaultsMacros",
     type: "ObservableDefaultsMacros")
