@@ -240,12 +240,23 @@ You can set parameters directly in the `@ObservableDefaults` macro:
 - `prefix`: A prefix for `UserDefaults` keys.
 - `autoInit`: Whether to automatically generate the initializer (default is `true`).
 - `observeFirst`: Observation priority mode (default is `false`).
+- `limitToInstance`: Whether to limit observations to the specific UserDefaults instance (default is `true`). Set to `false` for App Group cross-process synchronization.
 
 ```swift
 @ObservableDefaults(autoInit: false, ignoreExternalChanges: true, prefix: "myApp_")
 class Settings {
     @DefaultsKey(userDefaultsKey: "fullName")
     var name: String = "Fatbobman"
+}
+
+// For App Group cross-process synchronization
+@ObservableDefaults(
+    suiteName: "group.myapp",
+    prefix: "widget_",
+    limitToInstance: false
+)
+class WidgetSettings {
+    var lastUpdate: Date = Date()
 }
 ```
 
@@ -592,6 +603,66 @@ class CloudSettings {
 - ✅ Your project has `defaultIsolation` set to `MainActor` in build settings
 - ✅ You're experiencing Swift 6 concurrency compilation errors
 - ❌ Your project uses the default `nonisolated` setting (parameter not needed)
+
+### App Groups and Cross-Process Synchronization
+
+When using App Groups to share UserDefaults between your main app and extensions (widgets, app extensions), you need special configuration to ensure proper cross-process notification handling.
+
+#### The Problem
+
+By default, `@ObservableDefaults` only listens to UserDefaults change notifications from its specific UserDefaults instance. When using App Groups:
+
+- Your main app creates: `UserDefaults(suiteName: "group.myapp")`
+- Your widget creates: `UserDefaults(suiteName: "group.myapp")`
+
+Even though both access the same data store, they are different object instances. When the widget modifies data, the main app won't automatically receive notifications about the changes.
+
+#### The Solution
+
+Use the `limitToInstance: false` parameter to enable cross-process notifications:
+
+```swift
+@ObservableDefaults(
+    suiteName: "group.com.yourcompany.app",
+    prefix: "widget_",  // IMPORTANT: Use unique prefixes
+    limitToInstance: false  // Enable cross-process notifications
+)
+class WidgetSettings {
+    var lastUpdate: Date = Date()
+    var displayCount: Int = 0
+}
+```
+
+#### Important: Always Use Unique Prefixes
+
+When `limitToInstance: false`, the macro receives ALL UserDefaults notifications. Without unique prefixes, your app might react to unrelated UserDefaults changes from other parts of your app or different App Groups.
+
+```swift
+// Main App
+@ObservableDefaults(
+    suiteName: "group.myapp",
+    prefix: "main_",
+    limitToInstance: false
+)
+class AppSettings {
+    var userName: String = "User"  // Stored as "main_userName"
+}
+
+// Widget
+@ObservableDefaults(
+    suiteName: "group.myapp",
+    prefix: "widget_",
+    limitToInstance: false
+)
+class WidgetData {
+    var userName: String = "Widget"  // Stored as "widget_userName"
+}
+```
+
+#### Performance Considerations
+
+- **Default (`limitToInstance: true`)**: Better performance, only monitors specific instance changes. Use for single-process apps.
+- **Cross-Process (`limitToInstance: false`)**: Necessary for App Groups but receives more notifications. Unique prefixes help filter relevant changes.
 
 ### General Notes
 
