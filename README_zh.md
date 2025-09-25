@@ -240,12 +240,23 @@ public init(
 - `prefix`: `UserDefaults` 键的前缀。
 - `autoInit`: 是否自动生成初始化器（默认为 `true`）。
 - `observeFirst`: 观察优先级模式（默认为 `false`）。
+- `limitToInstance`: 是否限制观察特定的 UserDefaults 实例（默认为 `true`）。设置为 `false` 以支持 App Group 跨进程同步。
 
 ```swift
 @ObservableDefaults(autoInit: false, ignoreExternalChanges: true, prefix: "myApp_")
 class Settings {
     @DefaultsKey(userDefaultsKey: "fullName")
     var name: String = "Fatbobman"
+}
+
+// App Group 跨进程同步
+@ObservableDefaults(
+    suiteName: "group.myapp",
+    prefix: "myapp_",
+    limitToInstance: false
+)
+class SharedSettings {
+    var lastUpdate: Date = Date()
 }
 ```
 
@@ -592,6 +603,74 @@ class CloudSettings {
 - ✅ 您的项目在构建设置中将 `defaultIsolation` 设置为 `MainActor`
 - ✅ 您遇到了 Swift 6 并发编译错误
 - ❌ 您的项目使用默认的 `nonisolated` 设置（不需要参数）
+
+### App Groups 和跨进程同步
+
+当使用 App Groups 在主应用和扩展（小组件、应用扩展）之间共享 UserDefaults 时，您需要特殊配置以确保正确的跨进程通知处理。
+
+#### 问题所在
+
+默认情况下，`@ObservableDefaults` 仅监听来自其特定 UserDefaults 实例的 UserDefaults 变更通知。当使用 App Groups 时：
+
+- 您的主应用创建：`UserDefaults(suiteName: "group.myapp")`
+- 您的小组件创建：`UserDefaults(suiteName: "group.myapp")`
+
+即使两者访问相同的数据存储，它们是不同的对象实例。当小组件修改数据时，主应用不会自动接收到关于变更的通知。
+
+#### 解决方案
+
+使用 `limitToInstance: false` 参数启用跨进程通知：
+
+```swift
+@ObservableDefaults(
+    suiteName: "group.com.yourcompany.app",
+    prefix: "myapp_",  // 重要：使用唯一前缀
+    limitToInstance: false  // 启用跨进程通知
+)
+class SharedSettings {
+    var lastUpdate: Date = Date()
+    var displayCount: Int = 0
+}
+```
+
+#### 关键：必须使用唯一前缀
+
+当 `limitToInstance: false` 时，宏会监听来自整个系统的所有 UserDefaults 变更通知，而不仅仅是您特定的套件。这意味着它会接收来自：
+
+- `UserDefaults.standard`
+- 其他 App Groups（`group.otherapp`）
+- 您应用中的任何其他 UserDefaults 实例
+
+**前缀充当过滤器**，确保您的类仅响应来自预期 suiteName 的变更：
+
+```swift
+// App Group 套件
+@ObservableDefaults(
+    suiteName: "group.myapp",
+    prefix: "myapp_",  // 仅响应以 "myapp_" 开头的键
+    limitToInstance: false
+)
+class AppGroupSettings {
+    var sharedData: String = "data"  // 存储为 "myapp_sharedData"
+}
+
+// 不同的 App Group 套件
+@ObservableDefaults(
+    suiteName: "group.anotherapp",
+    prefix: "anotherapp_",  // 仅响应以 "anotherapp_" 开头的键
+    limitToInstance: false
+)
+class AnotherAppSettings {
+    var sharedData: String = "other"  // 存储为 "anotherapp_sharedData"
+}
+```
+
+如果没有唯一前缀，您的 `AppGroupSettings` 可能会错误地响应来自 `group.anotherapp` 或 `UserDefaults.standard` 的变更。
+
+#### 性能考虑
+
+- **默认（`limitToInstance: true`）**：更好的性能，仅监控来自特定 UserDefaults 实例的变更。建议用于单进程应用。
+- **跨进程（`limitToInstance: false`）**：App Groups 所必需，但会接收所有系统 UserDefaults 通知。前缀对于过滤目标套件中的相关变更至关重要。
 
 ### 一般说明
 
