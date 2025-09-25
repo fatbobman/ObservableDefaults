@@ -252,10 +252,10 @@ class Settings {
 // For App Group cross-process synchronization
 @ObservableDefaults(
     suiteName: "group.myapp",
-    prefix: "widget_",
+    prefix: "myapp_",
     limitToInstance: false
 )
-class WidgetSettings {
+class SharedSettings {
     var lastUpdate: Date = Date()
 }
 ```
@@ -624,45 +624,53 @@ Use the `limitToInstance: false` parameter to enable cross-process notifications
 ```swift
 @ObservableDefaults(
     suiteName: "group.com.yourcompany.app",
-    prefix: "widget_",  // IMPORTANT: Use unique prefixes
+    prefix: "myapp_",  // IMPORTANT: Use a unique prefix
     limitToInstance: false  // Enable cross-process notifications
 )
-class WidgetSettings {
+class SharedSettings {
     var lastUpdate: Date = Date()
     var displayCount: Int = 0
 }
 ```
 
-#### Important: Always Use Unique Prefixes
+#### Critical: Always Use a Unique Prefix
 
-When `limitToInstance: false`, the macro receives ALL UserDefaults notifications. Without unique prefixes, your app might react to unrelated UserDefaults changes from other parts of your app or different App Groups.
+When `limitToInstance: false`, the macro listens to ALL UserDefaults change notifications from the entire system, not just your specific suite. This means it will receive notifications from:
+
+- `UserDefaults.standard`
+- Other App Groups (`group.otherapp`)
+- Any other UserDefaults instances in your app
+
+**The prefix acts as a filter** to ensure your class only responds to changes from your intended suiteName:
 
 ```swift
-// Main App
+// App Group suite
 @ObservableDefaults(
     suiteName: "group.myapp",
-    prefix: "main_",
+    prefix: "myapp_",  // Only respond to keys starting with "myapp_"
     limitToInstance: false
 )
-class AppSettings {
-    var userName: String = "User"  // Stored as "main_userName"
+class AppGroupSettings {
+    var sharedData: String = "data"  // Stored as "myapp_sharedData"
 }
 
-// Widget
+// Different App Group suite
 @ObservableDefaults(
-    suiteName: "group.myapp",
-    prefix: "widget_",
+    suiteName: "group.anotherapp",
+    prefix: "anotherapp_",  // Only respond to keys starting with "anotherapp_"
     limitToInstance: false
 )
-class WidgetData {
-    var userName: String = "Widget"  // Stored as "widget_userName"
+class AnotherAppSettings {
+    var sharedData: String = "other"  // Stored as "anotherapp_sharedData"
 }
 ```
 
+Without unique prefixes, your `AppGroupSettings` might incorrectly react to changes from `group.anotherapp` or `UserDefaults.standard`.
+
 #### Performance Considerations
 
-- **Default (`limitToInstance: true`)**: Better performance, only monitors specific instance changes. Use for single-process apps.
-- **Cross-Process (`limitToInstance: false`)**: Necessary for App Groups but receives more notifications. Unique prefixes help filter relevant changes.
+- **Default (`limitToInstance: true`)**: Better performance, only monitors changes from the specific UserDefaults instance. Recommended for single-process apps.
+- **Cross-Process (`limitToInstance: false`)**: Necessary for App Groups but receives ALL system UserDefaults notifications. The prefix is essential to filter only relevant changes from your target suite.
 
 ### General Notes
 
