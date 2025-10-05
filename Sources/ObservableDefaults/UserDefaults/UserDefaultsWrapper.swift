@@ -171,6 +171,7 @@ public struct UserDefaultsWrapper<Value> {
     ///   - store: The user defaults store to get the value from
     /// - Returns: The decoded value from the user defaults store, or the default value if the key
     /// is not found or decoding fails
+    @_disfavoredOverload
     public nonisolated static func getValue(
         _ key: String,
         _ defaultValue: Value,
@@ -198,6 +199,7 @@ public struct UserDefaultsWrapper<Value> {
     ///   - store: The user defaults store to get the value from
     /// - Returns: The decoded optional value from the user defaults store, or the default value if the key
     /// is not found or decoding fails
+    @_disfavoredOverload
     public nonisolated static func getValue(
         _ key: String,
         _ defaultValue: Value?,
@@ -307,6 +309,7 @@ public struct UserDefaultsWrapper<Value> {
     ///   - newValue: The new Codable value to store
     ///   - store: The user defaults store to set the value in
     /// - Note: If encoding fails, the method silently returns without storing anything
+    @_disfavoredOverload
     public nonisolated static func setValue(_ key: String, _ newValue: Value, _ store: UserDefaults)
     where Value: Codable {
         // Encode the value to JSON data
@@ -322,6 +325,7 @@ public struct UserDefaultsWrapper<Value> {
     ///   - newValue: The new optional Codable value to store (nil will remove the key)
     ///   - store: The user defaults store to set the value in
     /// - Note: If encoding fails, the method silently returns without storing anything
+    @_disfavoredOverload
     public nonisolated static func setValue(_ key: String, _ newValue: Value?, _ store: UserDefaults)
     where Value: Codable {
         guard let value = newValue else {

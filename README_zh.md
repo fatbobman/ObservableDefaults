@@ -436,7 +436,7 @@ class AppearanceSettings {
 }
 ```
 
-由于这些枚举依赖 `RawRepresentable` 存储，请避免为它们额外声明 `Codable`，否则会在生成的存取器中出现重载歧义。如果需要自定义编码，可在更高层的 `Codable` 模型中包装该枚举，而不是直接让枚举本身符合 `Codable`。
+当类型同时遵循 `RawRepresentable` 和 `Codable` 时，库会优先使用 `RawRepresentable` 的存储方式，通过原始值（raw value）存储数据，而不是使用 JSON 编码。这确保了与现有数据的向后兼容性，并为枚举类型提供了更高效的存储方式。
 
 ### 与其他 Observable 对象集成
 

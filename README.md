@@ -436,7 +436,7 @@ class AppearanceSettings {
 }
 ```
 
-Because these enums are handled through `RawRepresentable`, avoid adding an explicit `Codable` conformance to the same type—doing so can introduce ambiguous overloads in the generated storage accessors. If you need custom encoding, wrap the enum in another `Codable` type instead of conforming the enum itself.
+When a type conforms to both `RawRepresentable` and `Codable`, the library will prioritize the `RawRepresentable` storage method, storing values using their raw representation rather than JSON encoding. This ensures backward compatibility with existing data and provides more efficient storage for enum types.
 
 ### Integrating with Other Observable Objects
 

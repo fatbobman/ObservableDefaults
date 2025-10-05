@@ -147,6 +147,7 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     ///   - defaultValue: The default value to return if the key is not found or decoding fails
     /// - Returns: The decoded value from the store, or the default value if the key is not found or
     /// decoding fails
+    @_disfavoredOverload
     public func getValue<Value>(
         _ key: String,
         _ defaultValue: Value) -> Value
@@ -172,6 +173,7 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     ///   - defaultValue: The default optional value to return if the key is not found or decoding fails
     /// - Returns: The decoded optional value from the store, or the default value if the key is not found or
     /// decoding fails
+    @_disfavoredOverload
     public func getValue<Value>(
         _ key: String,
         _ defaultValue: Value?) -> Value?
@@ -309,6 +311,7 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     ///   - key: The key to set the value for
     ///   - newValue: The new Codable value to store
     /// - Note: If encoding fails, the method silently returns without storing anything
+    @_disfavoredOverload
     public func setValue<Value: Codable>(
         _ key: String,
         _ newValue: Value) {
@@ -324,6 +327,7 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     ///   - key: The key to set the value for
     ///   - newValue: The new optional Codable value to store (nil will remove the key)
     /// - Note: If encoding fails, the method silently returns without storing anything
+    @_disfavoredOverload
     public func setValue<Value: Codable>(
         _ key: String,
         _ newValue: Value?)
