@@ -2,27 +2,18 @@ import Foundation
 import ObservableDefaults
 import Testing
 
-// Test type that conforms to both RawRepresentable and Codable
-// This simulates the user's scenario from issue #23
-private struct UserProfile: RawRepresentable, Equatable {
+private struct UserProfile: RawRepresentable, Codable, Equatable {
     var name: String
     var age: Int
 
-    // RawRepresentable conformance using JSON string
     var rawValue: String {
-        // Manually construct JSON to avoid Codable encoding
-        return "{\"name\": \"\(name)\", \"age\": \(age)}"
+        "\(name)|\(age)"
     }
 
     init?(rawValue: String) {
-        // Simple JSON parsing for test purposes
-        guard let data = rawValue.data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let name = json["name"] as? String,
-              let age = json["age"] as? Int else {
-            return nil
-        }
-        self.name = name
+        let parts = rawValue.split(separator: "|", maxSplits: 1).map(String.init)
+        guard parts.count == 2, let age = Int(parts[1]) else { return nil }
+        self.name = parts[0]
         self.age = age
     }
 
@@ -32,186 +23,237 @@ private struct UserProfile: RawRepresentable, Equatable {
     }
 }
 
-// Make it Codable for testing the conflict scenario
-extension UserProfile: Codable {
-    enum CodingKeys: String, CodingKey {
-        case name
-        case age
+private struct RawStringToken: RawRepresentable, Equatable {
+    var value: String
+
+    var rawValue: String {
+        value
+    }
+
+    init?(rawValue: String) {
+        self.value = rawValue
+    }
+
+    init(value: String) {
+        self.value = value
     }
 }
 
-// Optional version test
+private struct HybridStringToken: RawRepresentable, Codable, Equatable {
+    var value: String
+
+    var rawValue: String {
+        value
+    }
+
+    init?(rawValue: String) {
+        self.value = rawValue
+    }
+
+    init(value: String) {
+        self.value = value
+    }
+}
+
+private struct HybridIntToken: RawRepresentable, Codable, Equatable {
+    var value: Int
+
+    var rawValue: Int {
+        value
+    }
+
+    init?(rawValue: Int) {
+        self.value = rawValue
+    }
+
+    init(value: Int) {
+        self.value = value
+    }
+}
+
+extension RawStringToken: UserDefaultsPropertyListValue {}
+extension RawStringToken: CloudPropertyListValue {}
+extension HybridStringToken: UserDefaultsPropertyListValue {}
+extension HybridStringToken: CloudPropertyListValue {}
+extension HybridIntToken: UserDefaultsPropertyListValue {}
+extension HybridIntToken: CloudPropertyListValue {}
+
 private enum Status: String, Codable {
     case active
     case inactive
 }
 
-@ObservableDefaults(prefix: "Test1_")
-private class TestStore1 {
+@ObservableDefaults(prefix: "RRC_defaults_rawCodable_")
+private class DefaultsRawCodableStore {
     var profile = UserProfile(name: "Default", age: 0)
 }
 
-@ObservableDefaults(prefix: "Test2_")
-private class TestStore2 {
-    var profile = UserProfile(name: "Default", age: 0)
+@ObservableDefaults(prefix: "RRC_defaults_rawProperty_")
+private class DefaultsRawPropertyStore {
+    var token = RawStringToken(value: "default")
+    var optionalToken: RawStringToken?
 }
 
-@ObservableDefaults(prefix: "Test3_")
-private class TestStore3 {
-    var optionalProfile: UserProfile?
+@ObservableDefaults(prefix: "RRC_defaults_hybrid_")
+private class DefaultsHybridStore {
+    var hybrid = HybridIntToken(value: 1)
+    var optionalHybrid: HybridIntToken?
 }
 
-@ObservableDefaults(prefix: "Test4_")
-private class TestStore4 {
+@ObservableDefaults(prefix: "RRC_defaults_enum_")
+private class DefaultsEnumStore {
     var status = Status.active
 }
 
-@ObservableCloud(prefix: "CloudTest1_", developmentMode: true)
-private class CloudTestStore1 {
+@ObservableDefaults(prefix: "RRC_defaults_compat_")
+private class DefaultsLegacyPropertyListStore {
+    var value = "legacy"
+}
+
+@ObservableDefaults(prefix: "RRC_defaults_compat_")
+private class DefaultsMigratedHybridStore {
+    var value = HybridStringToken(value: "default")
+}
+
+@ObservableCloud(prefix: "RRC_cloud_rawCodable_")
+private class CloudRawCodableStore {
     var profile = UserProfile(name: "Default", age: 0)
 }
 
-@ObservableCloud(prefix: "CloudTest2_", developmentMode: true)
-private class CloudTestStore2 {
-    var profile = UserProfile(name: "Default", age: 0)
+@ObservableCloud(prefix: "RRC_cloud_rawProperty_")
+private class CloudRawPropertyStore {
+    var token = RawStringToken(value: "default")
+    var optionalToken: RawStringToken?
 }
 
-@ObservableCloud(prefix: "CloudTest3_", developmentMode: true)
-private class CloudTestStore3 {
-    var optionalProfile: UserProfile?
+@ObservableCloud(prefix: "RRC_cloud_hybrid_")
+private class CloudHybridStore {
+    var hybrid = HybridIntToken(value: 1)
+    var optionalHybrid: HybridIntToken?
 }
 
-@ObservableCloud(prefix: "CloudTest4_", developmentMode: true)
-private class CloudTestStore4 {
+@ObservableCloud(prefix: "RRC_cloud_enum_")
+private class CloudEnumStore {
     var status = Status.active
 }
 
-@Suite("RawRepresentable & Codable Conflict Tests")
+@Suite("RawRepresentable & Codable Tests", .serialized)
 struct RawRepresentableCodableTests {
+    @Test("Defaults: RawRepresentable + Codable uses raw-value storage")
+    func defaultsRawCodableStorage() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let store = DefaultsRawCodableStore(userDefaults: userDefaults)
 
-    @Test("Type conforming to both RawRepresentable and Codable should compile")
-    func compilationTest() {
-        // This test verifies that the code compiles without ambiguity errors
-        let store = TestStore1()
-        #expect(store.profile.name == "Default")
-        #expect(store.profile.age == 0)
+        store.profile = UserProfile(name: "Alice", age: 30)
+        #expect(store.profile == UserProfile(name: "Alice", age: 30))
+
+        let stored = userDefaults.object(forKey: "RRC_defaults_rawCodable_profile")
+        #expect(stored as? String == "Alice|30")
+        #expect(stored is Data == false)
     }
 
-    @Test("Should use RawRepresentable storage (not Codable JSON encoding)")
-    func storageFormatTest() {
-        let store = TestStore2()
-        let testProfile = UserProfile(name: "Alice", age: 30)
+    @Test("Defaults: RawRepresentable + PropertyList (with optional) works")
+    func defaultsRawPropertyListOnly() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let store = DefaultsRawPropertyStore(userDefaults: userDefaults)
 
-        store.profile = testProfile
+        store.token = RawStringToken(value: "updated")
+        #expect(store.token == RawStringToken(value: "updated"))
+        #expect(userDefaults.object(forKey: "RRC_defaults_rawProperty_token") as? String == "updated")
 
-        // Verify the value is stored correctly
-        #expect(store.profile.name == "Alice")
-        #expect(store.profile.age == 30)
+        store.optionalToken = RawStringToken(value: "optional")
+        #expect(store.optionalToken == RawStringToken(value: "optional"))
+        #expect(userDefaults.object(forKey: "RRC_defaults_rawProperty_optionalToken") as? String == "optional")
 
-        // Check that it's stored as a String (RawRepresentable way), not as Data (Codable way)
-        let userDefaults = UserDefaults.standard
-        let storedValue = userDefaults.object(forKey: "Test2_profile")
-
-        // Should be stored as String (raw value), not Data (Codable encoding)
-        #expect(storedValue is String)
-        #expect(storedValue is Data == false)
+        store.optionalToken = nil
+        #expect(store.optionalToken == nil)
+        #expect(userDefaults.object(forKey: "RRC_defaults_rawProperty_optionalToken") == nil)
     }
 
-    @Test("Should read existing RawRepresentable data correctly")
-    func backwardCompatibilityTest() {
-        let userDefaults = UserDefaults.standard
-        let key = "testProfile"
+    @Test("Defaults: RawRepresentable + PropertyList + Codable uses raw-value storage")
+    func defaultsRawPropertyListCodable() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let store = DefaultsHybridStore(userDefaults: userDefaults)
 
-        // Simulate existing data stored as RawRepresentable (JSON string)
-        let existingProfile = UserProfile(name: "Bob", age: 25)
-        userDefaults.set(existingProfile.rawValue, forKey: key)
+        store.hybrid = HybridIntToken(value: 42)
+        #expect(store.hybrid == HybridIntToken(value: 42))
+        let stored = userDefaults.object(forKey: "RRC_defaults_hybrid_hybrid")
+        #expect(stored as? Int == 42)
+        #expect(stored is Data == false)
 
-        // Read it back using the wrapper
-        let retrieved = UserDefaultsWrapper<UserProfile>.getValue(
-            key,
-            UserProfile(name: "Default", age: 0),
-            userDefaults
-        )
+        store.optionalHybrid = HybridIntToken(value: 7)
+        #expect(store.optionalHybrid == HybridIntToken(value: 7))
+        #expect(userDefaults.object(forKey: "RRC_defaults_hybrid_optionalHybrid") as? Int == 7)
 
-        #expect(retrieved.name == "Bob")
-        #expect(retrieved.age == 25)
-
-        // Cleanup
-        userDefaults.removeObject(forKey: key)
+        store.optionalHybrid = nil
+        #expect(store.optionalHybrid == nil)
+        #expect(userDefaults.object(forKey: "RRC_defaults_hybrid_optionalHybrid") == nil)
     }
 
-    @Test("Optional RawRepresentable & Codable type should work")
-    func optionalTest() {
-        let store = TestStore3()
-
-        #expect(store.optionalProfile == nil)
-
-        store.optionalProfile = UserProfile(name: "Charlie", age: 35)
-        #expect(store.optionalProfile?.name == "Charlie")
-        #expect(store.optionalProfile?.age == 35)
-
-        store.optionalProfile = nil
-        #expect(store.optionalProfile == nil)
-    }
-
-    @Test("Enum with RawRepresentable and Codable should work")
-    func enumTest() {
-        // Clean up to ensure fresh state
-        UserDefaults.standard.removeObject(forKey: "Test4_status")
-
-        let store = TestStore4()
-
-        #expect(store.status == .active)
+    @Test("Defaults: RawRepresentable enum + Codable works")
+    func defaultsEnumRawRepresentableCodable() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let store = DefaultsEnumStore(userDefaults: userDefaults)
 
         store.status = .inactive
         #expect(store.status == .inactive)
-
-        // Verify it's stored as raw value (String), not encoded Data
-        let userDefaults = UserDefaults.standard
-        let storedValue = userDefaults.object(forKey: "Test4_status")
-        #expect(storedValue is String)
-        #expect((storedValue as? String) == "inactive")
+        #expect(userDefaults.object(forKey: "RRC_defaults_enum_status") as? String == "inactive")
     }
 
-    // MARK: - Cloud Tests
+    @Test("Defaults compatibility: legacy PropertyList data remains readable after adding RawRepresentable")
+    func defaultsPropertyListMigrationCompatibility() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
 
-    @Test("Cloud: Type conforming to both RawRepresentable and Codable should compile")
-    func cloudCompilationTest() {
-        let store = CloudTestStore1()
-        #expect(store.profile.name == "Default")
-        #expect(store.profile.age == 0)
+        let legacyStore = DefaultsLegacyPropertyListStore(userDefaults: userDefaults)
+        legacyStore.value = "legacy-v1"
+        #expect(userDefaults.object(forKey: "RRC_defaults_compat_value") as? String == "legacy-v1")
+
+        let migratedStore = DefaultsMigratedHybridStore(userDefaults: userDefaults)
+        #expect(migratedStore.value == HybridStringToken(value: "legacy-v1"))
+
+        migratedStore.value = HybridStringToken(value: "legacy-v2")
+        #expect(userDefaults.object(forKey: "RRC_defaults_compat_value") as? String == "legacy-v2")
     }
 
-    @Test("Cloud: Should use RawRepresentable storage (not Codable JSON encoding)")
-    func cloudStorageFormatTest() {
-        let store = CloudTestStore2()
-        let testProfile = UserProfile(name: "Alice", age: 30)
+    @Test("Cloud: RawRepresentable + Codable works")
+    func cloudRawCodableStorage() {
+        let store = CloudRawCodableStore(developmentMode: true)
 
-        store.profile = testProfile
-
-        #expect(store.profile.name == "Alice")
-        #expect(store.profile.age == 30)
+        store.profile = UserProfile(name: "Alice", age: 30)
+        #expect(store.profile == UserProfile(name: "Alice", age: 30))
     }
 
-    @Test("Cloud: Optional RawRepresentable & Codable type should work")
-    func cloudOptionalTest() {
-        let store = CloudTestStore3()
+    @Test("Cloud: RawRepresentable + PropertyList (with optional) works")
+    func cloudRawPropertyListOnly() {
+        let store = CloudRawPropertyStore(developmentMode: true)
 
-        #expect(store.optionalProfile == nil)
+        store.token = RawStringToken(value: "updated")
+        #expect(store.token == RawStringToken(value: "updated"))
 
-        store.optionalProfile = UserProfile(name: "Charlie", age: 35)
-        #expect(store.optionalProfile?.name == "Charlie")
-        #expect(store.optionalProfile?.age == 35)
+        store.optionalToken = RawStringToken(value: "optional")
+        #expect(store.optionalToken == RawStringToken(value: "optional"))
 
-        store.optionalProfile = nil
-        #expect(store.optionalProfile == nil)
+        store.optionalToken = nil
+        #expect(store.optionalToken == nil)
     }
 
-    @Test("Cloud: Enum with RawRepresentable and Codable should work")
-    func cloudEnumTest() {
-        let store = CloudTestStore4()
+    @Test("Cloud: RawRepresentable + PropertyList + Codable works")
+    func cloudRawPropertyListCodable() {
+        let store = CloudHybridStore(developmentMode: true)
 
-        #expect(store.status == .active)
+        store.hybrid = HybridIntToken(value: 42)
+        #expect(store.hybrid == HybridIntToken(value: 42))
+
+        store.optionalHybrid = HybridIntToken(value: 7)
+        #expect(store.optionalHybrid == HybridIntToken(value: 7))
+
+        store.optionalHybrid = nil
+        #expect(store.optionalHybrid == nil)
+    }
+
+    @Test("Cloud: RawRepresentable enum + Codable works")
+    func cloudEnumRawRepresentableCodable() {
+        let store = CloudEnumStore(developmentMode: true)
 
         store.status = .inactive
         #expect(store.status == .inactive)

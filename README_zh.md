@@ -446,6 +446,58 @@ class AppearanceSettings {
 
 当类型同时遵循 `RawRepresentable` 和 `Codable` 时，库会优先使用 `RawRepresentable` 的存储方式，通过原始值（raw value）存储数据，而不是使用 JSON 编码。这确保了与现有数据的向后兼容性，并为枚举类型提供了更高效的存储方式。
 
+### 存储决策规则（直接访问 Key 时请务必遵循）
+
+以下规则同时适用于 `@ObservableDefaults`（`UserDefaults`）和 `@ObservableCloud`（`NSUbiquitousKeyValueStore`）。
+当类型同时满足多个约束时，按“越具体越优先”的顺序选择：
+
+1. `RawRepresentable & PropertyListValue & Codable`
+2. `RawRepresentable & PropertyListValue`
+3. `RawRepresentable`（且 `RawValue` 为 PropertyList 可存储类型）
+4. `PropertyListValue & Codable`
+5. `PropertyListValue`
+6. 仅 `Codable`（JSON `Data` 路径，优先级最低）
+
+#### 各组合的实际存储格式
+
+- `RawRepresentable` 路径：保存 `rawValue`。
+  - 例如 `String`/`Int` rawValue 会直接以 `String`/`Int` 存储。
+- `PropertyListValue` 路径：直接以 PropertyList 值存储。
+- 仅 `Codable` 路径：以 JSON 编码后的 `Data` 存储。
+- Optional 值：
+  - 非 `nil`：按上述规则保存
+  - `nil`：删除对应 key
+
+#### 读取回退（兼容历史数据）
+
+对于 `RawRepresentable & PropertyListValue`（包括 `RawRepresentable & PropertyListValue & Codable`）：
+
+- 读取时先按 `rawValue` 格式解析。
+- 若失败，再回退到直接 `PropertyListValue` 转换。
+
+这保证了历史上“按 PropertyList 直接写入”的旧数据，在后来属性演进为 `RawRepresentable` 后仍可读取。
+
+#### 与手动读写保持一致
+
+如果你在其他位置直接读写 `UserDefaults` / iCloud key，请使用同样的格式规则：
+
+- `RawRepresentable` 相关属性：手动写 `rawValue`
+- `PropertyListValue` 属性：手动写 PropertyList 原值
+- 仅 `Codable` 属性：手动写 JSON `Data`
+- key 规则与宏一致：
+  - 默认：`prefix + propertyName`
+  - 自定义 key：`@DefaultsKey` / `@CloudKey`
+
+示例（`UserDefaults`）：
+
+```swift
+// RawRepresentable 属性（rawValue: String）
+defaults.set(theme.rawValue, forKey: "app_theme")
+
+// 仅 Codable 属性
+defaults.set(try JSONEncoder().encode(profile), forKey: "app_profile")
+```
+
 ### 与其他 Observable 对象集成
 
 建议将存储数据与主应用程序状态分开管理：

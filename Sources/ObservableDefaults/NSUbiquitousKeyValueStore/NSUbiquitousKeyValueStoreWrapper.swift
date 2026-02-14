@@ -82,6 +82,92 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
         return R(rawValue: rawValue) ?? defaultValue
     }
 
+    /// Gets a value for types that conform to both RawRepresentable and CloudPropertyListValue.
+    ///
+    /// This dedicated overload removes ambiguity between the RawRepresentable and
+    /// CloudPropertyListValue overload sets.
+    public func getValue<Value>(
+        _ key: String,
+        _ defaultValue: Value) -> Value
+    where Value: RawRepresentable, Value.RawValue: CloudPropertyListValue,
+        Value: CloudPropertyListValue {
+        // Prefer RawRepresentable storage for hybrid types.
+        // Fallback to direct property-list casting to preserve compatibility with
+        // legacy data written through non-raw paths.
+        if let rawValue = store.object(forKey: key) as? Value.RawValue {
+            return Value(rawValue: rawValue) ?? defaultValue
+        }
+        if let value = store.object(forKey: key) as? Value {
+            return value
+        }
+        return defaultValue
+    }
+
+    /// Gets an optional value for types that conform to both RawRepresentable and
+    /// CloudPropertyListValue.
+    ///
+    /// This dedicated overload removes ambiguity between the RawRepresentable and
+    /// CloudPropertyListValue overload sets.
+    public func getValue<R>(
+        _ key: String,
+        _ defaultValue: R?) -> R?
+    where R: RawRepresentable, R.RawValue: CloudPropertyListValue, R: CloudPropertyListValue {
+        // Prefer RawRepresentable storage for hybrid types.
+        // Fallback to direct property-list casting to preserve compatibility with
+        // legacy data written through non-raw paths.
+        if let rawValue = store.object(forKey: key) as? R.RawValue {
+            return R(rawValue: rawValue) ?? defaultValue
+        }
+        if let value = store.object(forKey: key) as? R {
+            return value
+        }
+        return defaultValue
+    }
+
+    /// Gets a value for types that conform to RawRepresentable,
+    /// CloudPropertyListValue, and Codable.
+    ///
+    /// This dedicated overload removes ambiguity with the
+    /// CloudPropertyListValue & Codable overload set.
+    public func getValue<Value>(
+        _ key: String,
+        _ defaultValue: Value) -> Value
+    where Value: RawRepresentable, Value.RawValue: CloudPropertyListValue,
+        Value: CloudPropertyListValue & Codable {
+        // Prefer RawRepresentable storage for hybrid types.
+        // Fallback to direct property-list casting to preserve compatibility with
+        // legacy data written through non-raw paths.
+        if let rawValue = store.object(forKey: key) as? Value.RawValue {
+            return Value(rawValue: rawValue) ?? defaultValue
+        }
+        if let value = store.object(forKey: key) as? Value {
+            return value
+        }
+        return defaultValue
+    }
+
+    /// Gets an optional value for types that conform to RawRepresentable,
+    /// CloudPropertyListValue, and Codable.
+    ///
+    /// This dedicated overload removes ambiguity with the
+    /// CloudPropertyListValue & Codable overload set.
+    public func getValue<R>(
+        _ key: String,
+        _ defaultValue: R?) -> R?
+    where R: RawRepresentable, R.RawValue: CloudPropertyListValue,
+        R: CloudPropertyListValue & Codable {
+        // Prefer RawRepresentable storage for hybrid types.
+        // Fallback to direct property-list casting to preserve compatibility with
+        // legacy data written through non-raw paths.
+        if let rawValue = store.object(forKey: key) as? R.RawValue {
+            return R(rawValue: rawValue) ?? defaultValue
+        }
+        if let value = store.object(forKey: key) as? R {
+            return value
+        }
+        return defaultValue
+    }
+
     /// Gets a basic property list value from the ubiquitous key-value store.
     /// This method is used for basic types like String, Int, Bool, etc.
     /// - Parameters:
@@ -238,6 +324,68 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
         _ newValue: R?)
     where R: RawRepresentable, R.RawValue: CloudPropertyListValue {
         // Store the raw value of the optional enum (nil if the enum is nil)
+        if let newValue {
+            store.set(newValue.rawValue, forKey: key)
+        } else {
+            store.removeObject(forKey: key)
+        }
+    }
+
+    /// Sets a value for types that conform to both RawRepresentable and CloudPropertyListValue.
+    ///
+    /// This dedicated overload removes ambiguity between the RawRepresentable and
+    /// CloudPropertyListValue overload sets.
+    public func setValue<Value>(
+        _ key: String,
+        _ newValue: Value)
+    where Value: RawRepresentable, Value.RawValue: CloudPropertyListValue,
+        Value: CloudPropertyListValue {
+        // Prefer RawRepresentable storage for hybrid types.
+        store.set(newValue.rawValue, forKey: key)
+    }
+
+    /// Sets an optional value for types that conform to both RawRepresentable and
+    /// CloudPropertyListValue.
+    ///
+    /// This dedicated overload removes ambiguity between the RawRepresentable and
+    /// CloudPropertyListValue overload sets.
+    public func setValue<R>(
+        _ key: String,
+        _ newValue: R?)
+    where R: RawRepresentable, R.RawValue: CloudPropertyListValue, R: CloudPropertyListValue {
+        // Prefer RawRepresentable storage for hybrid types.
+        if let newValue {
+            store.set(newValue.rawValue, forKey: key)
+        } else {
+            store.removeObject(forKey: key)
+        }
+    }
+
+    /// Sets a value for types that conform to RawRepresentable,
+    /// CloudPropertyListValue, and Codable.
+    ///
+    /// This dedicated overload removes ambiguity with the
+    /// CloudPropertyListValue & Codable overload set.
+    public func setValue<Value>(
+        _ key: String,
+        _ newValue: Value)
+    where Value: RawRepresentable, Value.RawValue: CloudPropertyListValue,
+        Value: CloudPropertyListValue & Codable {
+        // Prefer RawRepresentable storage for hybrid types.
+        store.set(newValue.rawValue, forKey: key)
+    }
+
+    /// Sets an optional value for types that conform to RawRepresentable,
+    /// CloudPropertyListValue, and Codable.
+    ///
+    /// This dedicated overload removes ambiguity with the
+    /// CloudPropertyListValue & Codable overload set.
+    public func setValue<R>(
+        _ key: String,
+        _ newValue: R?)
+    where R: RawRepresentable, R.RawValue: CloudPropertyListValue,
+        R: CloudPropertyListValue & Codable {
+        // Prefer RawRepresentable storage for hybrid types.
         if let newValue {
             store.set(newValue.rawValue, forKey: key)
         } else {

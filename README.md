@@ -446,6 +446,58 @@ class AppearanceSettings {
 
 When a type conforms to both `RawRepresentable` and `Codable`, the library will prioritize the `RawRepresentable` storage method, storing values using their raw representation rather than JSON encoding. This ensures backward compatibility with existing data and provides more efficient storage for enum types.
 
+### Storage Resolution Rules (Important for Direct Key Access)
+
+These rules apply to both `@ObservableDefaults` (`UserDefaults`) and `@ObservableCloud` (`NSUbiquitousKeyValueStore`).
+When a type matches multiple constraints, the implementation chooses the most specific path in this order:
+
+1. `RawRepresentable & PropertyListValue & Codable`
+2. `RawRepresentable & PropertyListValue`
+3. `RawRepresentable` (where `RawValue` is a PropertyList-compatible type)
+4. `PropertyListValue & Codable`
+5. `PropertyListValue`
+6. `Codable` only (JSON `Data` path; intentionally lower priority)
+
+#### Persisted Format by Type Combination
+
+- `RawRepresentable`-based paths: persist `rawValue`.
+  - Example: `String`/`Int` raw values are stored directly as `String`/`Int`.
+- `PropertyListValue` paths: persist the value directly as PropertyList-compatible objects.
+- `Codable`-only path: persist JSON-encoded `Data`.
+- Optional values:
+  - non-`nil`: stored using the same rules above
+  - `nil`: key is removed
+
+#### Read Fallback for Compatibility
+
+For `RawRepresentable & PropertyListValue` (including `RawRepresentable & PropertyListValue & Codable`):
+
+- Read attempts `rawValue` format first.
+- If that fails, read falls back to direct `PropertyListValue` casting.
+
+This fallback keeps older data readable when a property was previously persisted via direct PropertyList format and later evolved to a `RawRepresentable` type.
+
+#### Consistency for Manual `UserDefaults` / Cloud Reads and Writes
+
+If you also read/write these keys directly outside the macros, use the same format rules to avoid mismatches.
+
+- Use `rawValue` for all `RawRepresentable`-based properties.
+- Use direct PropertyList values for PropertyList paths.
+- Use JSON `Data` only for `Codable`-only properties.
+- Key naming follows macro key resolution:
+  - default: `prefix + propertyName`
+  - custom key: `@DefaultsKey` / `@CloudKey`
+
+Example (`UserDefaults`):
+
+```swift
+// For RawRepresentable-backed property (rawValue: String)
+defaults.set(theme.rawValue, forKey: "app_theme")
+
+// For Codable-only property
+defaults.set(try JSONEncoder().encode(profile), forKey: "app_profile")
+```
+
 ### Integrating with Other Observable Objects
 
 It's recommended to manage storage data separately from your main application state:

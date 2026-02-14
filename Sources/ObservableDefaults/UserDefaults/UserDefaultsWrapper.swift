@@ -83,6 +83,98 @@ public struct UserDefaultsWrapper<Value> {
         return Value(rawValue: rawValue) ?? defaultValue
     }
 
+    /// Gets a value for types that conform to both RawRepresentable and
+    /// UserDefaultsPropertyListValue.
+    ///
+    /// This dedicated overload removes ambiguity between the RawRepresentable and
+    /// UserDefaultsPropertyListValue overload sets.
+    public nonisolated static func getValue(
+        _ key: String,
+        _ defaultValue: Value,
+        _ store: UserDefaults) -> Value
+    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
+        Value: UserDefaultsPropertyListValue {
+        // Prefer RawRepresentable storage for hybrid types.
+        // Fallback to direct property-list casting to preserve compatibility with
+        // legacy data written through non-raw paths.
+        if let rawValue = store.object(forKey: key) as? Value.RawValue {
+            return Value(rawValue: rawValue) ?? defaultValue
+        }
+        if let value = store.object(forKey: key) as? Value {
+            return value
+        }
+        return defaultValue
+    }
+
+    /// Gets an optional value for types that conform to both RawRepresentable and
+    /// UserDefaultsPropertyListValue.
+    ///
+    /// This dedicated overload removes ambiguity between the RawRepresentable and
+    /// UserDefaultsPropertyListValue overload sets.
+    public nonisolated static func getValue(
+        _ key: String,
+        _ defaultValue: Value?,
+        _ store: UserDefaults) -> Value?
+    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
+        Value: UserDefaultsPropertyListValue {
+        // Prefer RawRepresentable storage for hybrid types.
+        // Fallback to direct property-list casting to preserve compatibility with
+        // legacy data written through non-raw paths.
+        if let rawValue = store.object(forKey: key) as? Value.RawValue {
+            return Value(rawValue: rawValue) ?? defaultValue
+        }
+        if let value = store.object(forKey: key) as? Value {
+            return value
+        }
+        return defaultValue
+    }
+
+    /// Gets a value for types that conform to RawRepresentable,
+    /// UserDefaultsPropertyListValue, and Codable.
+    ///
+    /// This dedicated overload removes ambiguity with the
+    /// UserDefaultsPropertyListValue & Codable overload set.
+    public nonisolated static func getValue(
+        _ key: String,
+        _ defaultValue: Value,
+        _ store: UserDefaults) -> Value
+    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
+        Value: UserDefaultsPropertyListValue & Codable {
+        // Prefer RawRepresentable storage for hybrid types.
+        // Fallback to direct property-list casting to preserve compatibility with
+        // legacy data written through non-raw paths.
+        if let rawValue = store.object(forKey: key) as? Value.RawValue {
+            return Value(rawValue: rawValue) ?? defaultValue
+        }
+        if let value = store.object(forKey: key) as? Value {
+            return value
+        }
+        return defaultValue
+    }
+
+    /// Gets an optional value for types that conform to RawRepresentable,
+    /// UserDefaultsPropertyListValue, and Codable.
+    ///
+    /// This dedicated overload removes ambiguity with the
+    /// UserDefaultsPropertyListValue & Codable overload set.
+    public nonisolated static func getValue(
+        _ key: String,
+        _ defaultValue: Value?,
+        _ store: UserDefaults) -> Value?
+    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
+        Value: UserDefaultsPropertyListValue & Codable {
+        // Prefer RawRepresentable storage for hybrid types.
+        // Fallback to direct property-list casting to preserve compatibility with
+        // legacy data written through non-raw paths.
+        if let rawValue = store.object(forKey: key) as? Value.RawValue {
+            return Value(rawValue: rawValue) ?? defaultValue
+        }
+        if let value = store.object(forKey: key) as? Value {
+            return value
+        }
+        return defaultValue
+    }
+
     /// Gets a basic property list value from the user defaults store.
     /// This method is used for basic types like String, Int, Bool, etc.
     /// - Parameters:
@@ -245,6 +337,60 @@ public struct UserDefaultsWrapper<Value> {
         _ store: UserDefaults)
     where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue {
         // Store the raw value of the optional enum (nil if the enum is nil)
+        store.set(newValue?.rawValue, forKey: key)
+    }
+
+    /// Sets a value for types that conform to both RawRepresentable and
+    /// UserDefaultsPropertyListValue.
+    ///
+    /// This dedicated overload removes ambiguity between the RawRepresentable and
+    /// UserDefaultsPropertyListValue overload sets.
+    public nonisolated static func setValue(_ key: String, _ newValue: Value, _ store: UserDefaults)
+    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
+        Value: UserDefaultsPropertyListValue {
+        // Prefer RawRepresentable storage for hybrid types.
+        store.set(newValue.rawValue, forKey: key)
+    }
+
+    /// Sets an optional value for types that conform to both RawRepresentable and
+    /// UserDefaultsPropertyListValue.
+    ///
+    /// This dedicated overload removes ambiguity between the RawRepresentable and
+    /// UserDefaultsPropertyListValue overload sets.
+    public nonisolated static func setValue(
+        _ key: String,
+        _ newValue: Value?,
+        _ store: UserDefaults)
+    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
+        Value: UserDefaultsPropertyListValue {
+        // Prefer RawRepresentable storage for hybrid types.
+        store.set(newValue?.rawValue, forKey: key)
+    }
+
+    /// Sets a value for types that conform to RawRepresentable,
+    /// UserDefaultsPropertyListValue, and Codable.
+    ///
+    /// This dedicated overload removes ambiguity with the
+    /// UserDefaultsPropertyListValue & Codable overload set.
+    public nonisolated static func setValue(_ key: String, _ newValue: Value, _ store: UserDefaults)
+    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
+        Value: UserDefaultsPropertyListValue & Codable {
+        // Prefer RawRepresentable storage for hybrid types.
+        store.set(newValue.rawValue, forKey: key)
+    }
+
+    /// Sets an optional value for types that conform to RawRepresentable,
+    /// UserDefaultsPropertyListValue, and Codable.
+    ///
+    /// This dedicated overload removes ambiguity with the
+    /// UserDefaultsPropertyListValue & Codable overload set.
+    public nonisolated static func setValue(
+        _ key: String,
+        _ newValue: Value?,
+        _ store: UserDefaults)
+    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
+        Value: UserDefaultsPropertyListValue & Codable {
+        // Prefer RawRepresentable storage for hybrid types.
         store.set(newValue?.rawValue, forKey: key)
     }
 
