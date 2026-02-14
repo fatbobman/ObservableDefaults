@@ -100,6 +100,13 @@ extension DefaultsBackedMacro: AccessorMacro {
             return []
         }
 
+        if property.hasWillOrDidSetObserver {
+            context.diagnose(
+                .observersNotSupported(
+                    property: property,
+                    attributeName: "@\(DefaultsBackedMacro.name)"))
+        }
+
         // Check if the property is optional to handle initialization differently
         var isOptionalType = false
         if let typeAnnotation = binding.typeAnnotation {
@@ -270,8 +277,9 @@ extension DefaultsBackedMacro: PeerMacro {
                 typeName.contains("Optional")
         }
 
-        // Generate private storage property with underscore prefix, for willSet and didSet
-        let storage = DeclSyntax(property.privatePrefixed("_"))
+        // Generate private storage property with underscore prefix.
+        // Persistent properties do not support property observers.
+        let storage = DeclSyntax(property.privatePrefixedWithoutAccessors("_"))
 
         // swiftformat:disable all
         // Generate default value storage property with double underscore prefix

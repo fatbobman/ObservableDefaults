@@ -131,6 +131,7 @@ struct ContentView: View {
 - `@Ignore`: 属性既不可观察也不存储在 `UserDefaults` 中。
 - `@DefaultsKey`: 为属性指定自定义 `UserDefaults` 键。
 - `@DefaultsBacked`: 属性存储在 `UserDefaults` 中并且可观察。
+- `@DefaultsBacked` 不支持 `willSet` / `didSet`。
 
 ```swift
 @ObservableDefaults
@@ -156,6 +157,7 @@ public class LocalSettings {
 - `@Ignore`: 属性既不可观察也不存储。
 - `@CloudKey`: 为属性指定自定义 `NSUbiquitousKeyValueStore` 键。
 - `@CloudBacked`: 属性存储在 `NSUbiquitousKeyValueStore` 中并且可观察。
+- `@CloudBacked` 不支持 `willSet` / `didSet`。
 
 ```swift
 @ObservableCloud
@@ -356,6 +358,12 @@ public class CloudSettings {
     public var cache = "cache"                    // 既不可观察也不持久化
 }
 ```
+
+### 属性观察器（`willSet` / `didSet`）
+
+- `@DefaultsBacked` 和 `@CloudBacked` 不支持 `willSet` / `didSet`。
+- `@ObservableOnly` 支持 `willSet` / `didSet`。
+- 在观察优先模式中，被自动标记为 `@ObservableOnly` 的属性同样支持 `willSet` / `didSet`。
 
 ### 支持 Optional 类型
 

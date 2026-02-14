@@ -69,6 +69,33 @@ class MockModelObserveFirst {
     var name: String = "Test"
 }
 
+@ObservableDefaults(observeFirst: true)
+class MockModelObserveFirstWithObservers {
+    var observableOnly: String = "ObservableOnly" {
+        willSet {
+            setResult.append("willSet: \(newValue)")
+        }
+        didSet {
+            setResult.append("didSet: \(oldValue)")
+        }
+    }
+
+    var observableCollection: [String] = ["ObservableOnly"] {
+        willSet {
+            setResult.append("willSet collection: \(newValue)")
+        }
+        didSet {
+            setResult.append("didSet collection: \(oldValue)")
+        }
+    }
+
+    @DefaultsBacked
+    var name: String = "Test"
+
+    @Ignore
+    var setResult: [String] = []
+}
+
 @ObservableDefaults
 class MockModelKeyName {
     @DefaultsBacked(userDefaultsKey: "rename-by-backed-key")
@@ -131,6 +158,24 @@ class MockModelCloudObserveFirst {
 
     @Ignore
     var ignore: String = "Ignore"
+}
+
+@ObservableCloud(observeFirst: true)
+class MockModelCloudObserveFirstWithObservers {
+    @CloudBacked
+    var name: String = "Test"
+
+    var observableOnly: String = "ObservableOnly" {
+        willSet {
+            setResult.append("willSet: \(newValue)")
+        }
+        didSet {
+            setResult.append("didSet: \(oldValue)")
+        }
+    }
+
+    @Ignore
+    var setResult: [String] = []
 }
 
 @ObservableCloud

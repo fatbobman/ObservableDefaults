@@ -43,14 +43,11 @@ struct ObservableCloudTests {
         model.observableOnly = "ObservableOnly" // same value
     }
 
-    @Test("WillSet and DidSet for Backed Property in Development Mode")
-    func willSetAndDidSetForBackedPropertyInDevelopmentMode() {
+    @Test("WillSet and DidSet are not supported for Backed Property in Development Mode")
+    func willSetAndDidSetAreNotSupportedForBackedPropertyInDevelopmentMode() {
         let model = MockModelCloud(developmentMode: true)
-        tracking(model, \.setResult, .direct)
         model.name = "test1"
-        #expect(
-            model.setResult == ["willSet: test1", "didSet: Test"],
-            "setResult should be observable by setting value directly")
+        #expect(model.setResult.isEmpty, "willSet/didSet should not run for backed properties")
     }
 
     @Test("WillSet and DidSet for Observable Only Property in Development Mode")
@@ -103,6 +100,15 @@ struct ObservableCloudTests {
             #expect(userDefaults.string(forKey: "observableOnly") == nil)
         }
 
+        @Test("Observe First ObservableOnly supports WillSet and DidSet", .testMode)
+        func observeFirstObservableOnlySupportsWillSetAndDidSet() {
+            let model = MockModelCloudObserveFirstWithObservers(developmentMode: false)
+            model.observableOnly = "Test2"
+            #expect(
+                model.setResult == ["willSet: Test2", "didSet: ObservableOnly"],
+                "willSet/didSet should run for observeFirst observable-only properties")
+        }
+
         @Test("Specify Key Name", .testMode)
         func specifyKeyName() {
             let model = MockModelCloudKeyName(developmentMode: false)
@@ -119,14 +125,11 @@ struct ObservableCloudTests {
             #expect(userDefaults.string(forKey: "mix-key-backed-key") == "Test4")
         }
 
-        @Test("WillSet and DidSet for Backed Property", .testMode)
-        func willSetAndDidSetForBackedProperty() {
+        @Test("WillSet and DidSet are not supported for Backed Property", .testMode)
+        func willSetAndDidSetAreNotSupportedForBackedProperty() {
             let model = MockModelCloud(developmentMode: false)
-            tracking(model, \.setResult, .direct)
             model.name = "test1"
-            #expect(
-                model.setResult == ["willSet: test1", "didSet: Test"],
-                "setResult should be observable by setting value directly")
+            #expect(model.setResult.isEmpty, "willSet/didSet should not run for backed properties")
         }
 
         @Test(
@@ -371,9 +374,8 @@ struct ObservableCloudTests {
         model.customKey = "UpdatedValue"
         #expect(model.customKey == "UpdatedValue", "customKey should be set to UpdatedValue")
         
-        // Test willSet/didSet functionality
-        #expect(model.setResult.contains("willSet: MainActorTest"), "willSet should be called for name")
-        #expect(model.setResult.contains("didSet: Test"), "didSet should be called for name")
+        // Backed properties do not support willSet/didSet
+        #expect(model.setResult.isEmpty, "willSet/didSet should not run for backed properties")
     }
     
     #if !DEBUG

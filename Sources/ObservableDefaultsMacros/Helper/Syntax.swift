@@ -39,6 +39,13 @@ extension VariableDeclSyntax {
         }
     }
 
+    // Check whether property observers are declared on the original property.
+    var hasWillOrDidSetObserver: Bool {
+        !accessorsMatching {
+            $0 == .keyword(.willSet) || $0 == .keyword(.didSet)
+        }.isEmpty
+    }
+
     // Only observable, not persistent
     var isObservable: Bool {
         isMutableAndNotComputed && !hasAttribute(named: IgnoreMacro.name) && !isStatic
@@ -162,7 +169,21 @@ extension VariableDeclSyntax {
                 leadingTrivia: .space,
                 trailingTrivia: .space,
                 presence: .present),
-            bindings: bindings.privatePrefixed(prefix),
+            bindings: bindings.privatePrefixed(prefix, preservingAccessors: true),
+            trailingTrivia: trailingTrivia)
+    }
+
+    func privatePrefixedWithoutAccessors(_ prefix: String) -> VariableDeclSyntax {
+        VariableDeclSyntax(
+            leadingTrivia: leadingTrivia,
+            attributes: [],
+            modifiers: modifiers.privatePrefixed(prefix),
+            bindingSpecifier: TokenSyntax(
+                bindingSpecifier.tokenKind,
+                leadingTrivia: .space,
+                trailingTrivia: .space,
+                presence: .present),
+            bindings: bindings.privatePrefixed(prefix, preservingAccessors: false),
             trailingTrivia: trailingTrivia)
     }
 }
@@ -309,7 +330,10 @@ extension TokenSyntax {
 }
 
 extension PatternBindingListSyntax {
-    func privatePrefixed(_ prefix: String) -> PatternBindingListSyntax {
+    func privatePrefixed(
+        _ prefix: String,
+        preservingAccessors: Bool = true) -> PatternBindingListSyntax
+    {
         var bindings = map(\.self)
         for index in 0 ..< bindings.count {
             let binding = bindings[index]
@@ -322,7 +346,7 @@ extension PatternBindingListSyntax {
                         trailingTrivia: identifier.trailingTrivia),
                     typeAnnotation: binding.typeAnnotation,
                     initializer: binding.initializer,
-                    accessorBlock: binding.accessorBlock,
+                    accessorBlock: preservingAccessors ? binding.accessorBlock : nil,
                     trailingComma: binding.trailingComma,
                     trailingTrivia: binding.trailingTrivia)
             }

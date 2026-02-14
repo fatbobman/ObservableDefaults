@@ -122,6 +122,28 @@ struct ObservableDefaultsTests {
             "observableOnly should be observable by setting value directly")
     }
 
+    @Test("Observe First ObservableOnly supports WillSet and DidSet")
+    func observeFirstObservableOnlySupportsWillSetAndDidSet() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let model = MockModelObserveFirstWithObservers(userDefaults: userDefaults)
+
+        model.observableOnly = "Test2"
+        #expect(
+            model.setResult == ["willSet: Test2", "didSet: ObservableOnly"],
+            "willSet/didSet should run for observeFirst observable-only properties")
+    }
+
+    @Test("Observe First ObservableOnly supports WillSet and DidSet via _modify")
+    func observeFirstObservableOnlySupportsWillSetAndDidSetViaModify() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let model = MockModelObserveFirstWithObservers(userDefaults: userDefaults)
+
+        model.observableCollection.append("Test2")
+        #expect(model.setResult.count == 2)
+        #expect(model.setResult.first == "willSet collection: [\"ObservableOnly\", \"Test2\"]")
+        #expect(model.setResult.last == "didSet collection: [\"ObservableOnly\"]")
+    }
+
     @Test("Specify Key Name")
     func specifyKeyName() {
         let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
@@ -163,16 +185,13 @@ struct ObservableDefaultsTests {
         model.observableOnly = "ObservableOnly" // same value
     }
 
-    @Test("WillSet and DidSet for Backed Property")
-    func willSetAndDidSetForBackedProperty() {
+    @Test("WillSet and DidSet are not supported for Backed Property")
+    func willSetAndDidSetAreNotSupportedForBackedProperty() {
         let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
         let model = MockModel(userDefaults: userDefaults)
 
-        tracking(model, \.setResult, .direct)
         model.name = "test1"
-        #expect(
-            model.setResult == ["willSet: test1", "didSet: Test"],
-            "setResult should be observable by setting value directly")
+        #expect(model.setResult.isEmpty, "willSet/didSet should not run for backed properties")
     }
 
     @Test("WillSet and DidSet for Observable Only Property")
@@ -316,9 +335,8 @@ struct ObservableDefaultsTests {
         model.customKey = "UpdatedValue"
         #expect(model.customKey == "UpdatedValue", "customKey should be set to UpdatedValue")
         
-        // Test willSet/didSet functionality
-        #expect(model.setResult.contains("willSet: MainActorTest"), "willSet should be called for name")
-        #expect(model.setResult.contains("didSet: Test"), "didSet should be called for name")
+        // Backed properties do not support willSet/didSet
+        #expect(model.setResult.isEmpty, "willSet/didSet should not run for backed properties")
         
         // Test that values persist to UserDefaults
         #expect(userDefaults.string(forKey: "name") == "MainActorTest", 
