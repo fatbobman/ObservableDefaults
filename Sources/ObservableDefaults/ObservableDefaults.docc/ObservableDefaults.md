@@ -273,6 +273,12 @@ public class CloudSettings {
 }
 ```
 
+### Property Observers (`willSet` / `didSet`)
+
+- `@DefaultsBacked` and `@CloudBacked` do not support `willSet` / `didSet`.
+- `@ObservableOnly` supports `willSet` / `didSet`.
+- In Observe First mode, properties automatically marked as `@ObservableOnly` also support `willSet` / `didSet`.
+
 ## Development Mode for Cloud Storage
 
 The `@ObservableCloud` macro supports development mode for testing without CloudKit setup:

@@ -14,6 +14,12 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
+struct ObservableDefaultsWarningMessage: DiagnosticMessage {
+    let message: String
+    let diagnosticID = MessageID(domain: "ObservableDefaultsMacros", id: "warning")
+    let severity: DiagnosticSeverity = .warning
+}
+
 func createDiagnostic(
     node: some SyntaxProtocol,
     message: String,
@@ -31,6 +37,15 @@ func createDiagnostic(
         node: node,
         message: MacroExpansionErrorMessage(message),
         fixIts: fixIts)
+}
+
+func createWarningDiagnostic(
+    node: some SyntaxProtocol,
+    message: String) -> Diagnostic
+{
+    Diagnostic(
+        node: node,
+        message: ObservableDefaultsWarningMessage(message: message))
 }
 
 extension Diagnostic {
@@ -105,6 +120,15 @@ extension Diagnostic {
         createDiagnostic(
             node: expression,
             message: "\(attributeName) parameter '\(argumentName)' must be a string literal")
+    }
+
+    static func observersNotSupported(
+        property: VariableDeclSyntax,
+        attributeName: String) -> Diagnostic
+    {
+        createWarningDiagnostic(
+            node: property,
+            message: "\(attributeName) does not support willSet/didSet. These observers will be ignored.")
     }
 
 }

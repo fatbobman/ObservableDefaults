@@ -29,6 +29,7 @@
 /// ```
 ///
 /// - Note: Properties must have default values and cannot be optional types
+/// - Important: `willSet` and `didSet` are not supported on `@DefaultsBacked` properties
 @attached(peer, names: prefixed(`_`), arbitrary)
 @attached(accessor, names: named(get), named(set))
 public macro DefaultsBacked(userDefaultsKey: String? = nil) = #externalMacro(
@@ -115,6 +116,8 @@ public macro Ignore() = #externalMacro(module: "ObservableDefaultsMacros", type:
 /// ```
 ///
 /// - Note: Values will not persist between app launches
+/// - Important: `willSet` and `didSet` are supported on `@ObservableOnly` properties,
+///   including properties automatically marked in Observe First mode
 @attached(peer, names: prefixed(`_`))
 @attached(accessor, names: named(get), named(set), named(init), named(_modify))
 public macro ObservableOnly() = #externalMacro(
@@ -280,6 +283,7 @@ public macro ObservableDefaults(
 /// - Property type must not be optional
 /// - Property must not already have custom accessors
 /// - Property type must conform to appropriate storage protocols
+/// - `willSet` and `didSet` are not supported on `@CloudBacked` properties
 ///
 /// ## Generated Code
 ///

@@ -131,6 +131,7 @@ The library provides additional macros for finer control:
 - `@Ignore`: The property is neither observable nor stored in `UserDefaults`.
 - `@DefaultsKey`: Specifies a custom `UserDefaults` key for the property.
 - `@DefaultsBacked`: The property is stored in `UserDefaults` and observable.
+- `@DefaultsBacked` does not support `willSet` / `didSet`.
 
 ```swift
 @ObservableDefaults
@@ -156,6 +157,7 @@ Similar macro support with cloud-specific options:
 - `@Ignore`: The property is neither observable nor stored.
 - `@CloudKey`: Specifies a custom `NSUbiquitousKeyValueStore` key for the property.
 - `@CloudBacked`: The property is stored in `NSUbiquitousKeyValueStore` and observable.
+- `@CloudBacked` does not support `willSet` / `didSet`.
 
 ```swift
 @ObservableCloud
@@ -356,6 +358,12 @@ public class CloudSettings {
     public var cache = "cache"                    // Neither observable nor persisted
 }
 ```
+
+### Property Observers (`willSet` / `didSet`)
+
+- `@DefaultsBacked` and `@CloudBacked` do not support `willSet` / `didSet`.
+- `@ObservableOnly` supports `willSet` / `didSet`.
+- In Observe First mode, properties automatically marked as `@ObservableOnly` also support `willSet` / `didSet`.
 
 ### Supporting Optional Types
 
