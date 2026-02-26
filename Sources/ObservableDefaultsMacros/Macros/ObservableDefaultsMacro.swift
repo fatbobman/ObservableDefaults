@@ -182,12 +182,21 @@ extension ObservableDefaultsMacros: MemberMacro {
                 return """
                     \(caseIndent)case prefix + "\(meta.userDefaultsKey)":
                     \(caseIndent)    MainActor.assumeIsolated {
-                    \(caseIndent)        host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
+                    \(caseIndent)        let newValue = UserDefaultsWrapper.getValue(fullKey, host._\(meta.propertyID), host._userDefaults)
+                    \(caseIndent)        if host.shouldSetValue(newValue, host._\(meta.propertyID)) {
+                    \(caseIndent)            host._\(meta.propertyID) = newValue
+                    \(caseIndent)            host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
+                    \(caseIndent)        }
                     \(caseIndent)    }
                     """
             } else {
                 return """
-                    \(caseIndent)case prefix + "\(meta.userDefaultsKey)": host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
+                    \(caseIndent)case prefix + "\(meta.userDefaultsKey)":
+                    \(caseIndent)    let newValue = UserDefaultsWrapper.getValue(fullKey, host._\(meta.propertyID), host._userDefaults)
+                    \(caseIndent)    if host.shouldSetValue(newValue, host._\(meta.propertyID)) {
+                    \(caseIndent)        host._\(meta.propertyID) = newValue
+                    \(caseIndent)        host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
+                    \(caseIndent)    }
                     """
             }
             // swiftformat:enable all
