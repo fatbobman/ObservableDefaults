@@ -109,7 +109,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             suiteName,
             prefix,
             ignoreExternalChanges,
-            _,
+            observeFirst,
             limitToInstance,
             defaultIsolationIsMainActor,
             suiteNameExpression
@@ -149,7 +149,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             }
 
         // Build mapping between properties and their UserDefaults keys
-        let metas: [(userDefaultsKey: String, propertyID: String)] = persistentProperties
+        let metas: [(userDefaultsKey: String, propertyID: String, isBacked: Bool)] = persistentProperties
             .map { property in
                 let key =
                     property.attributes.extractValue(
@@ -159,7 +159,10 @@ extension ObservableDefaultsMacros: MemberMacro {
                         forAttribute: DefaultsKeyMacro.name,
                         argument: DefaultsKeyMacro.key) ?? property.identifier?.text ?? ""
                 let propertyID = property.identifier?.text ?? ""
-                return (key, propertyID)
+                // In observeFirst mode, only explicitly @DefaultsBacked properties are backed;
+                // otherwise all persistent properties are backed.
+                let isBacked = !observeFirst || property.hasAttribute(named: DefaultsBackedMacro.name)
+                return (key, propertyID, isBacked)
             }
 
         // Generate keyPath mapping for external change handling
@@ -178,11 +181,26 @@ extension ObservableDefaultsMacros: MemberMacro {
         let caseCode = metas.enumerated().map { index, meta in
             let caseIndent = index == 0 ? "" : "                "
             // swiftformat:disable all
-            if hasMainActor {
+            if !meta.isBacked {
+                // ObservableOnly properties are not stored in UserDefaults,
+                // so we cannot compare values — keep the original behavior.
+                if hasMainActor {
+                    return """
+                        \(caseIndent)case prefix + "\(meta.userDefaultsKey)":
+                        \(caseIndent)    MainActor.assumeIsolated {
+                        \(caseIndent)        host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
+                        \(caseIndent)    }
+                        """
+                } else {
+                    return """
+                        \(caseIndent)case prefix + "\(meta.userDefaultsKey)": host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
+                        """
+                }
+            } else if hasMainActor {
                 return """
                     \(caseIndent)case prefix + "\(meta.userDefaultsKey)":
                     \(caseIndent)    MainActor.assumeIsolated {
-                    \(caseIndent)        let newValue = UserDefaultsWrapper.getValue(fullKey, host._\(meta.propertyID), host._userDefaults)
+                    \(caseIndent)        let newValue = UserDefaultsWrapper.getValue(fullKey, host._default_value_of_\(meta.propertyID), host._userDefaults)
                     \(caseIndent)        if host.shouldSetValue(newValue, host._\(meta.propertyID)) {
                     \(caseIndent)            host._\(meta.propertyID) = newValue
                     \(caseIndent)            host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
@@ -192,7 +210,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             } else {
                 return """
                     \(caseIndent)case prefix + "\(meta.userDefaultsKey)":
-                    \(caseIndent)    let newValue = UserDefaultsWrapper.getValue(fullKey, host._\(meta.propertyID), host._userDefaults)
+                    \(caseIndent)    let newValue = UserDefaultsWrapper.getValue(fullKey, host._default_value_of_\(meta.propertyID), host._userDefaults)
                     \(caseIndent)    if host.shouldSetValue(newValue, host._\(meta.propertyID)) {
                     \(caseIndent)        host._\(meta.propertyID) = newValue
                     \(caseIndent)        host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}

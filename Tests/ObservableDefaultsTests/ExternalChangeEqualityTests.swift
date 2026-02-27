@@ -64,4 +64,34 @@ struct ExternalChangeEqualityTests {
         try? await Task.sleep(nanoseconds: 100_000_000)
         #expect(model.name == "Test")
     }
+
+    // MARK: - Removing key (setting to nil) should trigger mutation
+
+    @Test("Removing key from UserDefaults triggers mutation back to default value")
+    func removingKeyTriggersMutation() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let model = MockModel(userDefaults: userDefaults)
+
+        // Set a non-default value first
+        model.name = "Changed"
+
+        // Removing the key should trigger mutation (value reverts to default "Test")
+        tracking(model, \.name, .userDefaults)
+        userDefaults.removeObject(forKey: "name")
+        #expect(model.name == "Test")
+    }
+
+    @Test("Optional property: removing key triggers mutation back to nil")
+    func optionalRemovingKeyTriggersMutation() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let model = MockModelOptional(userDefaults: userDefaults)
+
+        // Set a non-nil value first
+        model.optionalName = "Hello"
+
+        // Removing the key should trigger mutation (value reverts to nil)
+        tracking(model, \.optionalName, .userDefaults)
+        userDefaults.removeObject(forKey: "optionalName")
+        #expect(model.optionalName == nil)
+    }
 }
