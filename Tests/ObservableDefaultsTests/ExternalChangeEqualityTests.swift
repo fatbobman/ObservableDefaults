@@ -11,12 +11,16 @@ import ObservableDefaults
 import Observation
 import Testing
 
-@Suite("External Change Equality Check")
+@Suite("External Change Equality Check", .serialized)
 struct ExternalChangeEqualityTests {
+    private func makeUserDefaults(testName: String = #function) -> UserDefaults {
+        UserDefaults.getTestInstance(
+            suiteName: "ExternalChangeEqualityTests.\(testName).\(UUID().uuidString)")
+    }
 
     @Test("Unrelated property not notified when another property changes externally")
     func unrelatedPropertyNotNotified() {
-        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let userDefaults = makeUserDefaults()
         let model = MockModel(userDefaults: userDefaults)
 
         // Track age - expect NO mutation when only name changes
@@ -26,7 +30,7 @@ struct ExternalChangeEqualityTests {
 
     @Test("Same value write does not notify for backed property")
     func sameValueWriteNotNotified() {
-        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let userDefaults = makeUserDefaults()
         let model = MockModel(userDefaults: userDefaults)
 
         // Track name - expect NO mutation when writing the same value
@@ -37,7 +41,7 @@ struct ExternalChangeEqualityTests {
     @MainActor
     @Test("MainActor unrelated property not notified when another property changes externally")
     func mainActorUnrelatedPropertyNotNotified() async {
-        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let userDefaults = makeUserDefaults()
         let model = MockModelMainActor(userDefaults: userDefaults)
 
         // Track count - expect NO mutation when only name changes
@@ -53,7 +57,7 @@ struct ExternalChangeEqualityTests {
     @MainActor
     @Test("MainActor same value write does not notify for backed property")
     func mainActorSameValueWriteNotNotified() async {
-        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let userDefaults = makeUserDefaults()
         let model = MockModelMainActor(userDefaults: userDefaults)
 
         // Track name - expect NO mutation when writing the same value
@@ -69,7 +73,7 @@ struct ExternalChangeEqualityTests {
 
     @Test("Removing key from UserDefaults triggers mutation back to default value")
     func removingKeyTriggersMutation() {
-        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let userDefaults = makeUserDefaults()
         let model = MockModel(userDefaults: userDefaults)
 
         // Set a non-default value first
@@ -83,7 +87,7 @@ struct ExternalChangeEqualityTests {
 
     @Test("Optional property: removing key triggers mutation back to nil")
     func optionalRemovingKeyTriggersMutation() {
-        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        let userDefaults = makeUserDefaults()
         let model = MockModelOptional(userDefaults: userDefaults)
 
         // Set a non-nil value first
@@ -93,5 +97,47 @@ struct ExternalChangeEqualityTests {
         tracking(model, \.optionalName, .userDefaults)
         userDefaults.removeObject(forKey: "optionalName")
         #expect(model.optionalName == nil)
+    }
+
+    @Test("Removing key falls back to registered default before model default")
+    func removingKeyFallsBackToRegisteredDefault() {
+        let userDefaults = makeUserDefaults()
+        userDefaults.register(defaults: ["name": "Registered"])
+        let model = MockModel(userDefaults: userDefaults)
+
+        model.name = "Changed"
+
+        tracking(model, \.name, .userDefaults)
+        userDefaults.removeObject(forKey: "name")
+        #expect(model.name == "Registered")
+    }
+
+    @Test("Optional property falls back to registered default before nil")
+    func optionalRemovingKeyFallsBackToRegisteredDefault() {
+        let userDefaults = makeUserDefaults()
+        userDefaults.register(defaults: ["optionalName": "RegisteredOptional"])
+        let model = MockModelOptional(userDefaults: userDefaults)
+
+        model.optionalName = "Hello"
+
+        tracking(model, \.optionalName, .userDefaults)
+        userDefaults.removeObject(forKey: "optionalName")
+        #expect(model.optionalName == "RegisteredOptional")
+    }
+
+    @MainActor
+    @Test("MainActor removing key falls back to registered default")
+    func mainActorRemovingKeyFallsBackToRegisteredDefault() async {
+        let userDefaults = makeUserDefaults()
+        userDefaults.register(defaults: ["name": "MainActorRegistered"])
+        let model = MockModelMainActor(userDefaults: userDefaults)
+
+        model.name = "Changed"
+
+        tracking(model, \.name, .userDefaults)
+        userDefaults.removeObject(forKey: "name")
+
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        #expect(model.name == "MainActorRegistered")
     }
 }

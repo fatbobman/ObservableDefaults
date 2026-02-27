@@ -600,7 +600,19 @@ build_app(
 
 ### UserDefaults 和 iCloud Key-Value Store 的默认值行为
 
-所有持久化属性（那些明确或隐式标记为 @DefaultsBacked 或 @CloudBacked 的属性）必须用默认值声明。框架捕获这些声明时的默认值，并在对象的整个生命周期内将它们保持为不可变的回退值。当底层存储（UserDefaults 或 iCloud Key-Value Store）中缺少键时，属性会自动恢复到这些保留的默认值，确保行为一致，无论外部存储修改如何。
+所有持久化属性（那些明确或隐式标记为 @DefaultsBacked 或 @CloudBacked 的属性）都必须用默认值声明。框架会捕获这些声明时的默认值，并在对象整个生命周期内将其保持为不可变的模型默认值。
+
+回退顺序取决于底层存储：
+
+- `@ObservableDefaults`（`UserDefaults`）
+  1. 所选 `UserDefaults` 域中的持久化值
+  2. 通过 `UserDefaults.register(defaults:)` 注册的默认值
+  3. ObservableDefaults 捕获的声明时模型默认值
+- `@ObservableCloud`（`NSUbiquitousKeyValueStore`）
+  1. 云端持久化值
+  2. ObservableDefaults 捕获的声明时模型默认值
+
+这意味着对于 `UserDefaults`，`removeObject(forKey:)` 并不一定直接回退到声明默认值。如果该 key 存在 registered default，会优先使用 registered default。
 
 ```swift
 @ObservableDefaults(autoInit: false) // @ObservableCloud(autoInit: false) 相同
@@ -625,12 +637,15 @@ let user = User(username: "alice", age: 25)
 
 user.username = "bob"  // 更改当前值，默认值保持 "guest"
 
-// 如果 UserDefaults 键被外部删除：
-UserDefaults.standard.removeObject(forKey: "username")
-UserDefaults.standard.removeObject(forKey: "age")
+let defaults = UserDefaults.standard
+defaults.register(defaults: ["username": "registered-user"])
+defaults.set("bob", forKey: "username")
+defaults.set(25, forKey: "age")
+defaults.removeObject(forKey: "username")
+defaults.removeObject(forKey: "age")
 
-print(user.username)  // "guest"（恢复到声明默认值）
-print(user.age)       // 18（恢复到声明默认值）
+print(user.username)  // "registered-user"（优先使用 registered default）
+print(user.age)       // 18（没有 registered default，因此回退到声明默认值）
 ```
 
 > **建议**: 除非您有特定要求，否则使用 `autoInit: true`（默认）来自动生成标准初始化器。这有助于避免认为可以通过自定义初始化器修改默认值的误解。

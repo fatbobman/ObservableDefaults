@@ -600,7 +600,19 @@ This flag helps bypass macro validation in CI environments where the full macro 
 
 ### Default Value Behavior for UserDefaults and iCloud Key-Value Store
 
-All persistent properties (those marked with @DefaultsBacked or @CloudBacked, either explicitly or implicitly) must be declared with default values. The framework captures these declaration-time defaults and maintains them as immutable fallback values throughout the object's lifetime. When keys are missing from the underlying storage (UserDefaults or iCloud Key-Value Store), properties automatically revert to these preserved default values, ensuring consistent behavior regardless of external storage modifications.
+All persistent properties (those marked with @DefaultsBacked or @CloudBacked, either explicitly or implicitly) must be declared with default values. The framework captures these declaration-time defaults and maintains them as immutable model defaults throughout the object's lifetime.
+
+Fallback order depends on the backing store:
+
+- `@ObservableDefaults` (`UserDefaults`)
+  1. Persisted value in the selected `UserDefaults` domain
+  2. Value provided by `UserDefaults.register(defaults:)`
+  3. Declaration-time model default captured by ObservableDefaults
+- `@ObservableCloud` (`NSUbiquitousKeyValueStore`)
+  1. Persisted cloud value
+  2. Declaration-time model default captured by ObservableDefaults
+
+This means `removeObject(forKey:)` does not always revert to the declaration default for `UserDefaults`. If the key has a registered default, that registered default is used first.
 
 ```swift
 @ObservableDefaults(autoInit: false) // @ObservableCloud(autoInit: false) is the same
@@ -625,12 +637,15 @@ let user = User(username: "alice", age: 25)
 
 user.username = "bob"  // Changes current value, default value stays "guest"
 
-// If UserDefaults keys are deleted externally:
-UserDefaults.standard.removeObject(forKey: "username")
-UserDefaults.standard.removeObject(forKey: "age")
+let defaults = UserDefaults.standard
+defaults.register(defaults: ["username": "registered-user"])
+defaults.set("bob", forKey: "username")
+defaults.set(25, forKey: "age")
+defaults.removeObject(forKey: "username")
+defaults.removeObject(forKey: "age")
 
-print(user.username)  // "guest" (reverts to declaration default)
-print(user.age)       // 18 (reverts to declaration default)
+print(user.username)  // "registered-user" (registered default wins)
+print(user.age)       // 18 (no registered default, so declaration default is used)
 ```
 
 > **Recommendation**: Unless you have specific requirements, use `autoInit: true` (default) to generate the standard initializer automatically. This helps avoid the misconception that default values can be modified through custom initializers.
