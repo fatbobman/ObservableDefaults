@@ -25,6 +25,10 @@ import Foundation
             userDefaults = UserDefaults(suiteName: Self.suiteName)!
         }
 
+        init(suiteName: String) {
+            userDefaults = UserDefaults(suiteName: suiteName)!
+        }
+
         // MARK: - Object methods
 
         func object(forKey aKey: String) -> Any? {

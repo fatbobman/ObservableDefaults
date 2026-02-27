@@ -27,13 +27,22 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
         /// A TaskLocal variable to determine if the current environment is a test environment.
         @TaskLocal
         static var isTestEnvironment: Bool = false
+
+        /// A TaskLocal suite override used to isolate mock cloud storage per test.
+        @TaskLocal
+        static var testSuiteName: String?
     #endif
 
     /// A private property to store the cloud store.
     private var store: ObservableDefaultsCloudStoreProtocol {
         #if DEBUG
-            return Self.isTestEnvironment ? MockUbiquitousKeyValueStore
-                .default : NSUbiquitousKeyValueStore.default
+            if Self.isTestEnvironment {
+                if let testSuiteName = Self.testSuiteName {
+                    return MockUbiquitousKeyValueStore(suiteName: testSuiteName)
+                }
+                return MockUbiquitousKeyValueStore.default
+            }
+            return NSUbiquitousKeyValueStore.default
         #else
             return NSUbiquitousKeyValueStore.default
         #endif

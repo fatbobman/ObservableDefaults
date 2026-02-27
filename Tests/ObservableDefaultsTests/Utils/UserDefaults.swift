@@ -24,13 +24,16 @@ extension UserDefaults {
 }
 
 extension UserDefaults {
+    private static var currentMockSuiteName: String {
+        NSUbiquitousKeyValueStoreWrapper.testSuiteName ?? MockUbiquitousKeyValueStore.suiteName
+    }
+
     static var mock: UserDefaults {
-        UserDefaults(suiteName: MockUbiquitousKeyValueStore.suiteName)!
+        UserDefaults(suiteName: currentMockSuiteName)!
     }
 
     static func clearMock() {
-        mock.removePersistentDomain(forName: MockUbiquitousKeyValueStore.suiteName)
+        mock.removePersistentDomain(forName: currentMockSuiteName)
         mock.synchronize()
     }
 }
-
