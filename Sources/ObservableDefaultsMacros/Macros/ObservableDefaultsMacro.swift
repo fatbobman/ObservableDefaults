@@ -148,9 +148,15 @@ extension ObservableDefaultsMacros: MemberMacro {
                 return varDecl
             }
 
-        // Build mapping between properties and their UserDefaults keys
-        let metas: [(userDefaultsKey: String, propertyID: String, isBacked: Bool)] = persistentProperties
-            .map { property in
+        // Build mapping between properties and their UserDefaults keys.
+        // In observeFirst mode, only explicitly @DefaultsBacked properties are backed;
+        // non-backed (ObservableOnly) properties are excluded because they are not
+        // stored in UserDefaults and should not appear in the notification handler.
+        let metas: [(userDefaultsKey: String, propertyID: String)] = persistentProperties
+            .compactMap { property in
+                if observeFirst, !property.hasAttribute(named: DefaultsBackedMacro.name) {
+                    return nil
+                }
                 let key =
                     property.attributes.extractValue(
                         forAttribute: DefaultsBackedMacro.name,
@@ -159,10 +165,7 @@ extension ObservableDefaultsMacros: MemberMacro {
                         forAttribute: DefaultsKeyMacro.name,
                         argument: DefaultsKeyMacro.key) ?? property.identifier?.text ?? ""
                 let propertyID = property.identifier?.text ?? ""
-                // In observeFirst mode, only explicitly @DefaultsBacked properties are backed;
-                // otherwise all persistent properties are backed.
-                let isBacked = !observeFirst || property.hasAttribute(named: DefaultsBackedMacro.name)
-                return (key, propertyID, isBacked)
+                return (key, propertyID)
             }
 
         // Generate keyPath mapping for external change handling
@@ -181,22 +184,7 @@ extension ObservableDefaultsMacros: MemberMacro {
         let caseCode = metas.enumerated().map { index, meta in
             let caseIndent = index == 0 ? "" : "                "
             // swiftformat:disable all
-            if !meta.isBacked {
-                // ObservableOnly properties are not stored in UserDefaults,
-                // so we cannot compare values — keep the original behavior.
-                if hasMainActor {
-                    return """
-                        \(caseIndent)case prefix + "\(meta.userDefaultsKey)":
-                        \(caseIndent)    MainActor.assumeIsolated {
-                        \(caseIndent)        host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
-                        \(caseIndent)    }
-                        """
-                } else {
-                    return """
-                        \(caseIndent)case prefix + "\(meta.userDefaultsKey)": host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
-                        """
-                }
-            } else if hasMainActor {
+            if hasMainActor {
                 return """
                     \(caseIndent)case prefix + "\(meta.userDefaultsKey)":
                     \(caseIndent)    MainActor.assumeIsolated {
