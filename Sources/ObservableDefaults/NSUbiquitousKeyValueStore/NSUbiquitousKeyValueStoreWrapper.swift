@@ -59,9 +59,9 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// conversion fails
     public func getValue<Value>(
         _ key: String,
-        _ defaultValue: Value) -> Value
-        where Value: RawRepresentable, Value.RawValue: CloudPropertyListValue
-    {
+        _ defaultValue: Value
+    ) -> Value
+    where Value: RawRepresentable, Value.RawValue: CloudPropertyListValue {
         // Attempt to get the raw value from NSUbiquitousKeyValueStore
         guard let rawValue = store.object(forKey: key) as? Value.RawValue
         else {
@@ -80,7 +80,8 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// found or conversion fails
     public func getValue<R>(
         _ key: String,
-        _ defaultValue: R?) -> R?
+        _ defaultValue: R?
+    ) -> R?
     where R: RawRepresentable, R.RawValue: CloudPropertyListValue {
         // Attempt to get the raw value from NSUbiquitousKeyValueStore
         guard let rawValue = store.object(forKey: key) as? R.RawValue
@@ -97,9 +98,12 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// CloudPropertyListValue overload sets.
     public func getValue<Value>(
         _ key: String,
-        _ defaultValue: Value) -> Value
-    where Value: RawRepresentable, Value.RawValue: CloudPropertyListValue,
-        Value: CloudPropertyListValue {
+        _ defaultValue: Value
+    ) -> Value
+    where
+        Value: RawRepresentable, Value.RawValue: CloudPropertyListValue,
+        Value: CloudPropertyListValue
+    {
         // Prefer RawRepresentable storage for hybrid types.
         // Fallback to direct property-list casting to preserve compatibility with
         // legacy data written through non-raw paths.
@@ -119,7 +123,8 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// CloudPropertyListValue overload sets.
     public func getValue<R>(
         _ key: String,
-        _ defaultValue: R?) -> R?
+        _ defaultValue: R?
+    ) -> R?
     where R: RawRepresentable, R.RawValue: CloudPropertyListValue, R: CloudPropertyListValue {
         // Prefer RawRepresentable storage for hybrid types.
         // Fallback to direct property-list casting to preserve compatibility with
@@ -140,9 +145,12 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// CloudPropertyListValue & Codable overload set.
     public func getValue<Value>(
         _ key: String,
-        _ defaultValue: Value) -> Value
-    where Value: RawRepresentable, Value.RawValue: CloudPropertyListValue,
-        Value: CloudPropertyListValue & Codable {
+        _ defaultValue: Value
+    ) -> Value
+    where
+        Value: RawRepresentable, Value.RawValue: CloudPropertyListValue,
+        Value: CloudPropertyListValue & Codable
+    {
         // Prefer RawRepresentable storage for hybrid types.
         // Fallback to direct property-list casting to preserve compatibility with
         // legacy data written through non-raw paths.
@@ -162,9 +170,12 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// CloudPropertyListValue & Codable overload set.
     public func getValue<R>(
         _ key: String,
-        _ defaultValue: R?) -> R?
-    where R: RawRepresentable, R.RawValue: CloudPropertyListValue,
-        R: CloudPropertyListValue & Codable {
+        _ defaultValue: R?
+    ) -> R?
+    where
+        R: RawRepresentable, R.RawValue: CloudPropertyListValue,
+        R: CloudPropertyListValue & Codable
+    {
         // Prefer RawRepresentable storage for hybrid types.
         // Fallback to direct property-list casting to preserve compatibility with
         // legacy data written through non-raw paths.
@@ -186,7 +197,8 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// casting fails
     public func getValue<Value>(
         _ key: String,
-        _ defaultValue: Value) -> Value
+        _ defaultValue: Value
+    ) -> Value
     where Value: CloudPropertyListValue {
         // Directly cast the object to the expected type, fallback to default if casting fails
         store.object(forKey: key) as? Value ?? defaultValue
@@ -201,7 +213,8 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// or type casting fails
     public func getValue<R>(
         _ key: String,
-        _ defaultValue: R?) -> R?
+        _ defaultValue: R?
+    ) -> R?
     where R: CloudPropertyListValue {
         store.object(forKey: key) as? R ?? defaultValue
     }
@@ -215,7 +228,8 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// casting fails
     public func getValue<Value>(
         _ key: String,
-        _ defaultValue: Value) -> Value
+        _ defaultValue: Value
+    ) -> Value
     where Value: CloudPropertyListValue & Codable {
         // Directly cast the object to the expected type, fallback to default if casting fails
         store.object(forKey: key) as? Value ?? defaultValue
@@ -230,7 +244,8 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// or type casting fails
     public func getValue<R>(
         _ key: String,
-        _ defaultValue: R?) -> R?
+        _ defaultValue: R?
+    ) -> R?
     where R: CloudPropertyListValue & Codable {
         store.object(forKey: key) as? R ?? defaultValue
     }
@@ -245,7 +260,8 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     @_disfavoredOverload
     public func getValue<Value>(
         _ key: String,
-        _ defaultValue: Value) -> Value
+        _ defaultValue: Value
+    ) -> Value
     where Value: Codable {
         // Get the data from NSUbiquitousKeyValueStore
         guard let data = store.data(forKey: key) else {
@@ -271,7 +287,8 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     @_disfavoredOverload
     public func getValue<Value>(
         _ key: String,
-        _ defaultValue: Value?) -> Value?
+        _ defaultValue: Value?
+    ) -> Value?
     where Value: Codable {
         // Get the data from NSUbiquitousKeyValueStore
         guard let data = store.data(forKey: key) else {
@@ -299,8 +316,8 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     ///   should use the generic optional handling method
     public func getValue(
         _ key: String,
-        _ defaultValue: Int64) -> Int64
-    {
+        _ defaultValue: Int64
+    ) -> Int64 {
         // Get the value from NSUbiquitousKeyValueStore
         let value = store.longLong(forKey: key)
         // Check if the value is 0 and the key exists in the store
@@ -317,7 +334,8 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     ///   - newValue: The new enum value to store
     public func setValue<Value>(
         _ key: String,
-        _ newValue: Value)
+        _ newValue: Value
+    )
     where Value: RawRepresentable, Value.RawValue: CloudPropertyListValue {
         // Store the raw value of the enum
         store.set(newValue.rawValue, forKey: key)
@@ -330,7 +348,8 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     ///   - newValue: The new optional enum value to store (nil will remove the key)
     public func setValue<R>(
         _ key: String,
-        _ newValue: R?)
+        _ newValue: R?
+    )
     where R: RawRepresentable, R.RawValue: CloudPropertyListValue {
         // Store the raw value of the optional enum (nil if the enum is nil)
         if let newValue {
@@ -346,9 +365,12 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// CloudPropertyListValue overload sets.
     public func setValue<Value>(
         _ key: String,
-        _ newValue: Value)
-    where Value: RawRepresentable, Value.RawValue: CloudPropertyListValue,
-        Value: CloudPropertyListValue {
+        _ newValue: Value
+    )
+    where
+        Value: RawRepresentable, Value.RawValue: CloudPropertyListValue,
+        Value: CloudPropertyListValue
+    {
         // Prefer RawRepresentable storage for hybrid types.
         store.set(newValue.rawValue, forKey: key)
     }
@@ -360,7 +382,8 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// CloudPropertyListValue overload sets.
     public func setValue<R>(
         _ key: String,
-        _ newValue: R?)
+        _ newValue: R?
+    )
     where R: RawRepresentable, R.RawValue: CloudPropertyListValue, R: CloudPropertyListValue {
         // Prefer RawRepresentable storage for hybrid types.
         if let newValue {
@@ -377,9 +400,12 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// CloudPropertyListValue & Codable overload set.
     public func setValue<Value>(
         _ key: String,
-        _ newValue: Value)
-    where Value: RawRepresentable, Value.RawValue: CloudPropertyListValue,
-        Value: CloudPropertyListValue & Codable {
+        _ newValue: Value
+    )
+    where
+        Value: RawRepresentable, Value.RawValue: CloudPropertyListValue,
+        Value: CloudPropertyListValue & Codable
+    {
         // Prefer RawRepresentable storage for hybrid types.
         store.set(newValue.rawValue, forKey: key)
     }
@@ -391,9 +417,12 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// CloudPropertyListValue & Codable overload set.
     public func setValue<R>(
         _ key: String,
-        _ newValue: R?)
-    where R: RawRepresentable, R.RawValue: CloudPropertyListValue,
-        R: CloudPropertyListValue & Codable {
+        _ newValue: R?
+    )
+    where
+        R: RawRepresentable, R.RawValue: CloudPropertyListValue,
+        R: CloudPropertyListValue & Codable
+    {
         // Prefer RawRepresentable storage for hybrid types.
         if let newValue {
             store.set(newValue.rawValue, forKey: key)
@@ -409,8 +438,8 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     ///   - newValue: The new value to store
     public func setValue<Value: CloudPropertyListValue>(
         _ key: String,
-        _ newValue: Value)
-    {
+        _ newValue: Value
+    ) {
         // Directly store the value
         store.set(newValue, forKey: key)
     }
@@ -422,8 +451,8 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     ///   - newValue: The new optional value to store (nil will remove the key)
     public func setValue<Value: CloudPropertyListValue>(
         _ key: String,
-        _ newValue: Value?)
-    {
+        _ newValue: Value?
+    ) {
         // Store the optional value (nil will remove the key)
         if let newValue {
             store.set(newValue, forKey: key)
@@ -439,8 +468,8 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     ///   - newValue: The new value to store
     public func setValue<Value: CloudPropertyListValue & Codable>(
         _ key: String,
-        _ newValue: Value)
-    {
+        _ newValue: Value
+    ) {
         // Directly store the value
         store.set(newValue, forKey: key)
     }
@@ -452,8 +481,8 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     ///   - newValue: The new optional value to store (nil will remove the key)
     public func setValue<Value: CloudPropertyListValue & Codable>(
         _ key: String,
-        _ newValue: Value?)
-    {
+        _ newValue: Value?
+    ) {
         // Store the optional value (nil will remove the key)
         if let newValue {
             store.set(newValue, forKey: key)
@@ -471,7 +500,8 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     @_disfavoredOverload
     public func setValue<Value: Codable>(
         _ key: String,
-        _ newValue: Value) {
+        _ newValue: Value
+    ) {
         // Encode the value to JSON data
         guard let data = try? JSONEncoder().encode(newValue) else { return }
         // Store the encoded data
@@ -487,14 +517,14 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     @_disfavoredOverload
     public func setValue<Value: Codable>(
         _ key: String,
-        _ newValue: Value?)
-    {
+        _ newValue: Value?
+    ) {
         // Handle nil value by removing the key
         guard let value = newValue else {
             store.removeObject(forKey: key)
             return
         }
-        
+
         // Encode the value to JSON data
         guard let data = try? JSONEncoder().encode(value) else { return }
         // Store the encoded data

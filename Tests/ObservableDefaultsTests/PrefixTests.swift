@@ -8,15 +8,13 @@
 //  Blog: https://fatbobman.com
 //  ------------------------------------------------
 //  Copyright © 2025-present Fatbobman. All rights reserved.
-		
 
 import Foundation
 import ObservableDefaults
 import Observation
 import Testing
 
-
-@ObservableCloud(prefix: "abc", developmentMode:true)
+@ObservableCloud(prefix: "abc", developmentMode: true)
 class Test1 {
     var name = "abc"
 }

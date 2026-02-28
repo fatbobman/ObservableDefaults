@@ -143,8 +143,8 @@ public struct CloudKeyMacro: PeerMacro {
     public static func expansion(
         of _: SwiftSyntax.AttributeSyntax,
         providingPeersOf _: some SwiftSyntax.DeclSyntaxProtocol,
-        in _: some SwiftSyntaxMacros.MacroExpansionContext) throws -> [SwiftSyntax.DeclSyntax]
-    {
+        in _: some SwiftSyntaxMacros.MacroExpansionContext
+    ) throws -> [SwiftSyntax.DeclSyntax] {
         // This is a marker macro that provides metadata for other macros
         // No peer declarations are generated - the macro serves only as a metadata container
         // for the @CloudBacked macro to read during its expansion phase

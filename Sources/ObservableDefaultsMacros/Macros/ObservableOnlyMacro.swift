@@ -77,10 +77,10 @@ extension ObservableOnlyMacro: PeerMacro {
     public static func expansion(
         of node: SwiftSyntax.AttributeSyntax,
         providingPeersOf declaration: some SwiftSyntax.DeclSyntaxProtocol,
-        in context: some SwiftSyntaxMacros.MacroExpansionContext) throws -> [SwiftSyntax.DeclSyntax]
-    {
+        in context: some SwiftSyntaxMacros.MacroExpansionContext
+    ) throws -> [SwiftSyntax.DeclSyntax] {
         guard let property = declaration.as(VariableDeclSyntax.self),
-              property.isObservable
+            property.isObservable
         else {
             return []
         }
@@ -113,11 +113,11 @@ extension ObservableOnlyMacro: AccessorMacro {
     public static func expansion(
         of _: AttributeSyntax,
         providingAccessorsOf declaration: some DeclSyntaxProtocol,
-        in context: some MacroExpansionContext) throws -> [AccessorDeclSyntax]
-    {
+        in context: some MacroExpansionContext
+    ) throws -> [AccessorDeclSyntax] {
         guard let property = declaration.as(VariableDeclSyntax.self),
-              property.isObservable,
-              let identifier = property.identifier?.trimmed
+            property.isObservable,
+            let identifier = property.identifier?.trimmed
         else {
             return []
         }

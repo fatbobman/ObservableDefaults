@@ -16,8 +16,8 @@ import Testing
         func provideScope(
             for test: Test,
             testCase: Test.Case?,
-            performing function: @Sendable () async throws -> Void) async throws
-        {
+            performing function: @Sendable () async throws -> Void
+        ) async throws {
             let suiteName = "ObservableDefaults.TestMode.\(UUID().uuidString)"
             try await NSUbiquitousKeyValueStoreWrapper.$isTestEnvironment
                 .withValue(value) {

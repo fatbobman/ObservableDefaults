@@ -100,8 +100,8 @@ extension ObservableCloudMacros: MemberMacro {
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
         conformingTo protocols: [TypeSyntax],
-        in _: some MacroExpansionContext) throws -> [DeclSyntax]
-    {
+        in _: some MacroExpansionContext
+    ) throws -> [DeclSyntax] {
         guard let identifier = declaration.asProtocol(NamedDeclSyntax.self) else { return [] }
 
         let className =
@@ -114,7 +114,8 @@ extension ObservableCloudMacros: MemberMacro {
             _,
             syncImmediately,
             developmentMode,
-            defaultIsolationIsMainActor) = extractProperty(node)
+            defaultIsolationIsMainActor
+        ) = extractProperty(node)
 
         // Find all properties that should be persisted to NSUbiquitousKeyValueStore
         guard let classDecl = declaration as? ClassDeclSyntax else {
@@ -124,7 +125,7 @@ extension ObservableCloudMacros: MemberMacro {
         // Check if the class has @MainActor attribute or if defaultIsolation is MainActor
         let hasExplicitMainActor = classDecl.attributes.contains(where: { attribute in
             if case let .attribute(attr) = attribute,
-               let identifierType = attr.attributeName.as(IdentifierTypeSyntax.self)
+                let identifierType = attr.attributeName.as(IdentifierTypeSyntax.self)
             {
                 return identifierType.name.text == "MainActor"
             }
@@ -135,7 +136,7 @@ extension ObservableCloudMacros: MemberMacro {
         let persistentProperties = classDecl.memberBlock.members
             .compactMap { member -> VariableDeclSyntax? in
                 guard let varDecl = member.decl.as(VariableDeclSyntax.self),
-                      varDecl.isPersistent
+                    varDecl.isPersistent
                 else {
                     return nil
                 }
@@ -184,17 +185,16 @@ extension ObservableCloudMacros: MemberMacro {
         // Build mapping between properties and their NSUbiquitousKeyValueStore keys
         let metas: [(keyValueStoreKey: String, propertyID: String)] =
             persistentProperties
-                .map { property in
-                    let key =
-                        property.attributes.extractValue(
-                            forAttribute: CloudBackedMacro.name,
-                            argument: CloudBackedMacro.key) ??
-                        property.attributes.extractValue(
-                            forAttribute: CloudKeyMacro.name,
-                            argument: CloudKeyMacro.key) ?? property.identifier?.text ?? ""
-                    let propertyID = property.identifier?.text ?? ""
-                    return (key, propertyID)
-                }
+            .map { property in
+                let key =
+                    property.attributes.extractValue(
+                        forAttribute: CloudBackedMacro.name,
+                        argument: CloudBackedMacro.key) ?? property.attributes.extractValue(
+                        forAttribute: CloudKeyMacro.name,
+                        argument: CloudKeyMacro.key) ?? property.identifier?.text ?? ""
+                let propertyID = property.identifier?.text ?? ""
+                return (key, propertyID)
+            }
 
         let caseCode = metas.enumerated().map { index, meta in
             let caseIndent = index == 0 ? "" : "                "
@@ -297,110 +297,111 @@ extension ObservableCloudMacros: MemberMacro {
             """
 
         // Generate NotificationCenter observer class for NSUbiquitousKeyValueStore changes
-        let observerFunctionSyntax: DeclSyntax = if hasMainActor {
-            """
-            private var _cloudObserver: CloudObservation?
+        let observerFunctionSyntax: DeclSyntax =
+            if hasMainActor {
+                """
+                private var _cloudObserver: CloudObservation?
 
-            /// Manages NSUbiquitousKeyValueStore change observation for external cloud updates.
-            ///
-            /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
-            private final class CloudObservation: @unchecked Sendable {
-                let host: \(className)
-                let prefix: String
-                private var notificationObserver: NSObjectProtocol?
+                /// Manages NSUbiquitousKeyValueStore change observation for external cloud updates.
+                ///
+                /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
+                private final class CloudObservation: @unchecked Sendable {
+                    let host: \(className)
+                    let prefix: String
+                    private var notificationObserver: NSObjectProtocol?
 
-                /// Initializes the observation with the specified parameters.
-                /// - Parameters:
-                ///   - host: The host instance to observe
-                ///   - prefix: The prefix for the NSUbiquitousKeyValueStore keys
-                init(host: \(className), prefix: String) {
-                    self.host = host
-                    self.prefix = prefix
+                    /// Initializes the observation with the specified parameters.
+                    /// - Parameters:
+                    ///   - host: The host instance to observe
+                    ///   - prefix: The prefix for the NSUbiquitousKeyValueStore keys
+                    init(host: \(className), prefix: String) {
+                        self.host = host
+                        self.prefix = prefix
 
-                    notificationObserver = NotificationCenter.default
-                        .addObserver(
-                            forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
-                            object: nil,
-                            queue: .main
-                        ) { [weak host, prefix] notification in
-                            guard let host else { return }
-                            
-                            guard let userInfo = notification.userInfo,
-                                let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
-                            else {
-                                return
+                        notificationObserver = NotificationCenter.default
+                            .addObserver(
+                                forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+                                object: nil,
+                                queue: .main
+                            ) { [weak host, prefix] notification in
+                                guard let host else { return }
+                                
+                                guard let userInfo = notification.userInfo,
+                                    let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
+                                else {
+                                    return
+                                }
+
+                                for key in changedKeys {
+                                    switch key {
+                                    \(raw: caseCode)
+                                    default:
+                                        break
+                                    }
+                                }
                             }
+                    }
 
-                            for key in changedKeys {
-                                switch key {
+                    \(raw: defaultIsolationIsMainActor ? "@MainActor" : "")
+                    deinit {
+                        if let observer = notificationObserver {
+                            NotificationCenter.default.removeObserver(observer)
+                        }
+                    }
+                }
+                """
+            } else {
+                """
+                private var _cloudObserver: CloudObservation?
+
+                /// Manages NSUbiquitousKeyValueStore change observation for external cloud updates.
+                ///
+                /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
+                private final class CloudObservation: @unchecked Sendable {
+                    let host: \(className)
+                    let prefix: String
+
+                    /// Initializes the observation with the specified parameters.
+                    /// - Parameters:
+                    ///   - host: The host instance to observe
+                    ///   - prefix: The prefix for the NSUbiquitousKeyValueStore keys
+                    init(host: \(className), prefix: String) {
+                        self.host = host
+                        self.prefix = prefix
+                        NotificationCenter.default
+                            .addObserver(
+                                forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+                                object: nil,
+                                queue: nil,
+                                using: cloudStoreDidChange
+                            )
+                    }
+
+                    /// Handles cloud store changes from external sources.
+                    /// - Parameter notification: The notification containing changed keys information
+                    @Sendable
+                    private func cloudStoreDidChange(_ notification: Foundation.Notification) {
+                        guard let userInfo = notification.userInfo,
+                            let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
+                        else {
+                            return
+                        }
+
+                        for key in changedKeys {
+                            switch key {
                                 \(raw: caseCode)
                                 default:
                                     break
-                                }
                             }
                         }
-                }
+                    }
 
-                \(raw: defaultIsolationIsMainActor ? "@MainActor" : "")
-                deinit {
-                    if let observer = notificationObserver {
-                        NotificationCenter.default.removeObserver(observer)
+                    deinit {
+                        NotificationCenter.default.removeObserver(self)
                     }
                 }
+                """
             }
-            """
-        } else {
-            """
-            private var _cloudObserver: CloudObservation?
-
-            /// Manages NSUbiquitousKeyValueStore change observation for external cloud updates.
-            ///
-            /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
-            private final class CloudObservation: @unchecked Sendable {
-                let host: \(className)
-                let prefix: String
-
-                /// Initializes the observation with the specified parameters.
-                /// - Parameters:
-                ///   - host: The host instance to observe
-                ///   - prefix: The prefix for the NSUbiquitousKeyValueStore keys
-                init(host: \(className), prefix: String) {
-                    self.host = host
-                    self.prefix = prefix
-                    NotificationCenter.default
-                        .addObserver(
-                            forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
-                            object: nil,
-                            queue: nil,
-                            using: cloudStoreDidChange
-                        )
-                }
-
-                /// Handles cloud store changes from external sources.
-                /// - Parameter notification: The notification containing changed keys information
-                @Sendable
-                private func cloudStoreDidChange(_ notification: Foundation.Notification) {
-                    guard let userInfo = notification.userInfo,
-                        let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
-                    else {
-                        return
-                    }
-
-                    for key in changedKeys {
-                        switch key {
-                            \(raw: caseCode)
-                            default:
-                                break
-                        }
-                    }
-                }
-
-                deinit {
-                    NotificationCenter.default.removeObserver(self)
-                }
-            }
-            """
-        }
 
         return [
             registrarSyntax,
@@ -433,8 +434,8 @@ extension ObservableCloudMacros: ExtensionMacro {
         attachedTo _: some DeclGroupSyntax,
         providingExtensionsOf type: some TypeSyntaxProtocol,
         conformingTo _: [TypeSyntax],
-        in _: some MacroExpansionContext) throws -> [ExtensionDeclSyntax]
-    {
+        in _: some MacroExpansionContext
+    ) throws -> [ExtensionDeclSyntax] {
         let observableProtocol: DeclSyntax =
             """
                 extension \(type.trimmed): Observation.Observable {}
@@ -468,11 +469,11 @@ extension ObservableCloudMacros: MemberAttributeMacro {
         of node: AttributeSyntax,
         attachedTo _: some DeclGroupSyntax,
         providingAttributesFor member: some DeclSyntaxProtocol,
-        in _: some MacroExpansionContext) throws -> [SwiftSyntax.AttributeSyntax]
-    {
+        in _: some MacroExpansionContext
+    ) throws -> [SwiftSyntax.AttributeSyntax] {
         let (_, _, observeFirst, _, _, _) = extractProperty(node)
         guard let varDecl = member.as(VariableDeclSyntax.self),
-              varDecl.isObservable
+            varDecl.isObservable
         else {
             return []
         }
@@ -481,7 +482,7 @@ extension ObservableCloudMacros: MemberAttributeMacro {
             // In Observe First mode, only add @ObservableOnly if not already marked with
             // @CloudBacked or @ObservableOnly
             if !varDecl.hasAttribute(named: CloudBackedMacro.name),
-               !varDecl.hasAttribute(named: ObservableOnlyMacro.name)
+                !varDecl.hasAttribute(named: ObservableOnlyMacro.name)
             {
                 return ["@\(raw: ObservableOnlyMacro.name)"]
             }
@@ -509,14 +510,16 @@ extension ObservableCloudMacros {
     ///
     /// - Parameter node: The attribute syntax containing the parameters
     /// - Returns: A tuple containing all extracted parameter values
-    static func extractProperty(_ node: AttributeSyntax) -> (
+    static func extractProperty(
+        _ node: AttributeSyntax
+    ) -> (
         autoInit: Bool,
         prefix: String,
         observeFirst: Bool,
         syncImmediately: Bool,
         developementMode: Bool,
-        defaultIsolationIsMainActor: Bool)
-    {
+        defaultIsolationIsMainActor: Bool
+    ) {
         var autoInit = true
         var prefix = ""
         var observeFirst = false
@@ -527,29 +530,30 @@ extension ObservableCloudMacros {
         if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
             for argument in argumentList {
                 if argument.label?.text == ObservableCloudMacros.autoInit,
-                   let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
+                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
                     autoInit = booleanLiteral.literal.text == "true"
                 } else if argument.label?.text == ObservableCloudMacros.prefix,
-                          let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self)
+                    let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self)
                 {
-                    let rawPrefix = stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content
+                    let rawPrefix =
+                        stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content
                         .text ?? ""
                     prefix = rawPrefix.trimmingCharacters(in: .whitespacesAndNewlines)
                 } else if argument.label?.text == ObservableCloudMacros.observeFirst,
-                          let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
+                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
                     observeFirst = booleanLiteral.literal.text == "true"
                 } else if argument.label?.text == ObservableCloudMacros.syncImmediately,
-                          let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
+                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
                     syncImmediately = booleanLiteral.literal.text == "true"
                 } else if argument.label?.text == ObservableCloudMacros.developmentMode,
-                          let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
+                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
                     developmentMode = booleanLiteral.literal.text == "true"
                 } else if argument.label?.text == ObservableCloudMacros.defaultIsolationIsMainActor,
-                          let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
+                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
                     defaultIsolationIsMainActor = booleanLiteral.literal.text == "true"
                 }

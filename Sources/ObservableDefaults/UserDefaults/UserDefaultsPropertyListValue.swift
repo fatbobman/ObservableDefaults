@@ -137,8 +137,11 @@ extension Array: UserDefaultsPropertyListValue where Element: UserDefaultsProper
 /// UserDefaults.
 /// - Note: Keys must be String and values must be property list compatible for the dictionary to be
 /// storable
-extension Dictionary: UserDefaultsPropertyListValue where Key == String,
-Value: UserDefaultsPropertyListValue {}
+extension Dictionary: UserDefaultsPropertyListValue
+where
+    Key == String,
+    Value: UserDefaultsPropertyListValue
+{}
 
 // MARK: - Optional Types
 

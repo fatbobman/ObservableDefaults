@@ -125,6 +125,7 @@ class MyNSUbiquitousKeyValueStore: @unchecked Sendable {
 }
 
 extension NSUbiquitousKeyValueStore {
-    static let didChangeExternallyNotification: Notification
-        .Name = .init("NSUbiquitousKeyValueStoreDidChangeExternallyNotification")
+    static let didChangeExternallyNotification:
+        Notification
+            .Name = .init("NSUbiquitousKeyValueStoreDidChangeExternallyNotification")
 }

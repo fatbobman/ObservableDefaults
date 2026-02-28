@@ -152,21 +152,21 @@ extension CloudBackedMacro: AccessorMacro {
     public static func expansion(
         of _: AttributeSyntax,
         providingAccessorsOf declaration: some DeclSyntaxProtocol,
-        in context: some MacroExpansionContext) throws -> [AccessorDeclSyntax]
-    {
+        in context: some MacroExpansionContext
+    ) throws -> [AccessorDeclSyntax] {
         // Validate and extract property information
         guard let property = declaration.as(VariableDeclSyntax.self),
-              let binding = property.bindings.first,
-              let identifier = binding.pattern.as(IdentifierPatternSyntax.self)
+            let binding = property.bindings.first,
+            let identifier = binding.pattern.as(IdentifierPatternSyntax.self)
         else { return [] }
-        
+
         // Check if the containing class has @MainActor attribute
         var hasMainActor = false
         for context in context.lexicalContext {
             if let classContext = context.as(ClassDeclSyntax.self) {
                 hasMainActor = classContext.attributes.contains(where: { attribute in
                     if case let .attribute(attr) = attribute,
-                       let identifierType = attr.attributeName.as(IdentifierTypeSyntax.self)
+                        let identifierType = attr.attributeName.as(IdentifierTypeSyntax.self)
                     {
                         return identifierType.name.text == "MainActor"
                     }
@@ -200,9 +200,7 @@ extension CloudBackedMacro: AccessorMacro {
         if let typeAnnotation = binding.typeAnnotation {
             let typeSyntax = typeAnnotation.type
             let typeName = typeSyntax.description.trimmingCharacters(in: .whitespacesAndNewlines)
-            isOptionalType = typeSyntax.is(OptionalTypeSyntax.self) ||
-                typeSyntax.is(ImplicitlyUnwrappedOptionalTypeSyntax.self) ||
-                typeName.contains("Optional")
+            isOptionalType = typeSyntax.is(OptionalTypeSyntax.self) || typeSyntax.is(ImplicitlyUnwrappedOptionalTypeSyntax.self) || typeName.contains("Optional")
         }
 
         // Ensure the property has a default value (required for NSUbiquitousKeyValueStore
@@ -219,8 +217,8 @@ extension CloudBackedMacro: AccessorMacro {
         // @CloudBacked(keyValueStoreKey:) or @CloudKey(keyValueStoreKey:)
         if let extractedKey: String = property.attributes.extractValue(
             forAttribute: CloudBackedMacro.name,
-            argument: CloudBackedMacro.key) ??
-            property.attributes.extractValue(
+            argument: CloudBackedMacro.key)
+            ?? property.attributes.extractValue(
                 forAttribute: CloudKeyMacro.name,
                 argument: CloudKeyMacro.key)
         {
@@ -341,13 +339,13 @@ extension CloudBackedMacro: PeerMacro {
     public static func expansion(
         of _: SwiftSyntax.AttributeSyntax,
         providingPeersOf declaration: some DeclSyntaxProtocol,
-        in _: some MacroExpansionContext) throws -> [DeclSyntax]
-    {
+        in _: some MacroExpansionContext
+    ) throws -> [DeclSyntax] {
         // Only generate storage for valid persistent properties
         guard let property = declaration.as(VariableDeclSyntax.self),
-              let binding = property.bindings.first,
-              let identifier = binding.pattern.as(IdentifierPatternSyntax.self),
-              property.isPersistent
+            let binding = property.bindings.first,
+            let identifier = binding.pattern.as(IdentifierPatternSyntax.self),
+            property.isPersistent
         else {
             return []
         }
@@ -357,9 +355,7 @@ extension CloudBackedMacro: PeerMacro {
         if let typeAnnotation = binding.typeAnnotation {
             let typeSyntax = typeAnnotation.type
             let typeName = typeSyntax.description.trimmingCharacters(in: .whitespacesAndNewlines)
-            isOptionalType = typeSyntax.is(OptionalTypeSyntax.self) ||
-                typeSyntax.is(ImplicitlyUnwrappedOptionalTypeSyntax.self) ||
-                typeName.contains("Optional")
+            isOptionalType = typeSyntax.is(OptionalTypeSyntax.self) || typeSyntax.is(ImplicitlyUnwrappedOptionalTypeSyntax.self) || typeName.contains("Optional")
         }
 
         // Generate private storage property with underscore prefix.

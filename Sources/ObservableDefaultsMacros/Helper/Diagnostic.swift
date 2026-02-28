@@ -24,12 +24,12 @@ func createDiagnostic(
     node: some SyntaxProtocol,
     message: String,
     fixItMessage: String? = nil,
-    fixIt: FixIt.Change? = nil) -> Diagnostic
-{
+    fixIt: FixIt.Change? = nil
+) -> Diagnostic {
     var fixIts: [FixIt] = []
     if let fixItMessage, let fixIt {
         fixIts = [
-            FixIt(message: MacroExpansionFixItMessage(fixItMessage), changes: [fixIt]),
+            FixIt(message: MacroExpansionFixItMessage(fixItMessage), changes: [fixIt])
         ]
     }
 
@@ -41,8 +41,8 @@ func createDiagnostic(
 
 func createWarningDiagnostic(
     node: some SyntaxProtocol,
-    message: String) -> Diagnostic
-{
+    message: String
+) -> Diagnostic {
     Diagnostic(
         node: node,
         message: ObservableDefaultsWarningMessage(message: message))
@@ -62,8 +62,8 @@ extension Diagnostic {
 
     static func initializerRequired(
         property: VariableDeclSyntax,
-        macroType: MacroType) -> Diagnostic
-    {
+        macroType: MacroType
+    ) -> Diagnostic {
         createDiagnostic(
             node: property,
             message: "\(macroType.rawValue) properties must have an initial value",
@@ -83,14 +83,14 @@ extension Diagnostic {
                                     equal: .equalToken(
                                         leadingTrivia: .spaces(1),
                                         trailingTrivia: .spaces(1)),
-                                    value: ExprSyntax("<#initializer#>"))),
+                                    value: ExprSyntax("<#initializer#>")))
                         ])))))
     }
 
     static func explicitTypeAnnotationRequired(
         property: VariableDeclSyntax,
-        macroType: MacroType) -> Diagnostic
-    {
+        macroType: MacroType
+    ) -> Diagnostic {
         createDiagnostic(
             node: property,
             message: "\(macroType.rawValue) properties must have an explicit type annotation. var name: String",
@@ -108,15 +108,15 @@ extension Diagnostic {
                                 typeAnnotation: TypeAnnotationSyntax(
                                     colon: .colonToken(trailingTrivia: .spaces(1)),
                                     type: TypeSyntax("<#Type#> ")),
-                                initializer: property.bindings.first!.initializer),
+                                initializer: property.bindings.first!.initializer)
                         ])))))
     }
 
     static func stringLiteralRequired(
         expression: ExprSyntax,
         argumentName: String,
-        attributeName: String) -> Diagnostic
-    {
+        attributeName: String
+    ) -> Diagnostic {
         createDiagnostic(
             node: expression,
             message: "\(attributeName) parameter '\(argumentName)' must be a string literal")
@@ -124,8 +124,8 @@ extension Diagnostic {
 
     static func observersNotSupported(
         property: VariableDeclSyntax,
-        attributeName: String) -> Diagnostic
-    {
+        attributeName: String
+    ) -> Diagnostic {
         createWarningDiagnostic(
             node: property,
             message: "\(attributeName) does not support willSet/didSet. These observers will be ignored.")

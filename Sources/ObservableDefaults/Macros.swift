@@ -32,9 +32,10 @@
 /// - Important: `willSet` and `didSet` are not supported on `@DefaultsBacked` properties
 @attached(peer, names: prefixed(`_`), arbitrary)
 @attached(accessor, names: named(get), named(set))
-public macro DefaultsBacked(userDefaultsKey: String? = nil) = #externalMacro(
-    module: "ObservableDefaultsMacros",
-    type: "DefaultsBackedMacro")
+public macro DefaultsBacked(userDefaultsKey: String? = nil) =
+    #externalMacro(
+        module: "ObservableDefaultsMacros",
+        type: "DefaultsBackedMacro")
 
 /// A macro that specifies a custom UserDefaults key for a property.
 ///
@@ -62,9 +63,10 @@ public macro DefaultsBacked(userDefaultsKey: String? = nil) = #externalMacro(
 ///
 /// - Note: This is a marker macro that provides metadata for other macros
 @attached(peer)
-public macro DefaultsKey(userDefaultsKey: String? = nil) = #externalMacro(
-    module: "ObservableDefaultsMacros",
-    type: "DefaultsKeyMacro")
+public macro DefaultsKey(userDefaultsKey: String? = nil) =
+    #externalMacro(
+        module: "ObservableDefaultsMacros",
+        type: "DefaultsKeyMacro")
 
 /// A macro that marks a property as neither observable nor stored in UserDefaults.
 ///
@@ -120,9 +122,10 @@ public macro Ignore() = #externalMacro(module: "ObservableDefaultsMacros", type:
 ///   including properties automatically marked in Observe First mode
 @attached(peer, names: prefixed(`_`))
 @attached(accessor, names: named(get), named(set), named(init), named(_modify))
-public macro ObservableOnly() = #externalMacro(
-    module: "ObservableDefaultsMacros",
-    type: "ObservableOnlyMacro")
+public macro ObservableOnly() =
+    #externalMacro(
+        module: "ObservableDefaultsMacros",
+        type: "ObservableOnlyMacro")
 
 /// A macro that creates an Observable class with automatic UserDefaults integration.
 ///
@@ -231,9 +234,11 @@ public macro ObservableDefaults(
     prefix: String = "",
     observeFirst: Bool = false,
     limitToInstance: Bool = true,
-    defaultIsolationIsMainActor: Bool = false) = #externalMacro(
-    module: "ObservableDefaultsMacros",
-    type: "ObservableDefaultsMacros")
+    defaultIsolationIsMainActor: Bool = false
+) =
+    #externalMacro(
+        module: "ObservableDefaultsMacros",
+        type: "ObservableDefaultsMacros")
 
 /// A macro that provides automatic NSUbiquitousKeyValueStore (iCloud Key-Value Storage) integration
 /// for individual properties within classes marked with `@ObservableCloud`.
@@ -305,9 +310,10 @@ public macro ObservableDefaults(
 /// - Warning: Changing property names or custom keys after deployment may cause data loss
 @attached(peer, names: prefixed(`_`), arbitrary)
 @attached(accessor, names: named(get), named(set))
-public macro CloudBacked(keyValueStoreKey: String? = nil) = #externalMacro(
-    module: "ObservableDefaultsMacros",
-    type: "CloudBackedMacro")
+public macro CloudBacked(keyValueStoreKey: String? = nil) =
+    #externalMacro(
+        module: "ObservableDefaultsMacros",
+        type: "CloudBackedMacro")
 
 /// A marker macro that provides an alternative syntax for specifying custom
 /// NSUbiquitousKeyValueStore
@@ -358,9 +364,10 @@ public macro CloudBacked(keyValueStoreKey: String? = nil) = #externalMacro(
 /// - Important: Must be used with `@CloudBacked` to have any effect
 /// - Warning: Changing keys after deployment will make existing cloud data inaccessible
 @attached(peer)
-public macro CloudKey(keyValueStoreKey: String? = nil) = #externalMacro(
-    module: "ObservableDefaultsMacros",
-    type: "CloudKeyMacro")
+public macro CloudKey(keyValueStoreKey: String? = nil) =
+    #externalMacro(
+        module: "ObservableDefaultsMacros",
+        type: "CloudKeyMacro")
 
 /// A comprehensive macro that automatically integrates NSUbiquitousKeyValueStore with SwiftUI's
 /// Observation framework for seamless cloud data synchronization.
@@ -515,6 +522,8 @@ public macro ObservableCloud(
     observeFirst: Bool = false,
     syncImmediately: Bool = false,
     developmentMode: Bool = false,
-    defaultIsolationIsMainActor: Bool = false) = #externalMacro(
-    module: "ObservableDefaultsMacros",
-    type: "ObservableCloudMacros")
+    defaultIsolationIsMainActor: Bool = false
+) =
+    #externalMacro(
+        module: "ObservableDefaultsMacros",
+        type: "ObservableCloudMacros")

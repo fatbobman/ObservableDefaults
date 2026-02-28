@@ -12,7 +12,7 @@ let package = Package(
         .library(
             name: "ObservableDefaults",
             targets: ["ObservableDefaults"]
-        ),
+        )
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax", "600.0.0"..<"603.0.0")

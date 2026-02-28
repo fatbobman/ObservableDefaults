@@ -173,7 +173,7 @@ struct ObservableDefaultsTests {
         let model = MockModel(userDefaults: userDefaults)
 
         tracking(model, \.name, .direct, false)
-        model.name = "Test" // same value
+        model.name = "Test"  // same value
     }
 
     @Test("Ignore Same Value Set for Observable Only Property")
@@ -182,7 +182,7 @@ struct ObservableDefaultsTests {
         let model = MockModel(userDefaults: userDefaults)
 
         tracking(model, \.observableOnly, .direct, false)
-        model.observableOnly = "ObservableOnly" // same value
+        model.observableOnly = "ObservableOnly"  // same value
     }
 
     @Test("WillSet and DidSet are not supported for Backed Property")
@@ -242,7 +242,7 @@ struct ObservableDefaultsTests {
         // Test initial values - these should match the default values defined in MockModelOptional
         #expect(model.optionalName == nil, "optionalName should start as nil")
         #expect(model.optionalAge == 25, "optionalAge should start as 25")
-        #expect(model.optionalWithoutInitializer == nil, "optionalWithoutInitializer should start as nil") 
+        #expect(model.optionalWithoutInitializer == nil, "optionalWithoutInitializer should start as nil")
         #expect(model.optionalWithCustomKey == true, "optionalWithCustomKey should start as true")
         #expect(model.name == nil, "name should start as nil")
 
@@ -283,77 +283,80 @@ struct ObservableDefaultsTests {
     func codableTypeWithStaticPropertiesSupport() {
         let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
         let model = MockModelCodable(userDefaults: userDefaults)
-        
+
         // Test initial values with static properties
         #expect(model.style == .style1, "style should start as .style1")
         #expect(model.explicitStyle == .style2, "explicitStyle should start as .style2")
-        
+
         // Test setting values
         tracking(model, \.style, .direct)
         model.style = .style3
         #expect(model.style == .style3, "style should be set to .style3")
-        
+
         tracking(model, \.explicitStyle, .direct)
         model.explicitStyle = .style1
         #expect(model.explicitStyle == .style1, "explicitStyle should be set to .style1")
-        
+
         // Test external UserDefaults changes with Codable types
         tracking(model, \.style, .userDefaults)
         let style2Data = try! JSONEncoder().encode(FontStyle.style2)
         userDefaults.set(style2Data, forKey: "style")
         #expect(model.style == .style2, "style should be updated from UserDefaults")
-        
+
         // Test removing values (should revert to default)
         userDefaults.removeObject(forKey: "style")
         #expect(model.style == .style1, "style should revert to default (.style1) when removed from UserDefaults")
-        
+
         userDefaults.removeObject(forKey: "explicitStyle")
         #expect(model.explicitStyle == .style2, "explicitStyle should revert to default (.style2) when removed from UserDefaults")
     }
-    
+
     @MainActor
     @Test("MainActor Support")
     func mainActorSupport() async {
         let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
         let model = MockModelMainActor(userDefaults: userDefaults)
-        
+
         // Test initial values
         #expect(model.name == "Test", "name should start as Test")
         #expect(model.count == 0, "count should start as 0")
         #expect(model.customKey == "CustomValue", "customKey should start as CustomValue")
-        
+
         // Test setting values (should work without key path compilation errors)
         tracking(model, \.name, .direct)
         model.name = "MainActorTest"
         #expect(model.name == "MainActorTest", "name should be set to MainActorTest")
-        
+
         tracking(model, \.count, .direct)
         model.count = 42
         #expect(model.count == 42, "count should be set to 42")
-        
+
         tracking(model, \.customKey, .direct)
         model.customKey = "UpdatedValue"
         #expect(model.customKey == "UpdatedValue", "customKey should be set to UpdatedValue")
-        
+
         // Backed properties do not support willSet/didSet
         #expect(model.setResult.isEmpty, "willSet/didSet should not run for backed properties")
-        
+
         // Test that values persist to UserDefaults
-        #expect(userDefaults.string(forKey: "name") == "MainActorTest", 
-                "name should be stored in UserDefaults")
-        #expect(userDefaults.integer(forKey: "count") == 42, 
-                "count should be stored in UserDefaults")
-        
+        #expect(
+            userDefaults.string(forKey: "name") == "MainActorTest",
+            "name should be stored in UserDefaults")
+        #expect(
+            userDefaults.integer(forKey: "count") == 42,
+            "count should be stored in UserDefaults")
+
         // Test custom key
-        #expect(userDefaults.string(forKey: "main-actor-custom-key") == "UpdatedValue",
-                "customKey should be stored with custom key")
-        
+        #expect(
+            userDefaults.string(forKey: "main-actor-custom-key") == "UpdatedValue",
+            "customKey should be stored with custom key")
+
         // Test external changes
         tracking(model, \.name, .userDefaults)
         userDefaults.set("ExternalMainActorName", forKey: "name")
-        
+
         // Give some time for the async dispatch to complete
-        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        try? await Task.sleep(nanoseconds: 100_000_000)  // 0.1 seconds
         #expect(model.name == "ExternalMainActorName", "name should be updated from external change")
     }
 }

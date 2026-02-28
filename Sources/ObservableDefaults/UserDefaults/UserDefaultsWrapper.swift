@@ -52,7 +52,8 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func getValue(
         _ key: String,
         _ defaultValue: Value,
-        _ store: UserDefaults) -> Value
+        _ store: UserDefaults
+    ) -> Value
     where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue {
         // Attempt to get the raw value from UserDefaults
         guard let rawValue = store.object(forKey: key) as? Value.RawValue else {
@@ -73,7 +74,8 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func getValue(
         _ key: String,
         _ defaultValue: Value?,
-        _ store: UserDefaults) -> Value?
+        _ store: UserDefaults
+    ) -> Value?
     where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue {
         // Attempt to get the raw value from UserDefaults
         guard let rawValue = store.object(forKey: key) as? Value.RawValue else {
@@ -91,9 +93,12 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func getValue(
         _ key: String,
         _ defaultValue: Value,
-        _ store: UserDefaults) -> Value
-    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
-        Value: UserDefaultsPropertyListValue {
+        _ store: UserDefaults
+    ) -> Value
+    where
+        Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
+        Value: UserDefaultsPropertyListValue
+    {
         // Prefer RawRepresentable storage for hybrid types.
         // Fallback to direct property-list casting to preserve compatibility with
         // legacy data written through non-raw paths.
@@ -114,9 +119,12 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func getValue(
         _ key: String,
         _ defaultValue: Value?,
-        _ store: UserDefaults) -> Value?
-    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
-        Value: UserDefaultsPropertyListValue {
+        _ store: UserDefaults
+    ) -> Value?
+    where
+        Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
+        Value: UserDefaultsPropertyListValue
+    {
         // Prefer RawRepresentable storage for hybrid types.
         // Fallback to direct property-list casting to preserve compatibility with
         // legacy data written through non-raw paths.
@@ -137,9 +145,12 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func getValue(
         _ key: String,
         _ defaultValue: Value,
-        _ store: UserDefaults) -> Value
-    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
-        Value: UserDefaultsPropertyListValue & Codable {
+        _ store: UserDefaults
+    ) -> Value
+    where
+        Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
+        Value: UserDefaultsPropertyListValue & Codable
+    {
         // Prefer RawRepresentable storage for hybrid types.
         // Fallback to direct property-list casting to preserve compatibility with
         // legacy data written through non-raw paths.
@@ -160,9 +171,12 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func getValue(
         _ key: String,
         _ defaultValue: Value?,
-        _ store: UserDefaults) -> Value?
-    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
-        Value: UserDefaultsPropertyListValue & Codable {
+        _ store: UserDefaults
+    ) -> Value?
+    where
+        Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
+        Value: UserDefaultsPropertyListValue & Codable
+    {
         // Prefer RawRepresentable storage for hybrid types.
         // Fallback to direct property-list casting to preserve compatibility with
         // legacy data written through non-raw paths.
@@ -186,7 +200,8 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func getValue(
         _ key: String,
         _ defaultValue: Value,
-        _ store: UserDefaults) -> Value
+        _ store: UserDefaults
+    ) -> Value
     where Value: UserDefaultsPropertyListValue {
         // Directly cast the object to the expected type, fallback to default if casting fails
         store.object(forKey: key) as? Value ?? defaultValue
@@ -203,7 +218,8 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func getValue(
         _ key: String,
         _ defaultValue: Value?,
-        _ store: UserDefaults) -> Value?
+        _ store: UserDefaults
+    ) -> Value?
     where Value: UserDefaultsPropertyListValue {
         // Check if the key exists first
         guard let object = store.object(forKey: key) else {
@@ -224,7 +240,8 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func getValue(
         _ key: String,
         _ defaultValue: Value,
-        _ store: UserDefaults) -> Value
+        _ store: UserDefaults
+    ) -> Value
     where Value: UserDefaultsPropertyListValue & Codable {
         // Check if the key exists first
         guard let object = store.object(forKey: key) else {
@@ -245,7 +262,8 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func getValue(
         _ key: String,
         _ defaultValue: Value?,
-        _ store: UserDefaults) -> Value?
+        _ store: UserDefaults
+    ) -> Value?
     where Value: UserDefaultsPropertyListValue & Codable {
         // Check if the key exists first
         guard let object = store.object(forKey: key) else {
@@ -267,7 +285,8 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func getValue(
         _ key: String,
         _ defaultValue: Value,
-        _ store: UserDefaults) -> Value
+        _ store: UserDefaults
+    ) -> Value
     where Value: Codable {
         // Get the data from UserDefaults
         guard let data = store.data(forKey: key) else {
@@ -295,7 +314,8 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func getValue(
         _ key: String,
         _ defaultValue: Value?,
-        _ store: UserDefaults) -> Value?
+        _ store: UserDefaults
+    ) -> Value?
     where Value: Codable {
         // Get the data from UserDefaults
         guard let data = store.data(forKey: key) else {
@@ -334,7 +354,8 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func setValue(
         _ key: String,
         _ newValue: Value?,
-        _ store: UserDefaults)
+        _ store: UserDefaults
+    )
     where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue {
         // Store the raw value of the optional enum (nil if the enum is nil)
         store.set(newValue?.rawValue, forKey: key)
@@ -346,8 +367,10 @@ public struct UserDefaultsWrapper<Value> {
     /// This dedicated overload removes ambiguity between the RawRepresentable and
     /// UserDefaultsPropertyListValue overload sets.
     public nonisolated static func setValue(_ key: String, _ newValue: Value, _ store: UserDefaults)
-    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
-        Value: UserDefaultsPropertyListValue {
+    where
+        Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
+        Value: UserDefaultsPropertyListValue
+    {
         // Prefer RawRepresentable storage for hybrid types.
         store.set(newValue.rawValue, forKey: key)
     }
@@ -360,9 +383,12 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func setValue(
         _ key: String,
         _ newValue: Value?,
-        _ store: UserDefaults)
-    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
-        Value: UserDefaultsPropertyListValue {
+        _ store: UserDefaults
+    )
+    where
+        Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
+        Value: UserDefaultsPropertyListValue
+    {
         // Prefer RawRepresentable storage for hybrid types.
         store.set(newValue?.rawValue, forKey: key)
     }
@@ -373,8 +399,10 @@ public struct UserDefaultsWrapper<Value> {
     /// This dedicated overload removes ambiguity with the
     /// UserDefaultsPropertyListValue & Codable overload set.
     public nonisolated static func setValue(_ key: String, _ newValue: Value, _ store: UserDefaults)
-    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
-        Value: UserDefaultsPropertyListValue & Codable {
+    where
+        Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
+        Value: UserDefaultsPropertyListValue & Codable
+    {
         // Prefer RawRepresentable storage for hybrid types.
         store.set(newValue.rawValue, forKey: key)
     }
@@ -387,9 +415,12 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func setValue(
         _ key: String,
         _ newValue: Value?,
-        _ store: UserDefaults)
-    where Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
-        Value: UserDefaultsPropertyListValue & Codable {
+        _ store: UserDefaults
+    )
+    where
+        Value: RawRepresentable, Value.RawValue: UserDefaultsPropertyListValue,
+        Value: UserDefaultsPropertyListValue & Codable
+    {
         // Prefer RawRepresentable storage for hybrid types.
         store.set(newValue?.rawValue, forKey: key)
     }
@@ -415,7 +446,8 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func setValue(
         _ key: String,
         _ newValue: Value?,
-        _ store: UserDefaults)
+        _ store: UserDefaults
+    )
     where Value: UserDefaultsPropertyListValue {
         // Store the optional value (nil will remove the key)
         store.set(newValue, forKey: key)
@@ -442,7 +474,8 @@ public struct UserDefaultsWrapper<Value> {
     public nonisolated static func setValue(
         _ key: String,
         _ newValue: Value?,
-        _ store: UserDefaults)
+        _ store: UserDefaults
+    )
     where Value: UserDefaultsPropertyListValue & Codable {
         // Store the optional value (nil will remove the key)
         store.set(newValue, forKey: key)

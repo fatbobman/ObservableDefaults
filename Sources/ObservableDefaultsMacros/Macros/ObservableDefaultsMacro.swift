@@ -96,8 +96,8 @@ extension ObservableDefaultsMacros: MemberMacro {
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
         conformingTo protocols: [TypeSyntax],
-        in context: some MacroExpansionContext) throws -> [DeclSyntax]
-    {
+        in context: some MacroExpansionContext
+    ) throws -> [DeclSyntax] {
         guard let identifier = declaration.asProtocol(NamedDeclSyntax.self) else { return [] }
 
         let className =
@@ -131,7 +131,7 @@ extension ObservableDefaultsMacros: MemberMacro {
         // Check if the class has @MainActor attribute or if defaultIsolation is MainActor
         let hasExplicitMainActor = classDecl.attributes.contains(where: { attribute in
             if case let .attribute(attr) = attribute,
-               let identifierType = attr.attributeName.as(IdentifierTypeSyntax.self)
+                let identifierType = attr.attributeName.as(IdentifierTypeSyntax.self)
             {
                 return identifierType.name.text == "MainActor"
             }
@@ -141,7 +141,7 @@ extension ObservableDefaultsMacros: MemberMacro {
         let persistentProperties = classDecl.memberBlock.members
             .compactMap { member -> VariableDeclSyntax? in
                 guard let varDecl = member.decl.as(VariableDeclSyntax.self),
-                      varDecl.isPersistent
+                    varDecl.isPersistent
                 else {
                     return nil
                 }
@@ -152,7 +152,8 @@ extension ObservableDefaultsMacros: MemberMacro {
         // In observeFirst mode, only explicitly @DefaultsBacked properties are backed;
         // non-backed (ObservableOnly) properties are excluded because they are not
         // stored in UserDefaults and should not appear in the notification handler.
-        let metas: [(userDefaultsKey: String, propertyID: String)] = persistentProperties
+        let metas: [(userDefaultsKey: String, propertyID: String)] =
+            persistentProperties
             .compactMap { property in
                 if observeFirst, !property.hasAttribute(named: DefaultsBackedMacro.name) {
                     return nil
@@ -160,8 +161,7 @@ extension ObservableDefaultsMacros: MemberMacro {
                 let key =
                     property.attributes.extractValue(
                         forAttribute: DefaultsBackedMacro.name,
-                        argument: DefaultsBackedMacro.key) ??
-                    property.attributes.extractValue(
+                        argument: DefaultsBackedMacro.key) ?? property.attributes.extractValue(
                         forAttribute: DefaultsKeyMacro.name,
                         argument: DefaultsKeyMacro.key) ?? property.identifier?.text ?? ""
                 let propertyID = property.identifier?.text ?? ""
@@ -169,10 +169,13 @@ extension ObservableDefaultsMacros: MemberMacro {
             }
 
         // Generate keyPath mapping for external change handling
-        let keyPathMaps = metas.isEmpty ? "[:]" :
-            "[" + metas
-            .map { "\\\(className).\($0.propertyID): \"\($0.userDefaultsKey)\"" }
-            .joined(separator: ", ") + "]"
+        let keyPathMaps =
+            metas.isEmpty
+            ? "[:]"
+            : "["
+                + metas
+                .map { "\\\(className).\($0.propertyID): \"\($0.userDefaultsKey)\"" }
+                .joined(separator: ", ") + "]"
 
         let keyPathMapsSyntax: DeclSyntax =
             """
@@ -237,8 +240,9 @@ extension ObservableDefaultsMacros: MemberMacro {
             """
 
         // Generate UserDefaults instance (standard or custom suite)
-        let userDefaultStoreSyntax: DeclSyntax = !suiteName.isEmpty ?
-            """
+        let userDefaultStoreSyntax: DeclSyntax =
+            !suiteName.isEmpty
+            ? """
             private var _userDefaults: Foundation.UserDefaults = {
                 if let userDefaults = Foundation.UserDefaults(suiteName: "\(raw: suiteName)") {
                     return userDefaults
@@ -250,8 +254,8 @@ extension ObservableDefaultsMacros: MemberMacro {
             }()
             """
             : """
-                private var _userDefaults: Foundation.UserDefaults = Foundation.UserDefaults.standard
-                """
+            private var _userDefaults: Foundation.UserDefaults = Foundation.UserDefaults.standard
+            """
 
         // Generate external notification control property
         let isExternalNotificationDisabled = ignoreExternalChanges ? "true" : "false"
@@ -305,185 +309,187 @@ extension ObservableDefaultsMacros: MemberMacro {
             """
 
         // Generate NotificationCenter observer class for external UserDefaults changes
-        let observerFunctionSyntax: DeclSyntax = if metas.isEmpty {
-            // No properties to observe, just create empty observer
-            """
-            private var observer: DefaultsObservation?
+        let observerFunctionSyntax: DeclSyntax =
+            if metas.isEmpty {
+                // No properties to observe, just create empty observer
+                """
+                private var observer: DefaultsObservation?
 
-            /// Manages UserDefaults change observation using NotificationCenter.
-            ///
-            /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
-            private final class DefaultsObservation: @unchecked Sendable {
-                let host: \(className)
-                let userDefaults: Foundation.UserDefaults
-                let prefix: String
-                let observableKeysBlacklist: [String]
+                /// Manages UserDefaults change observation using NotificationCenter.
+                ///
+                /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
+                private final class DefaultsObservation: @unchecked Sendable {
+                    let host: \(className)
+                    let userDefaults: Foundation.UserDefaults
+                    let prefix: String
+                    let observableKeysBlacklist: [String]
 
-                /// Initializes the observation with the specified parameters.
-                /// - Parameters:
-                ///   - host: The host instance to observe
-                ///   - userDefaults: The UserDefaults instance to monitor
-                ///   - prefix: The key prefix for UserDefaults keys
-                ///   - observableKeysBlacklist: Keys to exclude from observation
-                init(host: \(
+                    /// Initializes the observation with the specified parameters.
+                    /// - Parameters:
+                    ///   - host: The host instance to observe
+                    ///   - userDefaults: The UserDefaults instance to monitor
+                    ///   - prefix: The key prefix for UserDefaults keys
+                    ///   - observableKeysBlacklist: Keys to exclude from observation
+                    init(host: \(
                     className), userDefaults: Foundation.UserDefaults, prefix: String, observableKeysBlacklist: [String]) {
-                    self.host = host
-                    self.userDefaults = userDefaults
-                    self.prefix = prefix
-                    self.observableKeysBlacklist = observableKeysBlacklist
-                    // No properties to observe, so no need to register for notifications
+                        self.host = host
+                        self.userDefaults = userDefaults
+                        self.prefix = prefix
+                        self.observableKeysBlacklist = observableKeysBlacklist
+                        // No properties to observe, so no need to register for notifications
+                    }
+
+                    deinit {
+                        // No observer to remove
+                    }
                 }
+                """
+            } else if hasMainActor {
+                """
+                private var observer: DefaultsObservation?
 
-                deinit {
-                    // No observer to remove
-                }
-            }
-            """
-        } else if hasMainActor {
-            """
-            private var observer: DefaultsObservation?
+                /// Manages UserDefaults change observation using NotificationCenter.
+                ///
+                /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
+                private final class DefaultsObservation: @unchecked Sendable {
+                    let host: \(className)
+                    let userDefaults: Foundation.UserDefaults
+                    let prefix: String
+                    let observableKeysBlacklist: [String]
+                    private var notificationObserver: NSObjectProtocol?
 
-            /// Manages UserDefaults change observation using NotificationCenter.
-            ///
-            /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
-            private final class DefaultsObservation: @unchecked Sendable {
-                let host: \(className)
-                let userDefaults: Foundation.UserDefaults
-                let prefix: String
-                let observableKeysBlacklist: [String]
-                private var notificationObserver: NSObjectProtocol?
-
-                /// Initializes the observation with the specified parameters.
-                /// - Parameters:
-                ///   - host: The host instance to observe
-                ///   - userDefaults: The UserDefaults instance to monitor
-                ///   - prefix: The key prefix for UserDefaults keys
-                ///   - observableKeysBlacklist: Keys to exclude from observation
-                init(host: \(
+                    /// Initializes the observation with the specified parameters.
+                    /// - Parameters:
+                    ///   - host: The host instance to observe
+                    ///   - userDefaults: The UserDefaults instance to monitor
+                    ///   - prefix: The key prefix for UserDefaults keys
+                    ///   - observableKeysBlacklist: Keys to exclude from observation
+                    init(host: \(
                     className), userDefaults: Foundation.UserDefaults, prefix: String, observableKeysBlacklist: [String]) {
-                    self.host = host
-                    self.userDefaults = userDefaults
-                    self.prefix = prefix
-                    self.observableKeysBlacklist = observableKeysBlacklist
+                        self.host = host
+                        self.userDefaults = userDefaults
+                        self.prefix = prefix
+                        self.observableKeysBlacklist = observableKeysBlacklist
 
-                    notificationObserver = NotificationCenter.default
-                        .addObserver(
-                            forName: UserDefaults.didChangeNotification,
-                            object: \(raw: limitToInstance ? "userDefaults" : "nil"),
-                            queue: .main
-                        ) { [weak host, prefix, observableKeysBlacklist] notification in
-                            guard let host else { return }
-                            
-                            // Check all monitored keys for changes
-                            let monitoredKeys: [String] = [
-                                \(raw: metas.map { "\"\($0.userDefaultsKey)\"" }
+                        notificationObserver = NotificationCenter.default
+                            .addObserver(
+                                forName: UserDefaults.didChangeNotification,
+                                object: \(raw: limitToInstance ? "userDefaults" : "nil"),
+                                queue: .main
+                            ) { [weak host, prefix, observableKeysBlacklist] notification in
+                                guard let host else { return }
+                                
+                                // Check all monitored keys for changes
+                                let monitoredKeys: [String] = [
+                                    \(raw: metas.map { "\"\($0.userDefaultsKey)\"" }
                         .joined(separator: ", "))
-                            ]
+                                ]
 
-                            for key in monitoredKeys {
-                                let fullKey = prefix + key
-                                if !observableKeysBlacklist.contains(fullKey) {
-                                    switch fullKey {
-                                    \(raw: caseCode)
-                                    default:
-                                        break
+                                for key in monitoredKeys {
+                                    let fullKey = prefix + key
+                                    if !observableKeysBlacklist.contains(fullKey) {
+                                        switch fullKey {
+                                        \(raw: caseCode)
+                                        default:
+                                            break
+                                        }
                                     }
                                 }
                             }
-                        }
-                }
+                    }
 
-                \(raw: defaultIsolationIsMainActor ? "@MainActor" : "")
-                deinit {
-                    if let observer = notificationObserver {
-                        NotificationCenter.default.removeObserver(observer)
+                    \(raw: defaultIsolationIsMainActor ? "@MainActor" : "")
+                    deinit {
+                        if let observer = notificationObserver {
+                            NotificationCenter.default.removeObserver(observer)
+                        }
                     }
                 }
-            }
-            """
-        } else {
-            """
-            private var observer: DefaultsObservation?
+                """
+            } else {
+                """
+                private var observer: DefaultsObservation?
 
-            /// Manages UserDefaults change observation using NotificationCenter.
-            ///
-            /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
-            private final class DefaultsObservation: @unchecked Sendable {
-                let host: \(className)
-                let userDefaults: Foundation.UserDefaults
-                let prefix: String
-                let observableKeysBlacklist: [String]
+                /// Manages UserDefaults change observation using NotificationCenter.
+                ///
+                /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
+                private final class DefaultsObservation: @unchecked Sendable {
+                    let host: \(className)
+                    let userDefaults: Foundation.UserDefaults
+                    let prefix: String
+                    let observableKeysBlacklist: [String]
 
-                /// Initializes the observation with the specified parameters.
-                /// - Parameters:
-                ///   - host: The host instance to observe
-                ///   - userDefaults: The UserDefaults instance to monitor
-                ///   - prefix: The key prefix for UserDefaults keys
-                ///   - observableKeysBlacklist: Keys to exclude from observation
-                init(host: \(
+                    /// Initializes the observation with the specified parameters.
+                    /// - Parameters:
+                    ///   - host: The host instance to observe
+                    ///   - userDefaults: The UserDefaults instance to monitor
+                    ///   - prefix: The key prefix for UserDefaults keys
+                    ///   - observableKeysBlacklist: Keys to exclude from observation
+                    init(host: \(
                     className), userDefaults: Foundation.UserDefaults, prefix: String, observableKeysBlacklist: [String]) {
-                    self.host = host
-                    self.userDefaults = userDefaults
-                    self.prefix = prefix
-                    self.observableKeysBlacklist = observableKeysBlacklist
+                        self.host = host
+                        self.userDefaults = userDefaults
+                        self.prefix = prefix
+                        self.observableKeysBlacklist = observableKeysBlacklist
 
-                    NotificationCenter.default
-                        .addObserver(
-                            forName: UserDefaults.didChangeNotification,
-                            object: \(raw: limitToInstance ? "userDefaults" : "nil"),
-                            queue: nil,
-                            using: userDefaultsDidChange
-                        )
-                }
+                        NotificationCenter.default
+                            .addObserver(
+                                forName: UserDefaults.didChangeNotification,
+                                object: \(raw: limitToInstance ? "userDefaults" : "nil"),
+                                queue: nil,
+                                using: userDefaultsDidChange
+                            )
+                    }
 
-                /// Handles UserDefaults changes from external sources.
-                /// - Parameter notification: The notification containing change information
-                @Sendable
-                private func userDefaultsDidChange(_ notification: Foundation.Notification) {
-                    // Check all monitored keys for changes
-                    let monitoredKeys: [String] = [
-                        \(raw: metas.map { "\"\($0.userDefaultsKey)\"" }
+                    /// Handles UserDefaults changes from external sources.
+                    /// - Parameter notification: The notification containing change information
+                    @Sendable
+                    private func userDefaultsDidChange(_ notification: Foundation.Notification) {
+                        // Check all monitored keys for changes
+                        let monitoredKeys: [String] = [
+                            \(raw: metas.map { "\"\($0.userDefaultsKey)\"" }
                 .joined(separator: ", "))
-                    ]
+                        ]
 
-                    for key in monitoredKeys {
-                        let fullKey = prefix + key
-                        if !observableKeysBlacklist.contains(fullKey) {
-                            switch fullKey {
-                            \(raw: caseCode)
-                            default:
-                                break
+                        for key in monitoredKeys {
+                            let fullKey = prefix + key
+                            if !observableKeysBlacklist.contains(fullKey) {
+                                switch fullKey {
+                                \(raw: caseCode)
+                                default:
+                                    break
+                                }
                             }
                         }
                     }
-                }
 
-                deinit {
-                    NotificationCenter.default.removeObserver(self)
+                    deinit {
+                        NotificationCenter.default.removeObserver(self)
+                    }
                 }
+                """
             }
-            """
-        }
 
         // Generate observer starter method
-        let observerStarterSyntax: DeclSyntax = if metas.isEmpty {
-            // No properties to observe, create empty starter
-            """
-            private func observerStarter(observableKeysBlacklist: [PartialKeyPath<\(
+        let observerStarterSyntax: DeclSyntax =
+            if metas.isEmpty {
+                // No properties to observe, create empty starter
+                """
+                private func observerStarter(observableKeysBlacklist: [PartialKeyPath<\(
                 raw: className)>] = []) {
-                // No properties to observe
-                observer = DefaultsObservation(host: self, userDefaults: _userDefaults, prefix: _prefix, observableKeysBlacklist: [])
-            }
-            """
-        } else {
-            """
-            private func observerStarter(observableKeysBlacklist: [PartialKeyPath<\(
+                    // No properties to observe
+                    observer = DefaultsObservation(host: self, userDefaults: _userDefaults, prefix: _prefix, observableKeysBlacklist: [])
+                }
+                """
+            } else {
+                """
+                private func observerStarter(observableKeysBlacklist: [PartialKeyPath<\(
                 raw: className)>] = []) {
-                let keyList = observableKeysBlacklist.compactMap{ _defaultsKeyPathMap[$0] }
-                observer = DefaultsObservation(host: self, userDefaults: _userDefaults, prefix: _prefix, observableKeysBlacklist: keyList)
+                    let keyList = observableKeysBlacklist.compactMap{ _defaultsKeyPathMap[$0] }
+                    observer = DefaultsObservation(host: self, userDefaults: _userDefaults, prefix: _prefix, observableKeysBlacklist: keyList)
+                }
+                """
             }
-            """
-        }
 
         return [
             registrarSyntax,
@@ -520,8 +526,8 @@ extension ObservableDefaultsMacros: ExtensionMacro {
         attachedTo _: some DeclGroupSyntax,
         providingExtensionsOf type: some TypeSyntaxProtocol,
         conformingTo _: [TypeSyntax],
-        in _: some MacroExpansionContext) throws -> [ExtensionDeclSyntax]
-    {
+        in _: some MacroExpansionContext
+    ) throws -> [ExtensionDeclSyntax] {
         let observableProtocol: DeclSyntax =
             """
                 extension \(type.trimmed): Observation.Observable {}
@@ -554,11 +560,11 @@ extension ObservableDefaultsMacros: MemberAttributeMacro {
         of node: AttributeSyntax,
         attachedTo _: some DeclGroupSyntax,
         providingAttributesFor member: some DeclSyntaxProtocol,
-        in _: some MacroExpansionContext) throws -> [SwiftSyntax.AttributeSyntax]
-    {
+        in _: some MacroExpansionContext
+    ) throws -> [SwiftSyntax.AttributeSyntax] {
         let (_, _, _, _, observeFirst, _, _, _) = extractProperty(node)
         guard let varDecl = member.as(VariableDeclSyntax.self),
-              varDecl.isObservable
+            varDecl.isObservable
         else {
             return []
         }
@@ -567,7 +573,7 @@ extension ObservableDefaultsMacros: MemberAttributeMacro {
             // In Observe First mode, only add @ObservableOnly if not already marked with
             // @DefaultsBacked or @ObservableOnly
             if !varDecl.hasAttribute(named: DefaultsBackedMacro.name),
-               !varDecl.hasAttribute(named: ObservableOnlyMacro.name)
+                !varDecl.hasAttribute(named: ObservableOnlyMacro.name)
             {
                 return ["@\(raw: ObservableOnlyMacro.name)"]
             }
@@ -591,11 +597,13 @@ extension ObservableDefaultsMacros {
     /// - `prefix`: Prefix for all UserDefaults keys (default: nil, no prefix)
     /// - `ignoreExternalChanges`: Whether to ignore external UserDefaults changes (default: false)
     /// - `observeFirst`: Whether to enable Observe First mode (default: false)
-/// - `defaultIsolationIsMainActor`: Whether project's defaultIsolation is MainActor (default: false)
+    /// - `defaultIsolationIsMainActor`: Whether project's defaultIsolation is MainActor (default: false)
     ///
     /// - Parameter node: The attribute syntax containing the parameters
     /// - Returns: A tuple containing all extracted parameter values
-    static func extractProperty(_ node: AttributeSyntax) -> (
+    static func extractProperty(
+        _ node: AttributeSyntax
+    ) -> (
         autoInit: Bool,
         suiteName: String,
         prefix: String,
@@ -603,8 +611,8 @@ extension ObservableDefaultsMacros {
         observeFirst: Bool,
         limitToInstance: Bool,
         defaultIsolationIsMainActor: Bool,
-        invalidSuiteNameExpression: ExprSyntax?)
-    {
+        invalidSuiteNameExpression: ExprSyntax?
+    ) {
         var autoInit = true
         var suiteName = ""
         var prefix = ""
@@ -617,37 +625,39 @@ extension ObservableDefaultsMacros {
         if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
             for argument in argumentList {
                 if argument.label?.text == ObservableDefaultsMacros.autoInit,
-                   let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
+                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
                     autoInit = booleanLiteral.literal.text == "true"
                 } else if argument.label?.text == ObservableDefaultsMacros.ignoreExternalChanges,
-                          let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
+                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
                     ignoreExternalChanges = booleanLiteral.literal.text == "true"
                 } else if argument.label?.text == ObservableDefaultsMacros.suiteName {
                     if let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self) {
-                        let rawSuiteName = stringLiteral.segments.first?
+                        let rawSuiteName =
+                            stringLiteral.segments.first?
                             .as(StringSegmentSyntax.self)?.content.text ?? ""
                         suiteName = rawSuiteName.trimmingCharacters(in: .whitespacesAndNewlines)
                     } else {
                         invalidSuiteNameExpression = argument.expression
                     }
                 } else if argument.label?.text == ObservableDefaultsMacros.prefix,
-                          let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self)
+                    let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self)
                 {
-                    let rawPrefix = stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content
+                    let rawPrefix =
+                        stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content
                         .text ?? ""
                     prefix = rawPrefix.trimmingCharacters(in: .whitespacesAndNewlines)
                 } else if argument.label?.text == ObservableDefaultsMacros.observeFirst,
-                          let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
+                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
                     observeFirst = booleanLiteral.literal.text == "true"
                 } else if argument.label?.text == ObservableDefaultsMacros.limitToInstance,
-                          let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
+                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
                     limitToInstance = booleanLiteral.literal.text == "true"
                 } else if argument.label?.text == ObservableDefaultsMacros.defaultIsolationIsMainActor,
-                          let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
+                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
                 {
                     defaultIsolationIsMainActor = booleanLiteral.literal.text == "true"
                 }

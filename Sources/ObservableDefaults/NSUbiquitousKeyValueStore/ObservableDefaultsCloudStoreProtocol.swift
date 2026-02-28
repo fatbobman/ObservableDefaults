@@ -51,4 +51,3 @@ public protocol ObservableDefaultsCloudStoreProtocol {
 
 /// The default implementation of the cloud store.
 extension NSUbiquitousKeyValueStore: ObservableDefaultsCloudStoreProtocol {}
-

@@ -70,7 +70,7 @@ struct CrossProcessNotificationTests {
         NotificationCenter.default.post(name: UserDefaults.didChangeNotification, object: nil)
 
         // Allow time for notification processing
-        try await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
+        try await Task.sleep(nanoseconds: 200_000_000)  // 0.2 seconds
 
         // Values should be updated automatically due to limitToInstance: false
         #expect(settingsWithPrefix.userName == "UpdatedUser")
@@ -85,7 +85,7 @@ struct CrossProcessNotificationTests {
         NotificationCenter.default.post(name: UserDefaults.didChangeNotification, object: nil)
 
         // Allow time for notification processing
-        try await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
+        try await Task.sleep(nanoseconds: 200_000_000)  // 0.2 seconds
 
         // settingsWithPrefix should remain unchanged (different suite, different keys)
         #expect(settingsWithPrefix.userName == "UpdatedUser")  // Should stay the same

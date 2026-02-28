@@ -15,27 +15,27 @@ func tracking<Model, Value>(
     _ keyPath: KeyPath<Model, Value>,
     _ source: Source,
     _ result: Bool = true,
-    sourceLocation: Testing.SourceLocation = #_sourceLocation)
-{
+    sourceLocation: Testing.SourceLocation = #_sourceLocation
+) {
     withObservationTracking {
         _ = model[keyPath: keyPath]
     } onChange: {
         switch source {
-            case .direct:
-                #expect(
-                    result,
-                    "name should \(result ? "" : "not") be observable by setting value directly",
-                    sourceLocation: sourceLocation)
-            case .userDefaults:
-                #expect(
-                    result,
-                    "name should \(result ? "" : "not") be observable by setting value by UserDefaults",
-                    sourceLocation: sourceLocation)
-            case .notification:
-                #expect(
-                    result,
-                    "name should \(result ? "" : "not") be observable by setting value by Notification",
-                    sourceLocation: sourceLocation)
+        case .direct:
+            #expect(
+                result,
+                "name should \(result ? "" : "not") be observable by setting value directly",
+                sourceLocation: sourceLocation)
+        case .userDefaults:
+            #expect(
+                result,
+                "name should \(result ? "" : "not") be observable by setting value by UserDefaults",
+                sourceLocation: sourceLocation)
+        case .notification:
+            #expect(
+                result,
+                "name should \(result ? "" : "not") be observable by setting value by Notification",
+                sourceLocation: sourceLocation)
         }
     }
 }

@@ -61,11 +61,11 @@ func cloudWhitespaceHandling() {
     let whitespacePrefix = CloudWhitespacePrefix()
     let spacesOnly = CloudSpacesOnlyPrefix()
     let newlines = CloudNewlinesPrefix()
-    
+
     whitespacePrefix.value = "test1"
     spacesOnly.value = "test2"
     newlines.value = "test3"
-    
+
     #expect(whitespacePrefix.value == "test1")
     #expect(spacesOnly.value == "test2")
     #expect(newlines.value == "test3")
@@ -77,12 +77,12 @@ func defaultsWhitespaceHandling() {
     let whitespaceSuite = DefaultsWhitespaceSuite()
     let whitespaceOnly = DefaultsWhitespaceOnly()
     let bothWhitespace = DefaultsBothWithWhitespace()
-    
+
     whitespacePrefix.value = "test1"
     whitespaceSuite.value = "test2"
     whitespaceOnly.value = "test3"
     bothWhitespace.value = "test4"
-    
+
     #expect(whitespacePrefix.value == "test1")
     #expect(whitespaceSuite.value == "test2")
     #expect(whitespaceOnly.value == "test3")
@@ -93,10 +93,10 @@ func defaultsWhitespaceHandling() {
 func extremeWhitespaceEdgeCases() {
     let unicode = UnicodeWhitespace()
     let tabs = TabsAndReturns()
-    
+
     unicode.unicodeValue = "unicode_test"
     tabs.tabValue = "tabs_test"
-    
+
     #expect(unicode.unicodeValue == "unicode_test")
     #expect(tabs.tabValue == "tabs_test")
 }

@@ -54,11 +54,11 @@ func cloudParameterTests() {
     let noParams = CloudNoParams()
     let withPrefix = CloudWithPrefix()
     let emptyPrefix = CloudEmptyPrefix()
-    
+
     noParams.cloudValue1 = "test1"
     withPrefix.cloudValue2 = "test2"
     emptyPrefix.cloudValue3 = "test3"
-    
+
     #expect(noParams.cloudValue1 == "test1")
     #expect(withPrefix.cloudValue2 == "test2")
     #expect(emptyPrefix.cloudValue3 == "test3")
@@ -71,13 +71,13 @@ func defaultsParameterTests() {
     let withSuite = DefaultsWithSuite()
     let withBoth = DefaultsWithBoth()
     let emptyParams = DefaultsEmptyParams()
-    
+
     noParams.defaultsValue1 = "test1"
     withPrefix.defaultsValue2 = "test2"
     withSuite.defaultsValue3 = "test3"
     withBoth.defaultsValue4 = "test4"
     emptyParams.defaultsValue5 = "test5"
-    
+
     #expect(noParams.defaultsValue1 == "test1")
     #expect(withPrefix.defaultsValue2 == "test2")
     #expect(withSuite.defaultsValue3 == "test3")

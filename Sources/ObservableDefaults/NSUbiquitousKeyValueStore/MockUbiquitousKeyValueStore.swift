@@ -15,7 +15,8 @@ import Foundation
     /// - It is used to test the ObservableDefaults library in a test environment.
     /// - It is not used in a production environment. It is only available in DEBUG mode.
     final class MockUbiquitousKeyValueStore: ObservableDefaultsCloudStoreProtocol,
-    @unchecked Sendable {
+        @unchecked Sendable
+    {
         private let userDefaults: UserDefaults
         static let suiteName = "com.fatbobman.ObservableDefaults.MockUbiquitousKeyValueStore"
 

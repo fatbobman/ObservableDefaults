@@ -1,0 +1,26 @@
+#!/bin/sh
+set -eu
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT"
+
+if ! command -v swift-format >/dev/null 2>&1; then
+  echo "swift-format is not installed or not available in PATH." >&2
+  exit 1
+fi
+
+CONFIG_FILE="$REPO_ROOT/.swift-format"
+
+STAGED_SWIFT_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep '\.swift$' || true)
+
+if [ -z "$STAGED_SWIFT_FILES" ]; then
+  exit 0
+fi
+
+echo "Running swift-format on staged Swift files..." >&2
+
+printf '%s\n' "$STAGED_SWIFT_FILES" | while IFS= read -r file; do
+  [ -f "$file" ] || continue
+  swift-format format --in-place --configuration "$CONFIG_FILE" "$file"
+  git add -- "$file"
+done
