@@ -160,7 +160,6 @@ extension DefaultsBackedMacro: AccessorMacro {
                     attributeName: attributeName))
         }
 
-        // swiftformat:disable all
         // Generate getter that retrieves value from UserDefaults
         let getAccessor: AccessorDeclSyntax =
             """
@@ -170,7 +169,6 @@ extension DefaultsBackedMacro: AccessorMacro {
                 return UserDefaultsWrapper.getValue(key, \(raw: defaultValuePrefixed)\(raw: identifier), _userDefaults)
             }
             """
-        // swiftformat:enable all
 
         // Generate setter that stores value to UserDefaults with proper observation handling
         let setAccessor: AccessorDeclSyntax
@@ -277,7 +275,6 @@ extension DefaultsBackedMacro: PeerMacro {
         // Persistent properties do not support property observers.
         let storage = DeclSyntax(property.privatePrefixedWithoutAccessors("_"))
 
-        // swiftformat:disable all
         // Generate default value storage property with double underscore prefix
         let defaultStorage: DeclSyntax
         if let initializer = binding.initializer {
@@ -324,7 +321,6 @@ extension DefaultsBackedMacro: PeerMacro {
                 private let \(raw:defaultValuePrefixed)\(raw: identifier): Any? = nil
                 """
         }
-        // swiftformat:enable all
 
         return [storage, defaultStorage]
     }

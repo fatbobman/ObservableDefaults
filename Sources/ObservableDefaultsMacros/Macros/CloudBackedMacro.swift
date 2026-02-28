@@ -225,7 +225,6 @@ extension CloudBackedMacro: AccessorMacro {
             keyString = extractedKey
         }
 
-        // swiftformat:disable all
         // Generate getter that retrieves value from NSUbiquitousKeyValueStore or memory storage
         let getAccessor: AccessorDeclSyntax =
             """
@@ -239,7 +238,6 @@ extension CloudBackedMacro: AccessorMacro {
                 }
             }
             """
-        // swiftformat:enable all
 
         // Generate setter that stores value to NSUbiquitousKeyValueStore with proper observation
         // handling, with MainActor support
@@ -362,7 +360,6 @@ extension CloudBackedMacro: PeerMacro {
         // Persistent properties do not support property observers.
         let storage = DeclSyntax(property.privatePrefixedWithoutAccessors("_"))
 
-        // swiftformat:disable all
         // Generate default value storage property with double underscore prefix
         let defaultStorage: DeclSyntax
         if let initializer = binding.initializer {
@@ -409,7 +406,6 @@ extension CloudBackedMacro: PeerMacro {
                 private let \(raw:defaultValuePrefixed)\(raw: identifier): Any? = nil
                 """
         }
-        // swiftformat:enable all
 
         return [storage, defaultStorage]
     }

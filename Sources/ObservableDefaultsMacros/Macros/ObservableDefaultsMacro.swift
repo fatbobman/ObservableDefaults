@@ -72,8 +72,6 @@ public enum ObservableDefaultsMacros {
     static let defaultIsolationIsMainActor: String = "defaultIsolationIsMainActor"
 }
 
-// swiftlint: disable line_length
-
 extension ObservableDefaultsMacros: MemberMacro {
     /// Generates member declarations for the `@ObservableDefaults` macro.
     ///
@@ -186,7 +184,6 @@ extension ObservableDefaultsMacros: MemberMacro {
 
         let caseCode = metas.enumerated().map { index, meta in
             let caseIndent = index == 0 ? "" : "                "
-            // swiftformat:disable all
             if hasMainActor {
                 return """
                     \(caseIndent)case prefix + "\(meta.userDefaultsKey)":
@@ -208,7 +205,6 @@ extension ObservableDefaultsMacros: MemberMacro {
                     \(caseIndent)    }
                     """
             }
-            // swiftformat:enable all
         }.joined(separator: "\n")
 
         // Generate observation registrar for SwiftUI integration
@@ -505,8 +501,6 @@ extension ObservableDefaultsMacros: MemberMacro {
         ] + (autoInit ? [initFunctionSyntax] : [])
     }
 }
-
-// swiftlint: enable line_length
 
 extension ObservableDefaultsMacros: ExtensionMacro {
     /// Generates an extension that makes the class conform to the `Observable` protocol.

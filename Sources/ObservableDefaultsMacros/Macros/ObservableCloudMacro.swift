@@ -198,7 +198,6 @@ extension ObservableCloudMacros: MemberMacro {
 
         let caseCode = metas.enumerated().map { index, meta in
             let caseIndent = index == 0 ? "" : "                "
-            // swiftformat:disable all
             if hasMainActor {
                 return """
                     \(caseIndent)case prefix + "\(meta.keyValueStoreKey)":
@@ -211,7 +210,6 @@ extension ObservableCloudMacros: MemberMacro {
                     \(caseIndent)case prefix + "\(meta.keyValueStoreKey)": host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
                     """
             }
-            // swiftformat:enable all
         }.joined(separator: "\n")
 
         // Generate observation registrar for SwiftUI integration
