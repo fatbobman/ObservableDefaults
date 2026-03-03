@@ -129,26 +129,17 @@ extension ObservableDefaultsMacros: MemberMacro {
         // Check if the class has @MainActor attribute or if defaultIsolation is MainActor
         let hasExplicitMainActor = classDecl.hasExplicitMainActorAttribute
         let hasMainActor = hasExplicitMainActor || defaultIsolationIsMainActor
-        let persistentProperties = classDecl.persistentProperties
-
         // Build mapping between properties and their UserDefaults keys.
         // In observeFirst mode, only explicitly @DefaultsBacked properties are backed;
         // non-backed (ObservableOnly) properties are excluded because they are not
         // stored in UserDefaults and should not appear in the notification handler.
-        let metas: [(userDefaultsKey: String, propertyID: String)] =
-            persistentProperties
-            .compactMap { property in
-                if observeFirst, !property.hasAttribute(named: DefaultsBackedMacro.name) {
-                    return nil
-                }
-                let key = property.storageKey(
-                    primaryAttribute: DefaultsBackedMacro.name,
-                    primaryArgument: DefaultsBackedMacro.key,
-                    fallbackAttribute: DefaultsKeyMacro.name,
-                    fallbackArgument: DefaultsKeyMacro.key)
-                let propertyID = property.identifierText
-                return (key, propertyID)
-            }
+        let metas = classDecl.persistentPropertyMetas(
+            primaryAttribute: DefaultsBackedMacro.name,
+            primaryArgument: DefaultsBackedMacro.key,
+            fallbackAttribute: DefaultsKeyMacro.name,
+            fallbackArgument: DefaultsKeyMacro.key,
+            observeFirst: observeFirst,
+            requiredBackedAttribute: DefaultsBackedMacro.name)
 
         // Generate keyPath mapping for external change handling
         let keyPathMaps =
@@ -156,7 +147,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             ? "[:]"
             : "["
                 + metas
-                .map { "\\\(className).\($0.propertyID): \"\($0.userDefaultsKey)\"" }
+                .map { "\\\(className).\($0.propertyID): \"\($0.storageKey)\"" }
                 .joined(separator: ", ") + "]"
 
         let keyPathMapsSyntax: DeclSyntax =
@@ -170,7 +161,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             let caseIndent = index == 0 ? "" : "                "
             if hasMainActor {
                 return """
-                    \(caseIndent)case prefix + "\(meta.userDefaultsKey)":
+                    \(caseIndent)case prefix + "\(meta.storageKey)":
                     \(caseIndent)    MainActor.assumeIsolated {
                     \(caseIndent)        let newValue = UserDefaultsWrapper.getValue(fullKey, host._default_value_of_\(meta.propertyID), host._userDefaults)
                     \(caseIndent)        if host.shouldSetValue(newValue, host._\(meta.propertyID)) {
@@ -181,7 +172,7 @@ extension ObservableDefaultsMacros: MemberMacro {
                     """
             } else {
                 return """
-                    \(caseIndent)case prefix + "\(meta.userDefaultsKey)":
+                    \(caseIndent)case prefix + "\(meta.storageKey)":
                     \(caseIndent)    let newValue = UserDefaultsWrapper.getValue(fullKey, host._default_value_of_\(meta.propertyID), host._userDefaults)
                     \(caseIndent)    if host.shouldSetValue(newValue, host._\(meta.propertyID)) {
                     \(caseIndent)        host._\(meta.propertyID) = newValue
@@ -342,7 +333,7 @@ extension ObservableDefaultsMacros: MemberMacro {
                                 
                                 // Check all monitored keys for changes
                                 let monitoredKeys: [String] = [
-                                    \(raw: metas.map { "\"\($0.userDefaultsKey)\"" }
+                                    \(raw: metas.map { "\"\($0.storageKey)\"" }
                         .joined(separator: ", "))
                                 ]
 
@@ -408,7 +399,7 @@ extension ObservableDefaultsMacros: MemberMacro {
                     private func userDefaultsDidChange(_ notification: Foundation.Notification) {
                         // Check all monitored keys for changes
                         let monitoredKeys: [String] = [
-                            \(raw: metas.map { "\"\($0.userDefaultsKey)\"" }
+                            \(raw: metas.map { "\"\($0.storageKey)\"" }
                 .joined(separator: ", "))
                         ]
 

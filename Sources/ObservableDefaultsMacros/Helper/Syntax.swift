@@ -14,6 +14,11 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
+struct PersistedPropertyMeta {
+    let storageKey: String
+    let propertyID: String
+}
+
 extension VariableDeclSyntax {
     // Determine if it's a mutable variable and not a computed property
     var isMutableAndNotComputed: Bool {
@@ -259,6 +264,32 @@ extension ClassDeclSyntax {
                 return nil
             }
             return varDecl
+        }
+    }
+
+    func persistentPropertyMetas(
+        primaryAttribute: String,
+        primaryArgument: String,
+        fallbackAttribute: String,
+        fallbackArgument: String,
+        observeFirst: Bool = false,
+        requiredBackedAttribute: String? = nil
+    ) -> [PersistedPropertyMeta] {
+        persistentProperties.compactMap { property in
+            if observeFirst,
+                let requiredBackedAttribute,
+                !property.hasAttribute(named: requiredBackedAttribute)
+            {
+                return nil
+            }
+
+            return PersistedPropertyMeta(
+                storageKey: property.storageKey(
+                    primaryAttribute: primaryAttribute,
+                    primaryArgument: primaryArgument,
+                    fallbackAttribute: fallbackAttribute,
+                    fallbackArgument: fallbackArgument),
+                propertyID: property.identifierText)
         }
     }
 }

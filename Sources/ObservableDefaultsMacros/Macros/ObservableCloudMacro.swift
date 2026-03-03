@@ -126,8 +126,6 @@ extension ObservableCloudMacros: MemberMacro {
         let hasExplicitMainActor = classDecl.hasExplicitMainActorAttribute
         let hasMainActor = hasExplicitMainActor || defaultIsolationIsMainActor
 
-        let persistentProperties = classDecl.persistentProperties
-
         // Generate synchronization control property
         let syncImmediatelySyntax: DeclSyntax =
             """
@@ -168,30 +166,24 @@ extension ObservableCloudMacros: MemberMacro {
             """
 
         // Build mapping between properties and their NSUbiquitousKeyValueStore keys
-        let metas: [(keyValueStoreKey: String, propertyID: String)] =
-            persistentProperties
-            .map { property in
-                let key = property.storageKey(
-                    primaryAttribute: CloudBackedMacro.name,
-                    primaryArgument: CloudBackedMacro.key,
-                    fallbackAttribute: CloudKeyMacro.name,
-                    fallbackArgument: CloudKeyMacro.key)
-                let propertyID = property.identifierText
-                return (key, propertyID)
-            }
+        let metas = classDecl.persistentPropertyMetas(
+            primaryAttribute: CloudBackedMacro.name,
+            primaryArgument: CloudBackedMacro.key,
+            fallbackAttribute: CloudKeyMacro.name,
+            fallbackArgument: CloudKeyMacro.key)
 
         let caseCode = metas.enumerated().map { index, meta in
             let caseIndent = index == 0 ? "" : "                "
             if hasMainActor {
                 return """
-                    \(caseIndent)case prefix + "\(meta.keyValueStoreKey)":
+                    \(caseIndent)case prefix + "\(meta.storageKey)":
                     \(caseIndent)    MainActor.assumeIsolated {
                     \(caseIndent)        host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
                     \(caseIndent)    }
                     """
             } else {
                 return """
-                    \(caseIndent)case prefix + "\(meta.keyValueStoreKey)": host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
+                    \(caseIndent)case prefix + "\(meta.storageKey)": host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
                     """
             }
         }.joined(separator: "\n")
