@@ -114,7 +114,7 @@ final class CloudSyncImmediatelyFixture {
     ///
     /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
     private final class CloudObservation: @unchecked Sendable {
-        let host: CloudSyncImmediatelyFixture
+        weak var host: CloudSyncImmediatelyFixture?
         let prefix: String
 
         /// Initializes the observation with the specified parameters.
@@ -137,6 +137,8 @@ final class CloudSyncImmediatelyFixture {
         /// - Parameter notification: The notification containing changed keys information
         @Sendable
         private func cloudStoreDidChange(_ notification: Foundation.Notification) {
+            guard let host else { return }
+
             guard let userInfo = notification.userInfo,
                 let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
             else {

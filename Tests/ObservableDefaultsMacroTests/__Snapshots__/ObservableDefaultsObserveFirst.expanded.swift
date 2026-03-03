@@ -118,7 +118,7 @@ final class DefaultsObserveFirstFixture {
     ///
     /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
     private final class DefaultsObservation: @unchecked Sendable {
-        let host: DefaultsObserveFirstFixture
+        weak var host: DefaultsObserveFirstFixture?
         let userDefaults: Foundation.UserDefaults
         let prefix: String
         let observableKeysBlacklist: [String]
@@ -148,6 +148,8 @@ final class DefaultsObserveFirstFixture {
         /// - Parameter notification: The notification containing change information
         @Sendable
         private func userDefaultsDidChange(_ notification: Foundation.Notification) {
+            guard let host else { return }
+
             // Check all monitored keys for changes
             let monitoredKeys: [String] = [
                 "stored_name"

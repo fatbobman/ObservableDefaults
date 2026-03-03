@@ -88,7 +88,7 @@ final class DefaultsDefaultIsolationFixture {
     ///
     /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
     private final class DefaultsObservation: @unchecked Sendable {
-        let host: DefaultsDefaultIsolationFixture
+        weak var host: DefaultsDefaultIsolationFixture?
         let userDefaults: Foundation.UserDefaults
         let prefix: String
         let observableKeysBlacklist: [String]

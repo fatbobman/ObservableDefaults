@@ -21,7 +21,7 @@ func makeDefaultsObserverMembers(
             ///
             /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
             private final class DefaultsObservation: @unchecked Sendable {
-                let host: \(className)
+                weak var host: \(className)?
                 let userDefaults: Foundation.UserDefaults
                 let prefix: String
                 let observableKeysBlacklist: [String]
@@ -53,7 +53,7 @@ func makeDefaultsObserverMembers(
             ///
             /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
             private final class DefaultsObservation: @unchecked Sendable {
-                let host: \(className)
+                weak var host: \(className)?
                 let userDefaults: Foundation.UserDefaults
                 let prefix: String
                 let observableKeysBlacklist: [String]
@@ -113,7 +113,7 @@ func makeDefaultsObserverMembers(
             ///
             /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
             private final class DefaultsObservation: @unchecked Sendable {
-                let host: \(className)
+                weak var host: \(className)?
                 let userDefaults: Foundation.UserDefaults
                 let prefix: String
                 let observableKeysBlacklist: [String]
@@ -143,6 +143,8 @@ func makeDefaultsObserverMembers(
                 /// - Parameter notification: The notification containing change information
                 @Sendable
                 private func userDefaultsDidChange(_ notification: Foundation.Notification) {
+                    guard let host else { return }
+
                     // Check all monitored keys for changes
                     let monitoredKeys: [String] = [
                         \(raw: monitoredKeysLiteral)
@@ -204,7 +206,7 @@ func makeCloudObserverSyntax(
             ///
             /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
             private final class CloudObservation: @unchecked Sendable {
-                let host: \(className)
+                weak var host: \(className)?
                 let prefix: String
                 private var notificationObserver: NSObjectProtocol?
 
@@ -257,7 +259,7 @@ func makeCloudObserverSyntax(
             ///
             /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
             private final class CloudObservation: @unchecked Sendable {
-                let host: \(className)
+                weak var host: \(className)?
                 let prefix: String
 
                 /// Initializes the observation with the specified parameters.
@@ -280,6 +282,8 @@ func makeCloudObserverSyntax(
                 /// - Parameter notification: The notification containing changed keys information
                 @Sendable
                 private func cloudStoreDidChange(_ notification: Foundation.Notification) {
+                    guard let host else { return }
+
                     guard let userInfo = notification.userInfo,
                         let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
                     else {

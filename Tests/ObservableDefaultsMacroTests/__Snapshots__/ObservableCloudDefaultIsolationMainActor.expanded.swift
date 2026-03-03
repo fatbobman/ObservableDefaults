@@ -114,7 +114,7 @@ final class CloudDefaultIsolationFixture {
     ///
     /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
     private final class CloudObservation: @unchecked Sendable {
-        let host: CloudDefaultIsolationFixture
+        weak var host: CloudDefaultIsolationFixture?
         let prefix: String
         private var notificationObserver: NSObjectProtocol?
 
