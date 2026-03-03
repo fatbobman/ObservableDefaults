@@ -126,6 +126,28 @@ extension ObservableCloudMacros: MemberMacro {
                     attributeName: "@\(ObservableCloudMacros.name)"))
         }
 
+        if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
+            let booleanArguments = [
+                ObservableCloudMacros.autoInit,
+                ObservableCloudMacros.observeFirst,
+                ObservableCloudMacros.syncImmediately,
+                ObservableCloudMacros.developmentMode,
+                ObservableCloudMacros.defaultIsolationIsMainActor,
+            ]
+
+            for label in booleanArguments {
+                if let expression = argumentList.expression(forLabel: label),
+                    expression.booleanLiteralValue == nil
+                {
+                    context.diagnose(
+                        .booleanLiteralRequired(
+                            expression: expression,
+                            argumentName: label,
+                            attributeName: "@\(ObservableCloudMacros.name)"))
+                }
+            }
+        }
+
         // Find all properties that should be persisted to NSUbiquitousKeyValueStore
         guard let classDecl = declaration as? ClassDeclSyntax else {
             fatalError("@ObservableCloud can only be applied to classes")

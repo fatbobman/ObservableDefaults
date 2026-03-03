@@ -50,6 +50,58 @@ struct MacroDiagnosticTests {
         #expect(result.diagnostics[0].contains("@ObservableCloud parameter 'prefix' must be a string literal"))
     }
 
+    @Test("ObservableDefaults rejects non-literal boolean arguments")
+    func defaultsRejectNonLiteralBooleanArguments() throws {
+        let result = try MacroTestSupport.expand(
+            source: """
+                let flag = true
+
+                @ObservableDefaults(
+                    autoInit: flag,
+                    ignoreExternalChanges: flag,
+                    observeFirst: flag,
+                    limitToInstance: flag,
+                    defaultIsolationIsMainActor: flag
+                )
+                final class Fixture {
+                    var name: String = "fat"
+                }
+                """)
+
+        #expect(result.diagnostics.count == 5)
+        #expect(result.diagnostics.contains { $0.contains("@ObservableDefaults parameter 'autoInit' must be a boolean literal") })
+        #expect(result.diagnostics.contains { $0.contains("@ObservableDefaults parameter 'ignoreExternalChanges' must be a boolean literal") })
+        #expect(result.diagnostics.contains { $0.contains("@ObservableDefaults parameter 'observeFirst' must be a boolean literal") })
+        #expect(result.diagnostics.contains { $0.contains("@ObservableDefaults parameter 'limitToInstance' must be a boolean literal") })
+        #expect(result.diagnostics.contains { $0.contains("@ObservableDefaults parameter 'defaultIsolationIsMainActor' must be a boolean literal") })
+    }
+
+    @Test("ObservableCloud rejects non-literal boolean arguments")
+    func cloudRejectNonLiteralBooleanArguments() throws {
+        let result = try MacroTestSupport.expand(
+            source: """
+                let flag = true
+
+                @ObservableCloud(
+                    autoInit: flag,
+                    observeFirst: flag,
+                    syncImmediately: flag,
+                    developmentMode: flag,
+                    defaultIsolationIsMainActor: flag
+                )
+                final class Fixture {
+                    var name: String = "fat"
+                }
+                """)
+
+        #expect(result.diagnostics.count == 5)
+        #expect(result.diagnostics.contains { $0.contains("@ObservableCloud parameter 'autoInit' must be a boolean literal") })
+        #expect(result.diagnostics.contains { $0.contains("@ObservableCloud parameter 'observeFirst' must be a boolean literal") })
+        #expect(result.diagnostics.contains { $0.contains("@ObservableCloud parameter 'syncImmediately' must be a boolean literal") })
+        #expect(result.diagnostics.contains { $0.contains("@ObservableCloud parameter 'developmentMode' must be a boolean literal") })
+        #expect(result.diagnostics.contains { $0.contains("@ObservableCloud parameter 'defaultIsolationIsMainActor' must be a boolean literal") })
+    }
+
     @Test("DefaultsBacked rejects non-literal custom key")
     func defaultsBackedRejectsNonLiteralKey() throws {
         let result = try MacroTestSupport.expand(

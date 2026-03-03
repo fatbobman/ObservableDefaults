@@ -130,6 +130,28 @@ extension ObservableDefaultsMacros: MemberMacro {
                     attributeName: "@\(ObservableDefaultsMacros.name)"))
         }
 
+        if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
+            let booleanArguments = [
+                ObservableDefaultsMacros.autoInit,
+                ObservableDefaultsMacros.ignoreExternalChanges,
+                ObservableDefaultsMacros.observeFirst,
+                ObservableDefaultsMacros.limitToInstance,
+                ObservableDefaultsMacros.defaultIsolationIsMainActor,
+            ]
+
+            for label in booleanArguments {
+                if let expression = argumentList.expression(forLabel: label),
+                    expression.booleanLiteralValue == nil
+                {
+                    context.diagnose(
+                        .booleanLiteralRequired(
+                            expression: expression,
+                            argumentName: label,
+                            attributeName: "@\(ObservableDefaultsMacros.name)"))
+                }
+            }
+        }
+
         // Find all properties that should be persisted to UserDefaults
         guard let classDecl = declaration as? ClassDeclSyntax else {
             fatalError("@ObservableDefaults can only be applied to classes")

@@ -122,6 +122,16 @@ extension Diagnostic {
             message: "\(attributeName) parameter '\(argumentName)' must be a string literal")
     }
 
+    static func booleanLiteralRequired(
+        expression: ExprSyntax,
+        argumentName: String,
+        attributeName: String
+    ) -> Diagnostic {
+        createDiagnostic(
+            node: expression,
+            message: "\(attributeName) parameter '\(argumentName)' must be a boolean literal")
+    }
+
     static func observersNotSupported(
         property: VariableDeclSyntax,
         attributeName: String
