@@ -126,15 +126,7 @@ extension ObservableCloudMacros: MemberMacro {
         let hasExplicitMainActor = classDecl.hasExplicitMainActorAttribute
         let hasMainActor = hasExplicitMainActor || defaultIsolationIsMainActor
 
-        let persistentProperties = classDecl.memberBlock.members
-            .compactMap { member -> VariableDeclSyntax? in
-                guard let varDecl = member.decl.as(VariableDeclSyntax.self),
-                    varDecl.isPersistent
-                else {
-                    return nil
-                }
-                return varDecl
-            }
+        let persistentProperties = classDecl.persistentProperties
 
         // Generate synchronization control property
         let syncImmediatelySyntax: DeclSyntax =
@@ -179,13 +171,12 @@ extension ObservableCloudMacros: MemberMacro {
         let metas: [(keyValueStoreKey: String, propertyID: String)] =
             persistentProperties
             .map { property in
-                let key =
-                    property.attributes.extractValue(
-                        forAttribute: CloudBackedMacro.name,
-                        argument: CloudBackedMacro.key) ?? property.attributes.extractValue(
-                        forAttribute: CloudKeyMacro.name,
-                        argument: CloudKeyMacro.key) ?? property.identifier?.text ?? ""
-                let propertyID = property.identifier?.text ?? ""
+                let key = property.storageKey(
+                    primaryAttribute: CloudBackedMacro.name,
+                    primaryArgument: CloudBackedMacro.key,
+                    fallbackAttribute: CloudKeyMacro.name,
+                    fallbackArgument: CloudKeyMacro.key)
+                let propertyID = property.identifierText
                 return (key, propertyID)
             }
 

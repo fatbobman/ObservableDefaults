@@ -62,6 +62,25 @@ extension VariableDeclSyntax {
         identifierPattern?.identifier
     }
 
+    var identifierText: String {
+        identifier?.text ?? ""
+    }
+
+    func storageKey(
+        primaryAttribute: String,
+        primaryArgument: String,
+        fallbackAttribute: String,
+        fallbackArgument: String
+    ) -> String {
+        attributes.extractValue(
+            forAttribute: primaryAttribute,
+            argument: primaryArgument)
+            ?? attributes.extractValue(
+                forAttribute: fallbackAttribute,
+                argument: fallbackArgument)
+            ?? identifierText
+    }
+
     // Check if a specific macro application exists in the variable declaration
     func hasMacroApplication(_ name: String) -> Bool {
         // Iterate through the attribute list, checking each attribute's token
@@ -230,6 +249,17 @@ extension AttributeListSyntax {
 extension ClassDeclSyntax {
     var hasExplicitMainActorAttribute: Bool {
         attributes.containsMainActorAttribute
+    }
+
+    var persistentProperties: [VariableDeclSyntax] {
+        memberBlock.members.compactMap { member -> VariableDeclSyntax? in
+            guard let varDecl = member.decl.as(VariableDeclSyntax.self),
+                varDecl.isPersistent
+            else {
+                return nil
+            }
+            return varDecl
+        }
     }
 }
 

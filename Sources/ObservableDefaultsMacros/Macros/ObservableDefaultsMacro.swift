@@ -129,15 +129,7 @@ extension ObservableDefaultsMacros: MemberMacro {
         // Check if the class has @MainActor attribute or if defaultIsolation is MainActor
         let hasExplicitMainActor = classDecl.hasExplicitMainActorAttribute
         let hasMainActor = hasExplicitMainActor || defaultIsolationIsMainActor
-        let persistentProperties = classDecl.memberBlock.members
-            .compactMap { member -> VariableDeclSyntax? in
-                guard let varDecl = member.decl.as(VariableDeclSyntax.self),
-                    varDecl.isPersistent
-                else {
-                    return nil
-                }
-                return varDecl
-            }
+        let persistentProperties = classDecl.persistentProperties
 
         // Build mapping between properties and their UserDefaults keys.
         // In observeFirst mode, only explicitly @DefaultsBacked properties are backed;
@@ -149,13 +141,12 @@ extension ObservableDefaultsMacros: MemberMacro {
                 if observeFirst, !property.hasAttribute(named: DefaultsBackedMacro.name) {
                     return nil
                 }
-                let key =
-                    property.attributes.extractValue(
-                        forAttribute: DefaultsBackedMacro.name,
-                        argument: DefaultsBackedMacro.key) ?? property.attributes.extractValue(
-                        forAttribute: DefaultsKeyMacro.name,
-                        argument: DefaultsKeyMacro.key) ?? property.identifier?.text ?? ""
-                let propertyID = property.identifier?.text ?? ""
+                let key = property.storageKey(
+                    primaryAttribute: DefaultsBackedMacro.name,
+                    primaryArgument: DefaultsBackedMacro.key,
+                    fallbackAttribute: DefaultsKeyMacro.name,
+                    fallbackArgument: DefaultsKeyMacro.key)
+                let propertyID = property.identifierText
                 return (key, propertyID)
             }
 
