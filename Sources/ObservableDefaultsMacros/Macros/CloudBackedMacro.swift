@@ -167,14 +167,14 @@ extension CloudBackedMacro: AccessorMacro {
             let _ = validateBackedProperty(
                 property: property,
                 binding: binding,
-                macroType: .observableDefaults,
+                macroType: .observableCloud,
                 attributeName: "@\(CloudBackedMacro.name)",
                 in: context)
         else {
             return []
         }
 
-        let keyString = lookupBackedStorageKey(
+        let keyLookup = lookupBackedStorageKey(
             property: property,
             defaultKey: identifier.trimmedDescription,
             primaryAttribute: CloudBackedMacro.name,
@@ -182,7 +182,17 @@ extension CloudBackedMacro: AccessorMacro {
             fallbackAttribute: CloudKeyMacro.name,
             fallbackArgument: CloudKeyMacro.key
         )
-        .keyString
+        let keyString = keyLookup.keyString
+
+        if let expression = keyLookup.invalidExpression,
+            let attributeName = keyLookup.invalidAttributeName
+        {
+            context.diagnose(
+                .stringLiteralRequired(
+                    expression: expression,
+                    argumentName: CloudBackedMacro.key,
+                    attributeName: attributeName))
+        }
 
         // Generate getter that retrieves value from NSUbiquitousKeyValueStore or memory storage
         let getAccessor: AccessorDeclSyntax =

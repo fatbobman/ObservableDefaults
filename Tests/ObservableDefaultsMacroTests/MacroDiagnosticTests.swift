@@ -48,6 +48,36 @@ struct MacroDiagnosticTests {
         #expect(result.diagnostics[0].contains("@ObservableDefaults properties must have an initial value"))
     }
 
+    @Test("CloudBacked rejects non-literal custom key")
+    func cloudBackedRejectsNonLiteralKey() throws {
+        let result = try MacroTestSupport.expand(
+            source: """
+                @ObservableCloud
+                final class Fixture {
+                    @CloudBacked(keyValueStoreKey: 1)
+                    var name: String = "fat"
+                }
+                """)
+
+        #expect(result.diagnostics.count == 1)
+        #expect(result.diagnostics[0].contains("@CloudBacked parameter 'keyValueStoreKey' must be a string literal"))
+    }
+
+    @Test("CloudBacked requires initializer for non-optional")
+    func cloudBackedRequiresInitializer() throws {
+        let result = try MacroTestSupport.expand(
+            source: """
+                @ObservableCloud
+                final class Fixture {
+                    @CloudBacked
+                    var name: String
+                }
+                """)
+
+        #expect(result.diagnostics.count == 1)
+        #expect(result.diagnostics[0].contains("@ObservableCloud properties must have an initial value"))
+    }
+
     @Test("DefaultsBacked warns that willSet and didSet are ignored")
     func defaultsBackedWarnsOnObservers() throws {
         let result = try MacroTestSupport.expand(
