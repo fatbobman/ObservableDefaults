@@ -157,30 +157,8 @@ extension ObservableDefaultsMacros: MemberMacro {
             private var _ignoredKeyPathsForExternalUpdates: [PartialKeyPath<\(raw: className)>] = []
             """
 
-        let caseCode = metas.enumerated().map { index, meta in
-            let caseIndent = index == 0 ? "" : "                "
-            if hasMainActor {
-                return """
-                    \(caseIndent)case prefix + "\(meta.storageKey)":
-                    \(caseIndent)    MainActor.assumeIsolated {
-                    \(caseIndent)        let newValue = UserDefaultsWrapper.getValue(fullKey, host._default_value_of_\(meta.propertyID), host._userDefaults)
-                    \(caseIndent)        if host.shouldSetValue(newValue, host._\(meta.propertyID)) {
-                    \(caseIndent)            host._\(meta.propertyID) = newValue
-                    \(caseIndent)            host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
-                    \(caseIndent)        }
-                    \(caseIndent)    }
-                    """
-            } else {
-                return """
-                    \(caseIndent)case prefix + "\(meta.storageKey)":
-                    \(caseIndent)    let newValue = UserDefaultsWrapper.getValue(fullKey, host._default_value_of_\(meta.propertyID), host._userDefaults)
-                    \(caseIndent)    if host.shouldSetValue(newValue, host._\(meta.propertyID)) {
-                    \(caseIndent)        host._\(meta.propertyID) = newValue
-                    \(caseIndent)        host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
-                    \(caseIndent)    }
-                    """
-            }
-        }.joined(separator: "\n")
+        let caseCode = makeDefaultsObservationCaseCode(metas: metas, hasMainActor: hasMainActor)
+        let monitoredKeysLiteral = makeMonitoredKeysArrayLiteral(metas)
 
         // Generate observation registrar for SwiftUI integration
         let registrarSyntax = makeObservationRegistrarSyntax()
@@ -333,8 +311,7 @@ extension ObservableDefaultsMacros: MemberMacro {
                                 
                                 // Check all monitored keys for changes
                                 let monitoredKeys: [String] = [
-                                    \(raw: metas.map { "\"\($0.storageKey)\"" }
-                        .joined(separator: ", "))
+                                    \(raw: monitoredKeysLiteral)
                                 ]
 
                                 for key in monitoredKeys {
@@ -399,8 +376,7 @@ extension ObservableDefaultsMacros: MemberMacro {
                     private func userDefaultsDidChange(_ notification: Foundation.Notification) {
                         // Check all monitored keys for changes
                         let monitoredKeys: [String] = [
-                            \(raw: metas.map { "\"\($0.storageKey)\"" }
-                .joined(separator: ", "))
+                            \(raw: monitoredKeysLiteral)
                         ]
 
                         for key in monitoredKeys {

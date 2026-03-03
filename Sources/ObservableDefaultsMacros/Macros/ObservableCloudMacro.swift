@@ -172,21 +172,7 @@ extension ObservableCloudMacros: MemberMacro {
             fallbackAttribute: CloudKeyMacro.name,
             fallbackArgument: CloudKeyMacro.key)
 
-        let caseCode = metas.enumerated().map { index, meta in
-            let caseIndent = index == 0 ? "" : "                "
-            if hasMainActor {
-                return """
-                    \(caseIndent)case prefix + "\(meta.storageKey)":
-                    \(caseIndent)    MainActor.assumeIsolated {
-                    \(caseIndent)        host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
-                    \(caseIndent)    }
-                    """
-            } else {
-                return """
-                    \(caseIndent)case prefix + "\(meta.storageKey)": host._$observationRegistrar.withMutation(of: host, keyPath: \\.\(meta.propertyID)) {}
-                    """
-            }
-        }.joined(separator: "\n")
+        let caseCode = makeCloudObservationCaseCode(metas: metas, hasMainActor: hasMainActor)
 
         // Generate observation registrar for SwiftUI integration
         let registrarSyntax = makeObservationRegistrarSyntax()
