@@ -49,10 +49,13 @@ extension ExprSyntax {
     }
 
     var stringLiteralValue: String? {
-        guard let stringLiteral = self.as(StringLiteralExprSyntax.self) else {
+        guard let stringLiteral = self.as(StringLiteralExprSyntax.self),
+            stringLiteral.segments.count == 1,
+            let segment = stringLiteral.segments.first?.as(StringSegmentSyntax.self)
+        else {
             return nil
         }
-        return stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content.text
+        return segment.content.text
     }
 
     var trimmedStringLiteralValue: String? {
@@ -113,8 +116,8 @@ extension AttributeListSyntax.Element {
     }
 
     private func extractValueFromExpression(_ expression: ExprSyntax) -> Any? {
-        if let stringLiteral = expression.as(StringLiteralExprSyntax.self) {
-            return stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content.text
+        if let stringLiteral = expression.stringLiteralValue {
+            return stringLiteral
         } else if let integerLiteral = expression.as(IntegerLiteralExprSyntax.self) {
             return Int(integerLiteral.literal.text)
         } else if let floatLiteral = expression.as(FloatLiteralExprSyntax.self) {
