@@ -21,6 +21,11 @@ echo "Running swift-format on staged Swift files..." >&2
 
 printf '%s\n' "$STAGED_SWIFT_FILES" | while IFS= read -r file; do
   [ -f "$file" ] || continue
+  case "$file" in
+    */__Snapshots__/*)
+      continue
+      ;;
+  esac
   swift-format format --in-place --configuration "$CONFIG_FILE" "$file"
   git add -- "$file"
 done
