@@ -54,7 +54,7 @@ struct ObservableDefaultsTests {
             "name should not be observable by setting value by UserDefaults")
     }
 
-    @Test("Igonre Other UserDefaults Changes")
+    @Test("Ignore Other UserDefaults Changes")
     func ignoreOtherUserDefaultsChanges() {
         let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
         let userDefaults2 = UserDefaults.getTestInstance(suiteName: #function + "2")

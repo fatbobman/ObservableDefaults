@@ -141,7 +141,7 @@ extension ObservableCloudMacros: MemberMacro {
             private var _syncImmediately = \(raw: syncImmediately ? "true" : "false")
             """
 
-        let developementModeSyntax: DeclSyntax =
+        let developmentModeSyntax: DeclSyntax =
             """
             /// Determines whether the instance operates in development or production mode.
             ///
@@ -354,7 +354,7 @@ extension ObservableCloudMacros: MemberMacro {
             prefixSyntax,
             shouldSetValueSyntax,
             syncImmediatelySyntax,
-            developementModeSyntax,
+            developmentModeSyntax,
             observerFunctionSyntax,
         ] + (autoInit ? [initFunctionSyntax] : [])
     }
@@ -461,7 +461,7 @@ extension ObservableCloudMacros {
         prefix: String,
         observeFirst: Bool,
         syncImmediately: Bool,
-        developementMode: Bool,
+        developmentMode: Bool,
         defaultIsolationIsMainActor: Bool
     ) {
         var autoInit = true
