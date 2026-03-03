@@ -71,20 +71,7 @@ extension DefaultsBackedMacro: AccessorMacro {
         else { return [] }
 
         // Check if the containing class has @MainActor attribute
-        var hasMainActor = false
-        for context in context.lexicalContext {
-            if let classContext = context.as(ClassDeclSyntax.self) {
-                hasMainActor = classContext.attributes.contains(where: { attribute in
-                    if case let .attribute(attr) = attribute,
-                        let identifierType = attr.attributeName.as(IdentifierTypeSyntax.self)
-                    {
-                        return identifierType.name.text == "MainActor"
-                    }
-                    return false
-                })
-                break
-            }
-        }
+        let hasMainActor = lexicalContextHasExplicitMainActor(context.lexicalContext)
 
         // Property name as default UserDefaults key if no custom key is provided
         var keyString: String = identifier.trimmedDescription

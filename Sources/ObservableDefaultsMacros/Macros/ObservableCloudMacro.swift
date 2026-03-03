@@ -123,14 +123,7 @@ extension ObservableCloudMacros: MemberMacro {
         }
 
         // Check if the class has @MainActor attribute or if defaultIsolation is MainActor
-        let hasExplicitMainActor = classDecl.attributes.contains(where: { attribute in
-            if case let .attribute(attr) = attribute,
-                let identifierType = attr.attributeName.as(IdentifierTypeSyntax.self)
-            {
-                return identifierType.name.text == "MainActor"
-            }
-            return false
-        })
+        let hasExplicitMainActor = classDecl.hasExplicitMainActorAttribute
         let hasMainActor = hasExplicitMainActor || defaultIsolationIsMainActor
 
         let persistentProperties = classDecl.memberBlock.members

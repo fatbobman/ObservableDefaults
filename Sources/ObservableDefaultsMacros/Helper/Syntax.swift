@@ -188,6 +188,17 @@ extension VariableDeclSyntax {
 }
 
 extension AttributeListSyntax {
+    var containsMainActorAttribute: Bool {
+        contains(where: { attribute in
+            if case let .attribute(attr) = attribute,
+                let identifierType = attr.attributeName.as(IdentifierTypeSyntax.self)
+            {
+                return identifierType.name.text == "MainActor"
+            }
+            return false
+        })
+    }
+
     func extractValue<T>(forAttribute attributeName: String, argument argumentName: String) -> T? {
         for attribute in self {
             if let value: T = attribute.extractValue(
@@ -214,6 +225,21 @@ extension AttributeListSyntax {
         }
         return nil
     }
+}
+
+extension ClassDeclSyntax {
+    var hasExplicitMainActorAttribute: Bool {
+        attributes.containsMainActorAttribute
+    }
+}
+
+func lexicalContextHasExplicitMainActor(_ lexicalContext: [Syntax]) -> Bool {
+    for context in lexicalContext {
+        if let classContext = context.as(ClassDeclSyntax.self) {
+            return classContext.hasExplicitMainActorAttribute
+        }
+    }
+    return false
 }
 
 extension AttributeListSyntax.Element {
