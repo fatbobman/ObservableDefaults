@@ -105,6 +105,42 @@ struct ObservableCloudTests {
             #expect(weakModel == nil)
         }
 
+        @Test("Released cloud model ignores later external notifications", .testMode)
+        func releasedCloudModelIgnoresLaterExternalNotifications() {
+            weak var weakModel: MockModelCloud?
+
+            do {
+                let model = MockModelCloud(developmentMode: false)
+                weakModel = model
+                #expect(model.name == "Test")
+            }
+
+            #expect(weakModel == nil)
+
+            userDefaults.set("AfterDeinit", forKey: "name")
+            userDefaults.synchronize()
+            NotificationCenter.default.post(
+                name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+                object: nil,
+                userInfo: [
+                    NSUbiquitousKeyValueStoreChangedKeysKey: ["name"]
+                ])
+
+            let replacement = MockModelCloud(developmentMode: false)
+            #expect(replacement.name == "AfterDeinit")
+
+            tracking(replacement, \.name, .notification)
+            userDefaults.set("ReplacementUpdate", forKey: "name")
+            userDefaults.synchronize()
+            NotificationCenter.default.post(
+                name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+                object: nil,
+                userInfo: [
+                    NSUbiquitousKeyValueStoreChangedKeysKey: ["name"]
+                ])
+            #expect(replacement.name == "ReplacementUpdate")
+        }
+
         @Test("syncImmediately macro default is preserved by generated init", .testMode)
         func syncImmediatelyMacroDefaultIsPreserved() {
             let model = MockModelCloudSyncImmediately()

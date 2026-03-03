@@ -93,6 +93,31 @@ struct ObservableDefaultsTests {
         #expect(weakModel == nil)
     }
 
+    @Test("Released defaults model ignores later external notifications")
+    func releasedDefaultsModelIgnoresLaterExternalNotifications() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        weak var weakModel: MockModel?
+
+        do {
+            let model = MockModel(userDefaults: userDefaults)
+            weakModel = model
+            #expect(model.name == "Test")
+        }
+
+        #expect(weakModel == nil)
+
+        userDefaults.set("AfterDeinit", forKey: "name")
+        NotificationCenter.default.post(name: UserDefaults.didChangeNotification, object: userDefaults)
+
+        let replacement = MockModel(userDefaults: userDefaults)
+        #expect(replacement.name == "AfterDeinit")
+
+        tracking(replacement, \.name, .userDefaults)
+        userDefaults.set("ReplacementUpdate", forKey: "name")
+        NotificationCenter.default.post(name: UserDefaults.didChangeNotification, object: userDefaults)
+        #expect(replacement.name == "ReplacementUpdate")
+    }
+
     @Test("Observable Only")
     func observableOnly() {
         let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
