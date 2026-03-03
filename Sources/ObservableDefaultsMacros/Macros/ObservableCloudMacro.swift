@@ -472,35 +472,31 @@ extension ObservableCloudMacros {
         var defaultIsolationIsMainActor = false
 
         if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
-            for argument in argumentList {
-                if argument.label?.text == ObservableCloudMacros.autoInit,
-                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
-                {
-                    autoInit = booleanLiteral.literal.text == "true"
-                } else if argument.label?.text == ObservableCloudMacros.prefix,
-                    let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self)
-                {
-                    let rawPrefix =
-                        stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content
-                        .text ?? ""
-                    prefix = rawPrefix.trimmingCharacters(in: .whitespacesAndNewlines)
-                } else if argument.label?.text == ObservableCloudMacros.observeFirst,
-                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
-                {
-                    observeFirst = booleanLiteral.literal.text == "true"
-                } else if argument.label?.text == ObservableCloudMacros.syncImmediately,
-                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
-                {
-                    syncImmediately = booleanLiteral.literal.text == "true"
-                } else if argument.label?.text == ObservableCloudMacros.developmentMode,
-                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
-                {
-                    developmentMode = booleanLiteral.literal.text == "true"
-                } else if argument.label?.text == ObservableCloudMacros.defaultIsolationIsMainActor,
-                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
-                {
-                    defaultIsolationIsMainActor = booleanLiteral.literal.text == "true"
-                }
+            if let value = argumentList.booleanLiteralValue(forLabel: ObservableCloudMacros.autoInit) {
+                autoInit = value
+            }
+            if let value = argumentList.trimmedStringLiteralValue(forLabel: ObservableCloudMacros.prefix) {
+                prefix = value
+            }
+            if let value = argumentList.booleanLiteralValue(
+                forLabel: ObservableCloudMacros.observeFirst)
+            {
+                observeFirst = value
+            }
+            if let value = argumentList.booleanLiteralValue(
+                forLabel: ObservableCloudMacros.syncImmediately)
+            {
+                syncImmediately = value
+            }
+            if let value = argumentList.booleanLiteralValue(
+                forLabel: ObservableCloudMacros.developmentMode)
+            {
+                developmentMode = value
+            }
+            if let value = argumentList.booleanLiteralValue(
+                forLabel: ObservableCloudMacros.defaultIsolationIsMainActor)
+            {
+                defaultIsolationIsMainActor = value
             }
         }
         return (autoInit, prefix, observeFirst, syncImmediately, developmentMode, defaultIsolationIsMainActor)

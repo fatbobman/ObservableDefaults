@@ -272,6 +272,40 @@ func lexicalContextHasExplicitMainActor(_ lexicalContext: [Syntax]) -> Bool {
     return false
 }
 
+extension ExprSyntax {
+    var booleanLiteralValue: Bool? {
+        guard let booleanLiteral = self.as(BooleanLiteralExprSyntax.self) else {
+            return nil
+        }
+        return booleanLiteral.literal.tokenKind == .keyword(.true)
+    }
+
+    var stringLiteralValue: String? {
+        guard let stringLiteral = self.as(StringLiteralExprSyntax.self) else {
+            return nil
+        }
+        return stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content.text
+    }
+
+    var trimmedStringLiteralValue: String? {
+        stringLiteralValue?.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+extension LabeledExprListSyntax {
+    func expression(forLabel labelName: String) -> ExprSyntax? {
+        first(where: { $0.label?.text == labelName })?.expression
+    }
+
+    func booleanLiteralValue(forLabel labelName: String) -> Bool? {
+        expression(forLabel: labelName)?.booleanLiteralValue
+    }
+
+    func trimmedStringLiteralValue(forLabel labelName: String) -> String? {
+        expression(forLabel: labelName)?.trimmedStringLiteralValue
+    }
+}
+
 extension AttributeListSyntax.Element {
     /**
      Extracts a value of a specific type from an attribute.

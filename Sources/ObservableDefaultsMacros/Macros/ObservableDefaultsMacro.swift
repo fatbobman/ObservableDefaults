@@ -582,44 +582,38 @@ extension ObservableDefaultsMacros {
         var invalidSuiteNameExpression: ExprSyntax?
 
         if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
-            for argument in argumentList {
-                if argument.label?.text == ObservableDefaultsMacros.autoInit,
-                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
-                {
-                    autoInit = booleanLiteral.literal.text == "true"
-                } else if argument.label?.text == ObservableDefaultsMacros.ignoreExternalChanges,
-                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
-                {
-                    ignoreExternalChanges = booleanLiteral.literal.text == "true"
-                } else if argument.label?.text == ObservableDefaultsMacros.suiteName {
-                    if let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self) {
-                        let rawSuiteName =
-                            stringLiteral.segments.first?
-                            .as(StringSegmentSyntax.self)?.content.text ?? ""
-                        suiteName = rawSuiteName.trimmingCharacters(in: .whitespacesAndNewlines)
-                    } else {
-                        invalidSuiteNameExpression = argument.expression
-                    }
-                } else if argument.label?.text == ObservableDefaultsMacros.prefix,
-                    let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self)
-                {
-                    let rawPrefix =
-                        stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content
-                        .text ?? ""
-                    prefix = rawPrefix.trimmingCharacters(in: .whitespacesAndNewlines)
-                } else if argument.label?.text == ObservableDefaultsMacros.observeFirst,
-                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
-                {
-                    observeFirst = booleanLiteral.literal.text == "true"
-                } else if argument.label?.text == ObservableDefaultsMacros.limitToInstance,
-                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
-                {
-                    limitToInstance = booleanLiteral.literal.text == "true"
-                } else if argument.label?.text == ObservableDefaultsMacros.defaultIsolationIsMainActor,
-                    let booleanLiteral = argument.expression.as(BooleanLiteralExprSyntax.self)
-                {
-                    defaultIsolationIsMainActor = booleanLiteral.literal.text == "true"
+            if let value = argumentList.booleanLiteralValue(forLabel: ObservableDefaultsMacros.autoInit) {
+                autoInit = value
+            }
+            if let value = argumentList.booleanLiteralValue(
+                forLabel: ObservableDefaultsMacros.ignoreExternalChanges)
+            {
+                ignoreExternalChanges = value
+            }
+            if let suiteNameExpression = argumentList.expression(forLabel: ObservableDefaultsMacros.suiteName) {
+                if let value = suiteNameExpression.trimmedStringLiteralValue {
+                    suiteName = value
+                } else {
+                    invalidSuiteNameExpression = suiteNameExpression
                 }
+            }
+            if let value = argumentList.trimmedStringLiteralValue(forLabel: ObservableDefaultsMacros.prefix) {
+                prefix = value
+            }
+            if let value = argumentList.booleanLiteralValue(
+                forLabel: ObservableDefaultsMacros.observeFirst)
+            {
+                observeFirst = value
+            }
+            if let value = argumentList.booleanLiteralValue(
+                forLabel: ObservableDefaultsMacros.limitToInstance)
+            {
+                limitToInstance = value
+            }
+            if let value = argumentList.booleanLiteralValue(
+                forLabel: ObservableDefaultsMacros.defaultIsolationIsMainActor)
+            {
+                defaultIsolationIsMainActor = value
             }
         }
         return (autoInit, suiteName, prefix, ignoreExternalChanges, observeFirst, limitToInstance, defaultIsolationIsMainActor, invalidSuiteNameExpression)
