@@ -146,6 +146,7 @@ final class CloudObserveFirstFixture {
     private final class CloudObservation: @unchecked Sendable {
         weak var host: CloudObserveFirstFixture?
         let prefix: String
+        private var notificationObserver: NSObjectProtocol?
 
         /// Initializes the observation with the specified parameters.
         /// - Parameters:
@@ -154,13 +155,14 @@ final class CloudObserveFirstFixture {
         init(host: CloudObserveFirstFixture, prefix: String) {
             self.host = host
             self.prefix = prefix
-            NotificationCenter.default
+            notificationObserver = NotificationCenter.default
                 .addObserver(
                     forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
                     object: nil,
                     queue: nil,
-                    using: cloudStoreDidChange
-                )
+                    using: { [weak self] notification in
+                        self?.cloudStoreDidChange(notification)
+                    })
         }
 
         /// Handles cloud store changes from external sources.
@@ -185,7 +187,9 @@ final class CloudObserveFirstFixture {
         }
 
         deinit {
-            NotificationCenter.default.removeObserver(self)
+            if let observer = notificationObserver {
+                NotificationCenter.default.removeObserver(observer)
+            }
         }
     }
 

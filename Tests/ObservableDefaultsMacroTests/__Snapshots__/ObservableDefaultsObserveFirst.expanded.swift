@@ -122,6 +122,7 @@ final class DefaultsObserveFirstFixture {
         let userDefaults: Foundation.UserDefaults
         let prefix: String
         let observableKeysBlacklist: [String]
+        private var notificationObserver: NSObjectProtocol?
 
         /// Initializes the observation with the specified parameters.
         /// - Parameters:
@@ -135,13 +136,14 @@ final class DefaultsObserveFirstFixture {
             self.prefix = prefix
             self.observableKeysBlacklist = observableKeysBlacklist
 
-            NotificationCenter.default
+            notificationObserver = NotificationCenter.default
                 .addObserver(
                     forName: UserDefaults.didChangeNotification,
                     object: userDefaults,
                     queue: nil,
-                    using: userDefaultsDidChange
-                )
+                    using: { [weak self] notification in
+                        self?.userDefaultsDidChange(notification)
+                    })
         }
 
         /// Handles UserDefaults changes from external sources.
@@ -173,7 +175,9 @@ final class DefaultsObserveFirstFixture {
         }
 
         deinit {
-            NotificationCenter.default.removeObserver(self)
+            if let observer = notificationObserver {
+                NotificationCenter.default.removeObserver(observer)
+            }
         }
     }
 
