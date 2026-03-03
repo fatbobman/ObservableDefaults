@@ -98,6 +98,32 @@ struct MacroDiagnosticTests {
         #expect(result.diagnostics[0].contains("@ObservableCloud parameter 'prefix' must be a string literal"))
     }
 
+    @Test("ObservableDefaults accepts escaped whitespace prefix")
+    func defaultsAcceptEscapedWhitespacePrefix() throws {
+        let result = try MacroTestSupport.expand(
+            source: #"""
+                @ObservableDefaults(prefix: "\t\r\n  tab_prefix  \r\n\t")
+                final class Fixture {
+                    var name: String = "fat"
+                }
+                """#)
+
+        #expect(result.diagnostics.isEmpty)
+    }
+
+    @Test("ObservableCloud accepts escaped whitespace prefix")
+    func cloudAcceptsEscapedWhitespacePrefix() throws {
+        let result = try MacroTestSupport.expand(
+            source: #"""
+                @ObservableCloud(prefix: "\n\t  \r", developmentMode: true)
+                final class Fixture {
+                    var name: String = "fat"
+                }
+                """#)
+
+        #expect(result.diagnostics.isEmpty)
+    }
+
     @Test("ObservableDefaults rejects non-literal boolean arguments")
     func defaultsRejectNonLiteralBooleanArguments() throws {
         let result = try MacroTestSupport.expand(

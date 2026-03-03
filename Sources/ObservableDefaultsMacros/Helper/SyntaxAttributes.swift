@@ -49,13 +49,18 @@ extension ExprSyntax {
     }
 
     var stringLiteralValue: String? {
-        guard let stringLiteral = self.as(StringLiteralExprSyntax.self),
-            stringLiteral.segments.count == 1,
-            let segment = stringLiteral.segments.first?.as(StringSegmentSyntax.self)
-        else {
+        guard let stringLiteral = self.as(StringLiteralExprSyntax.self) else {
             return nil
         }
-        return segment.content.text
+
+        var contents = ""
+        for segment in stringLiteral.segments {
+            guard let stringSegment = segment.as(StringSegmentSyntax.self) else {
+                return nil
+            }
+            contents += stringSegment.content.text
+        }
+        return contents
     }
 
     var trimmedStringLiteralValue: String? {
