@@ -163,49 +163,26 @@ extension CloudBackedMacro: AccessorMacro {
         // Check if the containing class has @MainActor attribute
         let hasMainActor = lexicalContextHasExplicitMainActor(context.lexicalContext)
 
-        // Property name as default NSUbiquitousKeyValueStore key if no custom key is provided
-        var keyString: String = identifier.trimmedDescription
-
-        // Validate that the property can be persisted to NSUbiquitousKeyValueStore
-        guard property.isPersistent else {
-            let diagnostic = Diagnostic.variableRequired(
+        guard
+            let _ = validateBackedProperty(
                 property: property,
-                macroType: .observableDefaults)
-            context.diagnose(diagnostic)
+                binding: binding,
+                macroType: .observableDefaults,
+                attributeName: "@\(CloudBackedMacro.name)",
+                in: context)
+        else {
             return []
         }
 
-        if property.hasWillOrDidSetObserver {
-            context.diagnose(
-                .observersNotSupported(
-                    property: property,
-                    attributeName: "@\(CloudBackedMacro.name)"))
-        }
-
-        // Check if the property is optional to handle initialization differently
-        let isOptionalType = isOptionalStoredType(binding)
-
-        // Ensure the property has a default value (required for NSUbiquitousKeyValueStore
-        // integration). Optional types can have no initializer (defaults to nil)
-        if binding.initializer == nil && !isOptionalType {
-            let diagnostic = Diagnostic.initializerRequired(
-                property: property,
-                macroType: .observableDefaults)
-            context.diagnose(diagnostic)
-            return []
-        }
-
-        // Check for custom NSUbiquitousKeyValueStore key specified via
-        // @CloudBacked(keyValueStoreKey:) or @CloudKey(keyValueStoreKey:)
-        if let extractedKey: String = property.attributes.extractValue(
-            forAttribute: CloudBackedMacro.name,
-            argument: CloudBackedMacro.key)
-            ?? property.attributes.extractValue(
-                forAttribute: CloudKeyMacro.name,
-                argument: CloudKeyMacro.key)
-        {
-            keyString = extractedKey
-        }
+        let keyString = lookupBackedStorageKey(
+            property: property,
+            defaultKey: identifier.trimmedDescription,
+            primaryAttribute: CloudBackedMacro.name,
+            primaryArgument: CloudBackedMacro.key,
+            fallbackAttribute: CloudKeyMacro.name,
+            fallbackArgument: CloudKeyMacro.key
+        )
+        .keyString
 
         // Generate getter that retrieves value from NSUbiquitousKeyValueStore or memory storage
         let getAccessor: AccessorDeclSyntax =

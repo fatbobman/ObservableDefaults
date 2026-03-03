@@ -73,67 +73,28 @@ extension DefaultsBackedMacro: AccessorMacro {
         // Check if the containing class has @MainActor attribute
         let hasMainActor = lexicalContextHasExplicitMainActor(context.lexicalContext)
 
-        // Property name as default UserDefaults key if no custom key is provided
-        var keyString: String = identifier.trimmedDescription
-        var customKeyExpression: ExprSyntax?
-        var customKeyAttributeName: String?
-
-        // Validate that the property can be persisted to UserDefaults
-        guard property.isPersistent else {
-            let diagnostic = Diagnostic.variableRequired(
+        guard
+            let _ = validateBackedProperty(
                 property: property,
-                macroType: .observableDefaults)
-            context.diagnose(diagnostic)
+                binding: binding,
+                macroType: .observableDefaults,
+                attributeName: "@\(DefaultsBackedMacro.name)",
+                in: context)
+        else {
             return []
         }
 
-        if property.hasWillOrDidSetObserver {
-            context.diagnose(
-                .observersNotSupported(
-                    property: property,
-                    attributeName: "@\(DefaultsBackedMacro.name)"))
-        }
+        let keyLookup = lookupBackedStorageKey(
+            property: property,
+            defaultKey: identifier.trimmedDescription,
+            primaryAttribute: DefaultsBackedMacro.name,
+            primaryArgument: DefaultsBackedMacro.key,
+            fallbackAttribute: DefaultsKeyMacro.name,
+            fallbackArgument: DefaultsKeyMacro.key)
+        let keyString = keyLookup.keyString
 
-        // Check if the property is optional to handle initialization differently
-        let isOptionalType = isOptionalStoredType(binding)
-
-        // Ensure the property has a default value (required for UserDefaults integration)
-        // Optional types can have no initializer (defaults to nil)
-        if binding.initializer == nil && !isOptionalType {
-            let diagnostic = Diagnostic.initializerRequired(
-                property: property,
-                macroType: .observableDefaults)
-            context.diagnose(diagnostic)
-            return []
-        }
-
-        // Check for custom UserDefaults key specified via @DefaultsBacked(userDefaultsKey:) or
-        // @DefaultsKey(userDefaultsKey:)
-        // @DefaultsBacked takes precedence if both are present
-        if let expression = property.attributes.expression(
-            forAttribute: DefaultsBackedMacro.name,
-            argument: DefaultsBackedMacro.key)
-        {
-            customKeyExpression = expression
-            customKeyAttributeName = "@\(DefaultsBackedMacro.name)"
-        } else if let expression = property.attributes.expression(
-            forAttribute: DefaultsKeyMacro.name,
-            argument: DefaultsKeyMacro.key)
-        {
-            customKeyExpression = expression
-            customKeyAttributeName = "@\(DefaultsKeyMacro.name)"
-        }
-
-        if let extractedKey: String = property.attributes.extractValue(
-            forAttribute: DefaultsBackedMacro.name,
-            argument: DefaultsBackedMacro.key)
-            ?? property.attributes.extractValue(
-                forAttribute: DefaultsKeyMacro.name,
-                argument: DefaultsKeyMacro.key)
-        {
-            keyString = extractedKey
-        } else if let expression = customKeyExpression,
-            let attributeName = customKeyAttributeName
+        if let expression = keyLookup.invalidExpression,
+            let attributeName = keyLookup.invalidAttributeName
         {
             context.diagnose(
                 .stringLiteralRequired(
