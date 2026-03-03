@@ -206,32 +206,13 @@ extension ObservableCloudMacros: MemberMacro {
         }.joined(separator: "\n")
 
         // Generate observation registrar for SwiftUI integration
-        let registrarSyntax: DeclSyntax =
-            """
-            internal let _$observationRegistrar = Observation.ObservationRegistrar()
-            """
+        let registrarSyntax = makeObservationRegistrarSyntax()
 
         // Generate access method for precise view updates
-        let accessFunctionSyntax: DeclSyntax =
-            """
-            internal nonisolated func access<Member>(keyPath: KeyPath<\(className), Member>) {
-              _$observationRegistrar.access(self, keyPath: keyPath)
-            }
-            """
+        let accessFunctionSyntax = makeAccessFunctionSyntax(className: className)
 
         // Generate mutation method for property changes
-        let withMutationFunctionSyntax: DeclSyntax =
-            """
-            /// Performs a mutation on the specified keyPath and notifies observers.
-            /// - Parameters:
-            ///   - keyPath: The key path to the property being mutated
-            ///   - mutation: The mutation closure to execute
-            /// - Returns: The result of the mutation closure
-            internal nonisolated func withMutation<Member, T>(keyPath: KeyPath<\(
-                className), Member>, _ mutation: () throws -> T) rethrows -> T {
-              try _$observationRegistrar.withMutation(of: self, keyPath: keyPath, mutation)
-            }
-            """
+        let withMutationFunctionSyntax = makeWithMutationFunctionSyntax(className: className)
 
         // Generate prefix property for NSUbiquitousKeyValueStore keys
         let prefixSyntax: DeclSyntax =
@@ -242,25 +223,6 @@ extension ObservableCloudMacros: MemberMacro {
             """
 
         // Generate helper methods for value comparison
-        let shouldSetValueSyntax: DeclSyntax =
-            """
-            private nonisolated func shouldSetValue<T>(_ lhs: T, _ rhs: T) -> Bool {
-               true
-            }
-
-            private nonisolated func shouldSetValue<T: Equatable>(_ lhs: T, _ rhs: T) -> Bool {
-               lhs != rhs
-            }
-
-            private nonisolated func shouldSetValue<T: AnyObject>(_ lhs: T, _ rhs: T) -> Bool {
-               lhs !== rhs
-            }
-
-            private nonisolated func shouldSetValue<T: Equatable & AnyObject>(_ lhs: T, _ rhs: T) -> Bool {
-                lhs != rhs
-            }
-            """
-
         // Generate initializer when autoInit is enabled
         let developmentModeDefault = developmentMode ? "true" : "false"
 
