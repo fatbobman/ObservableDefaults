@@ -1,0 +1,10 @@
+@ObservableDefaults(observeFirst: true)
+final class DefaultsObserveFirstFixture {
+    var transient: String = "local"
+
+    @DefaultsBacked(userDefaultsKey: "stored_name")
+    var persisted: String = "fat"
+
+    @Ignore
+    var derived: String = "ignore"
+}

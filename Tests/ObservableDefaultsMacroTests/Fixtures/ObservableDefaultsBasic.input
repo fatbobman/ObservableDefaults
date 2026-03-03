@@ -1,0 +1,5 @@
+@ObservableDefaults
+final class DefaultsBasicFixture {
+    var name: String = "fat"
+    var age: Int = 20
+}

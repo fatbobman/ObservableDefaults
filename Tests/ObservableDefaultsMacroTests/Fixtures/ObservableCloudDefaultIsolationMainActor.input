@@ -1,0 +1,4 @@
+@ObservableCloud(defaultIsolationIsMainActor: true)
+final class CloudDefaultIsolationFixture {
+    var theme: String = "light"
+}

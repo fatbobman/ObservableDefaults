@@ -35,6 +35,21 @@ let package = Package(
             name: "ObservableDefaultsTests",
             dependencies: ["ObservableDefaults"]
         ),
+        .testTarget(
+            name: "ObservableDefaultsMacroTests",
+            dependencies: [
+                "ObservableDefaultsMacros",
+                .product(name: "SwiftBasicFormat", package: "swift-syntax"),
+                .product(name: "SwiftParser", package: "swift-syntax"),
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxMacroExpansion", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
+            ],
+            exclude: [
+                "Fixtures",
+                "__Snapshots__",
+            ]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )

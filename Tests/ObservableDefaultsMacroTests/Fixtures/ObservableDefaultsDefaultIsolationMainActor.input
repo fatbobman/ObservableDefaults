@@ -1,0 +1,4 @@
+@ObservableDefaults(defaultIsolationIsMainActor: true)
+final class DefaultsDefaultIsolationFixture {
+    var name: String = "fat"
+}

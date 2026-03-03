@@ -1,0 +1,7 @@
+@ObservableCloud(observeFirst: true, developmentMode: true)
+final class CloudObserveFirstFixture {
+    @CloudBacked
+    var theme: String = "light"
+
+    var ephemeral: String = "scratch"
+}
