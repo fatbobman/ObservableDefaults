@@ -129,10 +129,9 @@ extension ObservableDefaultsMacros: MemberMacro {
         // Check if the class has @MainActor attribute or if defaultIsolation is MainActor
         let hasExplicitMainActor = classDecl.hasExplicitMainActorAttribute
         let hasMainActor = hasExplicitMainActor || defaultIsolationIsMainActor
-        // Build mapping between properties and their UserDefaults keys.
-        // In observeFirst mode, only explicitly @DefaultsBacked properties are backed;
-        // non-backed (ObservableOnly) properties are excluded because they are not
-        // stored in UserDefaults and should not appear in the notification handler.
+        // Collect the persisted property metadata once, then derive all external-change
+        // support code from that shared source of truth. In observeFirst mode, only
+        // explicitly backed properties participate in persistence and notification handling.
         let metas = classDecl.persistentPropertyMetas(
             primaryAttribute: DefaultsBackedMacro.name,
             primaryArgument: DefaultsBackedMacro.key,
@@ -224,6 +223,8 @@ extension ObservableDefaultsMacros: MemberMacro {
             }
             """
 
+        // Keep the defaults observer wiring as a single subsystem so the generated
+        // observation class and its starter stay in sync.
         let observerMembers = makeDefaultsObserverMembers(
             className: className,
             caseCode: caseCode,

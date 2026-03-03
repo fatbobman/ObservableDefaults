@@ -1,6 +1,8 @@
 import SwiftSyntax
 import SwiftSyntaxBuilder
 
+// Defaults observation needs both the generated observer class and the starter that
+// translates ignored key paths into storage keys, so the helper returns both members.
 func makeDefaultsObserverMembers(
     className: IdentifierPatternSyntax,
     caseCode: String,
@@ -185,6 +187,8 @@ func makeDefaultsObserverMembers(
     return [observerSyntax, observerStarterSyntax]
 }
 
+// Cloud observation only needs the observer class itself because initialization is
+// handled directly by the generated init in ObservableCloudMacro.
 func makeCloudObserverSyntax(
     className: IdentifierPatternSyntax,
     caseCode: String,

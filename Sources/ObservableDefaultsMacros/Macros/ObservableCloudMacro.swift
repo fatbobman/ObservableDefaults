@@ -218,6 +218,8 @@ extension ObservableCloudMacros: MemberMacro {
             }
             """
 
+        // Generate the full cloud observer as one unit to preserve the cloud-specific
+        // notification semantics while keeping the macro entrypoint readable.
         let observerFunctionSyntax = makeCloudObserverSyntax(
             className: className,
             caseCode: caseCode,
