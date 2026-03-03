@@ -95,12 +95,7 @@ extension DefaultsBackedMacro: AccessorMacro {
         }
 
         // Check if the property is optional to handle initialization differently
-        var isOptionalType = false
-        if let typeAnnotation = binding.typeAnnotation {
-            let typeSyntax = typeAnnotation.type
-            let typeName = typeSyntax.description.trimmingCharacters(in: .whitespacesAndNewlines)
-            isOptionalType = typeSyntax.is(OptionalTypeSyntax.self) || typeSyntax.is(ImplicitlyUnwrappedOptionalTypeSyntax.self) || typeName.contains("Optional")
-        }
+        let isOptionalType = isOptionalStoredType(binding)
 
         // Ensure the property has a default value (required for UserDefaults integration)
         // Optional types can have no initializer (defaults to nil)
@@ -250,71 +245,6 @@ extension DefaultsBackedMacro: PeerMacro {
             return []
         }
 
-        // Check if the property is optional
-        var isOptionalType = false
-        if let typeAnnotation = binding.typeAnnotation {
-            let typeSyntax = typeAnnotation.type
-            let typeName = typeSyntax.description.trimmingCharacters(in: .whitespacesAndNewlines)
-            isOptionalType = typeSyntax.is(OptionalTypeSyntax.self) || typeSyntax.is(ImplicitlyUnwrappedOptionalTypeSyntax.self) || typeName.contains("Optional")
-        }
-
-        // Generate private storage property with underscore prefix.
-        // Persistent properties do not support property observers.
-        let storage = DeclSyntax(property.privatePrefixedWithoutAccessors("_"))
-
-        // Generate default value storage property with double underscore prefix
-        let defaultStorage: DeclSyntax
-        if let initializer = binding.initializer {
-            // Has explicit initializer
-            let initializerDescription = initializer.description
-            // Check if initializer is just "= nil" without type annotation
-            if isOptionalType && initializerDescription.trimmingCharacters(in: .whitespacesAndNewlines) == "= nil" {
-                // Add type annotation for "= nil" cases
-                defaultStorage =
-                    """
-                    // initial value storage, never change after initialization
-                    private let \(raw:defaultValuePrefixed)\(raw: identifier): \(raw: binding.typeAnnotation?.type.description ?? "Optional<Any>") = nil
-                    """
-            } else {
-                // Check if we need to add type annotation for type context
-                if let typeAnnotation = binding.typeAnnotation {
-                    // Has explicit type annotation, add it to ensure type context
-                    defaultStorage =
-                        """
-                        // initial value storage, never change after initialization
-                        private let \(raw:defaultValuePrefixed)\(raw: identifier): \(raw: typeAnnotation.type.description) \(raw: initializerDescription)
-                        """
-                } else {
-                    // No type annotation, use initializer as-is (may fail for ambiguous cases)
-                    defaultStorage =
-                        """
-                        // initial value storage, never change after initialization
-                        private let \(raw:defaultValuePrefixed)\(raw: identifier) \(raw: initializerDescription)
-                        """
-                }
-            }
-        } else if isOptionalType {
-            // Optional type without initializer defaults to nil
-            defaultStorage =
-                """
-                // initial value storage, never change after initialization
-                private let \(raw:defaultValuePrefixed)\(raw: identifier): \(raw: binding.typeAnnotation?.type.description ?? "Optional<Any>") = nil
-                """
-        } else {
-            // This should not happen due to earlier validation, but provide a fallback
-            defaultStorage =
-                """
-                // initial value storage, never change after initialization
-                private let \(raw:defaultValuePrefixed)\(raw: identifier): Any? = nil
-                """
-        }
-
-        return [storage, defaultStorage]
+        return makeBackedStorageDecls(property: property, binding: binding, identifier: identifier)
     }
 }
-
-/// The prefix for the default value storage property.
-///
-/// This prefix is used to distinguish the default value storage property from the regular storage
-/// property.
-let defaultValuePrefixed = "_default_value_of_"
