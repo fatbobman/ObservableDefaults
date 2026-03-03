@@ -1,287 +1,141 @@
-# Macro Refactor TODO
+# Macro Refactor Summary
 
-This document defines the safety rails for refactoring macro generation code without changing user-visible behavior.
+This document started as the execution plan for the macro refactor series.
+It now records what was completed, what intentionally changed after the pure
+refactor phase, and what remains optional.
 
-## Goals
+## Outcome
 
-- Keep runtime behavior unchanged.
-- Keep generated code structure unchanged unless a step explicitly targets formatting.
-- Make every refactor step independently verifiable and reversible.
-- Add dedicated tests for macro expansion and formatting so future cleanups are cheaper.
+- The pure refactor phase is complete.
+- Macro guardrail tests are now part of the repository and should be kept.
+- Several follow-up semantic fixes were completed after the refactor because
+  the new guardrails exposed real behavior drift.
 
-## Non-Goals
+## Completed Refactor Work
 
-- No feature changes during the refactor series.
-- No semantic cleanup mixed into helper extraction.
-- No README or public API changes unless a real behavior change is intentionally introduced later.
+### Phase 0: Baseline and Safety Rails
 
-## Ground Rules
+Completed:
 
-- Work on a dedicated branch only.
-- Each commit should contain one refactor step or one test-only step.
-- Every refactor step must pass full `swift test`.
-- If a refactor step changes generated code text unexpectedly, stop and inspect before continuing.
-- Formatting-only changes must happen in dedicated commits after semantic-preserving helper extraction is complete.
+- established a dedicated refactor branch
+- verified baseline builds and full test runs
+- added a dedicated macro test target
+- added fixture-based macro expansion snapshots
+- added formatted snapshot comparisons
+- added `SwiftSyntax`-based structure assertions
+- added macro diagnostic coverage for high-risk parsing paths
 
-## Safety Layers
+Repository artifacts now in use:
 
-Each step should be validated by all applicable layers below:
+- `Tests/ObservableDefaultsMacroTests/MacroExpansionSnapshotTests.swift`
+- `Tests/ObservableDefaultsMacroTests/MacroStructureTests.swift`
+- `Tests/ObservableDefaultsMacroTests/MacroDiagnosticTests.swift`
+- `Tests/ObservableDefaultsMacroTests/Fixtures/`
+- `Tests/ObservableDefaultsMacroTests/__Snapshots__/`
 
-1. Existing behavioral tests
-2. Full compile check
-3. Macro expansion snapshot comparison
-4. Formatted expansion snapshot comparison
-5. Targeted structure assertions for generated declarations
+### Phase 1: Low-Risk Shared Helpers
 
-## Phase 0: Baseline
+Completed:
 
-1. Confirm clean worktree.
-2. Run `swift build`.
-3. Run full `swift test`.
-4. Capture a baseline set of macro expansions for representative fixtures.
-5. Format the captured expansions with repository `.swift-format`.
-6. Save the formatted output as the initial snapshot baseline.
+- extracted shared `MainActor` host detection
+- extracted shared observation boilerplate
+- extracted shared backing/default storage generation
+- extracted shared property validation and key-resolution helpers
+- split overly broad syntax helpers by responsibility
 
-## Phase 1: Add Refactor Guardrails
+### Phase 2: Internal Modeling Cleanup
 
-### 1.1 Expansion Fixtures
+Completed:
 
-Create a small but representative fixture set covering:
+- introduced shared persisted-property metadata handling
+- extracted external change generation helpers as complete logic units
+- extracted complete cloud observer helper
+- extracted complete defaults observer helper
+- added navigation comments in main macro/helper files
 
-- `@ObservableDefaults` basic usage
-- `@ObservableDefaults(observeFirst: true)`
-- `@ObservableDefaults` with `suiteName`, `prefix`, `limitToInstance`
-- `@DefaultsBacked(userDefaultsKey:)`
-- `@DefaultsKey(userDefaultsKey:)`
-- optional defaults-backed property
-- `@ObservableCloud` basic usage
-- `@ObservableCloud(observeFirst: true)`
-- `@ObservableCloud(developmentMode: true)`
-- `@CloudBacked(keyValueStoreKey:)`
-- `@CloudKey(keyValueStoreKey:)`
-- `@ObservableOnly`
-- `@MainActor` host class
+Notes:
 
-### 1.2 Expansion Snapshot Test
+- a fragment-based observer helper attempt was reverted
+- the final observer extraction keeps complete units only
 
-Preferred approach:
+## Completed Post-Refactor Fixes
 
-- Create a test target dedicated to macro expansion snapshots.
-- Use a fixture source file per scenario.
-- Invoke macro expansion through a deterministic compiler command.
-- Normalize the output before diffing.
+The following changes were intentionally handled after the pure refactor phase.
+These are not "helper extraction" work; they are behavior or diagnostic fixes.
 
-Suggested normalization pipeline:
+Completed:
 
-1. Dump macro expansions.
-2. Strip irrelevant environment-specific paths if present.
-3. Run `swift-format --configuration .swift-format`.
-4. Compare against checked-in snapshots.
+- fixed `CloudBacked` diagnostics to use the correct macro type
+- diagnosed invalid cloud custom-key expressions
+- fixed `@ObservableCloud(observeFirst: true)` so observable-only properties do
+  not participate in external cloud notification handling
+- preserved `syncImmediately` macro defaults in generated initializers
+- diagnosed invalid top-level `prefix` arguments
+- diagnosed invalid top-level boolean arguments
+- rejected interpolated string arguments for macro string parameters
+- preserved escaped plain string literals for whitespace-related parameters
+- fixed observer lifetime by weakening observer-to-host references
+- stored and removed actual notification tokens instead of calling
+  `removeObserver(self)` in block-observer paths
+- added runtime regression tests for deallocation and post-release
+  notification behavior
 
-Acceptance rule:
+## Intentionally Deferred Work
 
-- Helper extraction commits should produce zero snapshot diffs.
-- If a diff appears, treat it as a blocker until explained.
+These items are optional and were not required to finish the refactor safely.
 
-### 1.3 Structure Tests
+### 1. Further Stage-Splitting of Top-Level `expansion`
 
-Add focused assertions by parsing expanded output with `SwiftSyntax`.
+Current state:
 
-Assert only high-value invariants, for example:
+- `ObservableDefaultsMacro.expansion` and `ObservableCloudMacro.expansion`
+  are still large, but much clearer than before
+- further splitting is optional, not urgent
 
-- `_$observationRegistrar` exists
-- `access` exists
-- `withMutation` exists
-- `_defaultsKeyPathMap` exists only for defaults-backed host macros
-- observe-first defaults fixtures only map explicitly backed properties
-- cloud fixtures keep `_developmentMode_` behavior branches
-- backed properties still generate storage and declaration-time default storage
-
-These tests should be resilient to whitespace-only changes.
-
-### 1.4 Diagnostic Tests
-
-Add dedicated coverage for macro diagnostics relevant to refactor risk:
-
-- non-string literal key parameters
-- invalid `suiteName` expression
-- `willSet` and `didSet` warning behavior
-- missing initializer on non-optional backed properties
-
-## Phase 2: Low-Risk Shared Helpers
-
-Apply one step per commit.
-
-### 2.1 Extract class actor-detection helper
-
-Target examples:
-
-- detect `@MainActor` on containing class
-- unify repeated host-class scanning logic
-
-Validation:
-
-- `swift test`
-- expansion snapshots unchanged
-- formatted snapshots unchanged
-
-### 2.2 Extract shared observation boilerplate builder
-
-Target examples:
-
-- `_$observationRegistrar`
-- `access`
-- `withMutation`
-- shared `shouldSetValue` declarations
-
-Validation:
-
-- `swift test`
-- expansion snapshots unchanged
-- formatted snapshots unchanged
-
-### 2.3 Extract shared backing storage/default storage builder
-
-Target examples:
-
-- `_property` storage
-- `_default_value_of_<property>` storage
-- optional `= nil` handling
-- explicit type-annotation preservation
-
-Validation:
-
-- `swift test`
-- expansion snapshots unchanged
-- formatted snapshots unchanged
-- targeted fixtures for optional and inferred-type defaults unchanged
-
-### 2.4 Extract shared key-resolution helper
-
-Target examples:
-
-- property-name fallback
-- backed-attribute priority over key-marker attribute
-- consistent non-string-literal handling
-
-Validation:
-
-- `swift test`
-- diagnostic tests
-- expansion snapshots unchanged
-
-## Phase 3: Internal Modeling Cleanup
-
-Only start this phase after Phase 2 is stable.
-
-### 3.1 Introduce shared metadata types
-
-Possible candidates:
-
-- macro configuration structs
-- persisted-property metadata struct
-- observer-generation input model
-
-Goal:
-
-- Replace anonymous tuples and repeated string assembly with typed intermediate data.
-
-Validation:
-
-- `swift test`
-- expansion snapshots unchanged
-- structure tests unchanged
-
-### 3.2 Split large `MemberMacro.expansion` functions into stages
-
-Suggested stages:
+Only continue if the result is still a complete logic unit, for example:
 
 1. parse config
 2. collect property metadata
 3. build shared boilerplate
-4. build backend-specific observer code
-5. build backend-specific initializer code
+4. build backend-specific observer members
+5. build backend-specific initializer members
 
-Validation:
+Do not continue if the extraction would produce template fragments.
 
-- `swift test`
-- expansion snapshots unchanged
-- structure tests unchanged
+### 2. Formatting-Only Cleanup
 
-## Phase 4: Formatting Cleanup
+Current state:
 
-Formatting changes must be isolated in their own commits after semantic refactor work is done.
+- formatting cleanup was intentionally not pursued aggressively
+- some hand-managed indentation remains, especially in
+  `ExternalChangeSyntax.swift`
 
-Targets:
+This can be done later, but only in formatting-only commits with snapshot review.
 
-- remove hand-managed indentation tricks such as `caseIndent`
-- make switch-case templates consistent across backends
-- normalize multi-line string formatting style
-- fix internal naming inconsistencies and typos only when they do not affect generated API
+Targets that remain optional:
 
-Validation:
+- remove `caseIndent`
+- normalize switch-case template shape across backends
+- simplify multi-line string formatting where it improves readability
 
-- `swift test`
-- structure tests unchanged
-- snapshot updates reviewed as formatting-only diffs
+## Maintenance Rules Going Forward
 
-## Command Checklist Per Step
+- Treat macro snapshot diffs as generated-code behavior changes unless the diff
+  is clearly formatting-only.
+- Prefer complete helper boundaries over string-fragment extraction.
+- Keep observer generation as whole units, not preamble/body/deinit fragments.
+- Use `swift-testing` by default for new tests; keep `XCTest` only where macro
+  testing APIs still require it.
+- Run `swift test --filter ObservableDefaultsMacroTests` for macro-generation,
+  macro-diagnostic, or generated-format changes.
 
-Run this minimum sequence after every refactor commit:
+## Recommended Close-Out
 
-```bash
-swift build
-swift test
-```
+The refactor series does not require more mandatory code changes.
 
-Run this full sequence once expansion tests exist:
+Reasonable next steps are:
 
-```bash
-swift build
-swift test
-swift test --filter MacroExpansion
-swift test --filter MacroStructure
-swift test --filter MacroDiagnostics
-```
-
-## Suggested Repository Additions
-
-These can be added in later commits:
-
-- `Tests/ObservableDefaultsMacroExpansionTests/`
-- `Tests/ObservableDefaultsMacroExpansionTests/Fixtures/`
-- `Tests/ObservableDefaultsMacroExpansionTests/__Snapshots__/`
-- `Scripts/` helper for expansion capture if the compiler invocation becomes too verbose
-
-If a script is added, keep it deterministic and side-effect free.
-
-## Review Checklist Per Commit
-
-- Does the commit change runtime semantics?
-- Does the commit change generated declaration names?
-- Does the commit change snapshot text?
-- If snapshot text changed, is it formatting-only?
-- Is there a dedicated test covering the helper or branch being extracted?
-- Can the commit be reverted independently?
-
-## Stop Conditions
-
-Stop the series and inspect immediately if any of the following happen:
-
-- full `swift test` fails
-- expansion snapshots change during a helper-only commit
-- diagnostics change unexpectedly
-- generated code for observe-first behavior changes
-- generated code for declaration-time default capture changes
-
-## First Execution Order
-
-1. Add expansion fixtures.
-2. Add expansion snapshot tests.
-3. Add structure tests.
-4. Add diagnostic tests missing for refactor risk.
-5. Extract `@MainActor` detection helper.
-6. Extract shared observation boilerplate.
-7. Extract shared backing/default storage builder.
-8. Extract shared key/config helpers.
-9. Perform formatting-only cleanup at the end.
+1. merge the branch after one final review
+2. optionally do a small formatting-only follow-up later
+3. optionally revisit top-level `expansion` stage-splitting only if a future
+   change makes those files hard to maintain again
