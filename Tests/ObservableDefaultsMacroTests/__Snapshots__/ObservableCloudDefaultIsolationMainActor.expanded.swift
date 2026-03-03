@@ -36,15 +36,15 @@ final class CloudDefaultIsolationFixture {
         }
     }
 
-    private var _theme: String = "light"
+    private  var _theme: String = "light"
 
     // initial value storage, never change after initialization
-    private let _default_value_of_theme: String = "light"
+    private let _default_value_of_theme: String  = "light"
 
     internal let _$observationRegistrar = Observation.ObservationRegistrar()
 
     internal nonisolated func access<Member>(keyPath: KeyPath<CloudDefaultIsolationFixture, Member>) {
-        _$observationRegistrar.access(self, keyPath: keyPath)
+      _$observationRegistrar.access(self, keyPath: keyPath)
     }
 
     /// Performs a mutation on the specified keyPath and notifies observers.
@@ -53,7 +53,7 @@ final class CloudDefaultIsolationFixture {
     ///   - mutation: The mutation closure to execute
     /// - Returns: The result of the mutation closure
     internal nonisolated func withMutation<Member, T>(keyPath: KeyPath<CloudDefaultIsolationFixture, Member>, _ mutation: () throws -> T) rethrows -> T {
-        try _$observationRegistrar.withMutation(of: self, keyPath: keyPath, mutation)
+      try _$observationRegistrar.withMutation(of: self, keyPath: keyPath, mutation)
     }
 
     /// Prefix for the NSUbiquitousKeyValueStore key. The default value is an empty string.
@@ -61,15 +61,15 @@ final class CloudDefaultIsolationFixture {
     private var _prefix: String = ""
 
     private nonisolated func shouldSetValue<T>(_ lhs: T, _ rhs: T) -> Bool {
-        true
+       true
     }
 
     private nonisolated func shouldSetValue<T: Equatable>(_ lhs: T, _ rhs: T) -> Bool {
-        lhs != rhs
+       lhs != rhs
     }
 
     private nonisolated func shouldSetValue<T: AnyObject>(_ lhs: T, _ rhs: T) -> Bool {
-        lhs !== rhs
+       lhs !== rhs
     }
 
     private nonisolated func shouldSetValue<T: Equatable & AnyObject>(_ lhs: T, _ rhs: T) -> Bool {
@@ -133,7 +133,7 @@ final class CloudDefaultIsolationFixture {
                     queue: .main
                 ) { [weak host, prefix] notification in
                     guard let host else { return }
-
+                    
                     guard let userInfo = notification.userInfo,
                         let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
                     else {
@@ -143,9 +143,9 @@ final class CloudDefaultIsolationFixture {
                     for key in changedKeys {
                         switch key {
                         case prefix + "theme":
-                            MainActor.assumeIsolated {
-                                host._$observationRegistrar.withMutation(of: host, keyPath: \.theme) {}
-                            }
+        MainActor.assumeIsolated {
+            host._$observationRegistrar.withMutation(of: host, keyPath: \.theme) {}
+        }
                         default:
                             break
                         }
@@ -176,7 +176,7 @@ final class CloudDefaultIsolationFixture {
             _cloudObserver = CloudObservation(host: self, prefix: _prefix)
         } else {
             #if DEBUG
-                print("Development mode is enabled, using memory storage for testing and development.")
+            print("Development mode is enabled, using memory storage for testing and development.")
             #endif
         }
     }

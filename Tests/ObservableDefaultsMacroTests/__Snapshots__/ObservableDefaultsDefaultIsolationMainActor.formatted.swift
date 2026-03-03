@@ -12,10 +12,12 @@ final class DefaultsDefaultIsolationFixture {
             guard shouldSetValue(newValue, currentValue) else {
                 return
             }
-            if _isExternalNotificationDisabled || _ignoredKeyPathsForExternalUpdates.contains(\.name) || ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            if _isExternalNotificationDisabled ||
+            _ignoredKeyPathsForExternalUpdates.contains(\.name) ||
+            ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
                 withMutation(keyPath: \.name) {
                     UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
-                    _name = newValue
+                     _name = newValue
                 }
             } else {
                 UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
@@ -24,15 +26,15 @@ final class DefaultsDefaultIsolationFixture {
         }
     }
 
-    private var _name: String = "fat"
+    private  var _name: String = "fat"
 
     // initial value storage, never change after initialization
-    private let _default_value_of_name: String = "fat"
+    private let _default_value_of_name: String  = "fat"
 
     internal let _$observationRegistrar = Observation.ObservationRegistrar()
 
     internal nonisolated func access<Member>(keyPath: KeyPath<DefaultsDefaultIsolationFixture, Member>) {
-        _$observationRegistrar.access(self, keyPath: keyPath)
+      _$observationRegistrar.access(self, keyPath: keyPath)
     }
 
     /// Performs a mutation on the specified keyPath and notifies observers.
@@ -41,7 +43,7 @@ final class DefaultsDefaultIsolationFixture {
     ///   - mutation: The mutation closure to execute
     /// - Returns: The result of the mutation closure
     internal nonisolated func withMutation<Member, T>(keyPath: KeyPath<DefaultsDefaultIsolationFixture, Member>, _ mutation: () throws -> T) rethrows -> T {
-        try _$observationRegistrar.withMutation(of: self, keyPath: keyPath, mutation)
+      try _$observationRegistrar.withMutation(of: self, keyPath: keyPath, mutation)
     }
 
     private var _userDefaults: Foundation.UserDefaults = Foundation.UserDefaults.standard
@@ -65,15 +67,15 @@ final class DefaultsDefaultIsolationFixture {
     private var _ignoredKeyPathsForExternalUpdates: [PartialKeyPath<DefaultsDefaultIsolationFixture>] = []
 
     private nonisolated func shouldSetValue<T>(_ lhs: T, _ rhs: T) -> Bool {
-        true
+       true
     }
 
     private nonisolated func shouldSetValue<T: Equatable>(_ lhs: T, _ rhs: T) -> Bool {
-        lhs != rhs
+       lhs != rhs
     }
 
     private nonisolated func shouldSetValue<T: AnyObject>(_ lhs: T, _ rhs: T) -> Bool {
-        lhs !== rhs
+       lhs !== rhs
     }
 
     private nonisolated func shouldSetValue<T: Equatable & AnyObject>(_ lhs: T, _ rhs: T) -> Bool {
@@ -124,14 +126,14 @@ final class DefaultsDefaultIsolationFixture {
                         if !observableKeysBlacklist.contains(fullKey) {
                             switch fullKey {
                             case prefix + "name":
-                                MainActor.assumeIsolated {
-                                    let newValue = UserDefaultsWrapper.getValue(fullKey, host._default_value_of_name, host._userDefaults)
-                                    if host.shouldSetValue(newValue, host._name) {
-                                        host._name = newValue
-                                        host._$observationRegistrar.withMutation(of: host, keyPath: \.name) {
-                                        }
-                                    }
-                                }
+        MainActor.assumeIsolated {
+            let newValue = UserDefaultsWrapper.getValue(fullKey, host._default_value_of_name, host._userDefaults)
+            if host.shouldSetValue(newValue, host._name) {
+                host._name = newValue
+                host._$observationRegistrar.withMutation(of: host, keyPath: \.name) {
+                }
+            }
+        }
                             default:
                                 break
                             }

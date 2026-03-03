@@ -12,10 +12,12 @@ final class DefaultsBasicFixture {
             guard shouldSetValue(newValue, currentValue) else {
                 return
             }
-            if _isExternalNotificationDisabled || _ignoredKeyPathsForExternalUpdates.contains(\.name) || ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            if _isExternalNotificationDisabled ||
+            _ignoredKeyPathsForExternalUpdates.contains(\.name) ||
+            ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
                 withMutation(keyPath: \.name) {
                     UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
-                    _name = newValue
+                     _name = newValue
                 }
             } else {
                 UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
@@ -24,10 +26,10 @@ final class DefaultsBasicFixture {
         }
     }
 
-    private var _name: String = "fat"
+    private  var _name: String = "fat"
 
     // initial value storage, never change after initialization
-    private let _default_value_of_name: String = "fat"
+    private let _default_value_of_name: String  = "fat"
     var age: Int {
         get {
             access(keyPath: \.age)
@@ -41,10 +43,12 @@ final class DefaultsBasicFixture {
             guard shouldSetValue(newValue, currentValue) else {
                 return
             }
-            if _isExternalNotificationDisabled || _ignoredKeyPathsForExternalUpdates.contains(\.age) || ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            if _isExternalNotificationDisabled ||
+            _ignoredKeyPathsForExternalUpdates.contains(\.age) ||
+            ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
                 withMutation(keyPath: \.age) {
                     UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
-                    _age = newValue
+                     _age = newValue
                 }
             } else {
                 UserDefaultsWrapper.setValue(key, newValue, _userDefaults)
@@ -53,15 +57,15 @@ final class DefaultsBasicFixture {
         }
     }
 
-    private var _age: Int = 20
+    private  var _age: Int = 20
 
     // initial value storage, never change after initialization
-    private let _default_value_of_age: Int = 20
+    private let _default_value_of_age: Int  = 20
 
     internal let _$observationRegistrar = Observation.ObservationRegistrar()
 
     internal nonisolated func access<Member>(keyPath: KeyPath<DefaultsBasicFixture, Member>) {
-        _$observationRegistrar.access(self, keyPath: keyPath)
+      _$observationRegistrar.access(self, keyPath: keyPath)
     }
 
     /// Performs a mutation on the specified keyPath and notifies observers.
@@ -70,7 +74,7 @@ final class DefaultsBasicFixture {
     ///   - mutation: The mutation closure to execute
     /// - Returns: The result of the mutation closure
     internal nonisolated func withMutation<Member, T>(keyPath: KeyPath<DefaultsBasicFixture, Member>, _ mutation: () throws -> T) rethrows -> T {
-        try _$observationRegistrar.withMutation(of: self, keyPath: keyPath, mutation)
+      try _$observationRegistrar.withMutation(of: self, keyPath: keyPath, mutation)
     }
 
     private var _userDefaults: Foundation.UserDefaults = Foundation.UserDefaults.standard
@@ -94,15 +98,15 @@ final class DefaultsBasicFixture {
     private var _ignoredKeyPathsForExternalUpdates: [PartialKeyPath<DefaultsBasicFixture>] = []
 
     private nonisolated func shouldSetValue<T>(_ lhs: T, _ rhs: T) -> Bool {
-        true
+       true
     }
 
     private nonisolated func shouldSetValue<T: Equatable>(_ lhs: T, _ rhs: T) -> Bool {
-        lhs != rhs
+       lhs != rhs
     }
 
     private nonisolated func shouldSetValue<T: AnyObject>(_ lhs: T, _ rhs: T) -> Bool {
-        lhs !== rhs
+       lhs !== rhs
     }
 
     private nonisolated func shouldSetValue<T: Equatable & AnyObject>(_ lhs: T, _ rhs: T) -> Bool {
@@ -147,7 +151,7 @@ final class DefaultsBasicFixture {
         private func userDefaultsDidChange(_ notification: Foundation.Notification) {
             // Check all monitored keys for changes
             let monitoredKeys: [String] = [
-                "name", "age",
+                "name", "age"
             ]
 
             for key in monitoredKeys {
@@ -155,11 +159,11 @@ final class DefaultsBasicFixture {
                 if !observableKeysBlacklist.contains(fullKey) {
                     switch fullKey {
                     case prefix + "name":
-                        let newValue = UserDefaultsWrapper.getValue(fullKey, host._default_value_of_name, host._userDefaults)
-                        if host.shouldSetValue(newValue, host._name) {
-                            host._name = newValue
-                            host._$observationRegistrar.withMutation(of: host, keyPath: \.name) {}
-                        }
+        let newValue = UserDefaultsWrapper.getValue(fullKey, host._default_value_of_name, host._userDefaults)
+        if host.shouldSetValue(newValue, host._name) {
+            host._name = newValue
+            host._$observationRegistrar.withMutation(of: host, keyPath: \.name) {}
+        }
                     case prefix + "age":
                         let newValue = UserDefaultsWrapper.getValue(fullKey, host._default_value_of_age, host._userDefaults)
                         if host.shouldSetValue(newValue, host._age) {
