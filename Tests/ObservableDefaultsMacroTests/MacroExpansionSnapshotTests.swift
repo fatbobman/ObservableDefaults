@@ -26,4 +26,9 @@ struct MacroExpansionSnapshotTests {
     func observableCloudDefaultIsolationMainActorSnapshot() throws {
         try MacroTestSupport.assertExpansionSnapshot(fixtureName: "ObservableCloudDefaultIsolationMainActor")
     }
+
+    @Test("ObservableCloud syncImmediately snapshot")
+    func observableCloudSyncImmediatelySnapshot() throws {
+        try MacroTestSupport.assertExpansionSnapshot(fixtureName: "ObservableCloudSyncImmediately")
+    }
 }

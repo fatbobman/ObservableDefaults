@@ -178,6 +178,11 @@ class MockModelCloudObserveFirstWithObservers {
     var setResult: [String] = []
 }
 
+@ObservableCloud(syncImmediately: true)
+class MockModelCloudSyncImmediately {
+    var name: String = "Test"
+}
+
 @ObservableCloud
 class MockModelCloudKeyName {
     @CloudBacked(keyValueStoreKey: "rename-by-backed-key")

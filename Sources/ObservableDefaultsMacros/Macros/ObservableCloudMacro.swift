@@ -195,13 +195,14 @@ extension ObservableCloudMacros: MemberMacro {
 
         // Generate helper methods for value comparison
         // Generate initializer when autoInit is enabled
+        let syncImmediatelyDefault = syncImmediately ? "true" : "false"
         let developmentModeDefault = developmentMode ? "true" : "false"
 
         let initFunctionSyntax: DeclSyntax =
             """
             public init(
                 prefix: String? = nil,
-                syncImmediately: Bool = false,
+                syncImmediately: Bool = \(raw: syncImmediatelyDefault),
                 developmentMode: Bool = \(raw: developmentModeDefault)
             ) {
                 if let prefix {

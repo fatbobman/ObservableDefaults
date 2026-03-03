@@ -63,4 +63,13 @@ struct MacroStructureTests {
         #expect(result.expandedSource.contains("@MainActor"))
         #expect(result.expandedSource.contains("deinit {"))
     }
+
+    @Test("ObservableCloud syncImmediately init preserves macro default")
+    func cloudSyncImmediatelyStructure() throws {
+        let result = try MacroTestSupport.expandFixture(named: "ObservableCloudSyncImmediately")
+
+        #expect(result.diagnostics.isEmpty)
+        #expect(result.expandedSource.contains("private var _syncImmediately = true"))
+        #expect(result.expandedSource.contains("syncImmediately: Bool = true"))
+    }
 }

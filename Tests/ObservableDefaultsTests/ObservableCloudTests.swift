@@ -92,6 +92,17 @@ struct ObservableCloudTests {
             #expect(userDefaults.string(forKey: "test_name") == "Test2")
         }
 
+        @Test("syncImmediately macro default is preserved by generated init", .testMode)
+        func syncImmediatelyMacroDefaultIsPreserved() {
+            let model = MockModelCloudSyncImmediately()
+            let syncImmediately =
+                Mirror(reflecting: model).children.first {
+                    $0.label == "_syncImmediately"
+                }?.value as? Bool
+
+            #expect(syncImmediately == true)
+        }
+
         @Test("Observe First", .testMode)
         func observeFirst() {
             let model = MockModelCloudObserveFirst(developmentMode: false)

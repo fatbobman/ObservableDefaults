@@ -1,0 +1,4 @@
+@ObservableCloud(syncImmediately: true)
+final class CloudSyncImmediatelyFixture {
+    var theme: String = "light"
+}
