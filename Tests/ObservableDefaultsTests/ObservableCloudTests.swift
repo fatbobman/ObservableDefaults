@@ -100,6 +100,25 @@ struct ObservableCloudTests {
             #expect(userDefaults.string(forKey: "observableOnly") == nil)
         }
 
+        @Test("Observe First ignores external notifications for observable-only cloud properties", .testMode)
+        func observeFirstIgnoresExternalNotificationsForObservableOnlyProperties() {
+            let model = MockModelCloudObserveFirst(developmentMode: false)
+
+            tracking(model, \.observableOnly, .notification, false)
+            userDefaults.set("Test2", forKey: "observableOnly")
+            userDefaults.synchronize()
+            NotificationCenter.default.post(
+                name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+                object: nil,
+                userInfo: [
+                    NSUbiquitousKeyValueStoreChangedKeysKey: ["observableOnly"]
+                ])
+
+            #expect(
+                model.observableOnly == "ObservableOnly",
+                "observeFirst observable-only properties should ignore external cloud notifications")
+        }
+
         @Test("Observe First ObservableOnly supports WillSet and DidSet", .testMode)
         func observeFirstObservableOnlySupportsWillSetAndDidSet() {
             let model = MockModelCloudObserveFirstWithObservers(developmentMode: false)

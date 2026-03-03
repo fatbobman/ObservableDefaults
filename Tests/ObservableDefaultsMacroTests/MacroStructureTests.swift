@@ -40,6 +40,8 @@ struct MacroStructureTests {
         #expect(result.expandedSource.contains("var _theme: String = \"light\""))
         #expect(result.expandedSource.contains("let _default_value_of_theme"))
         #expect(result.expandedSource.contains("var _ephemeral: String = \"scratch\""))
+        #expect(result.expandedSource.contains(#"case prefix + "theme":"#))
+        #expect(!result.expandedSource.contains(#"case prefix + "ephemeral":"#))
     }
 
     @Test("defaultIsolationIsMainActor adds MainActor-specific generated code for defaults")

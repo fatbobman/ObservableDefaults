@@ -178,9 +178,6 @@ final class CloudObserveFirstFixture {
                     case prefix + "theme":
                     host._$observationRegistrar.withMutation(of: host, keyPath: \.theme) {
                     }
-                    case prefix + "ephemeral":
-                    host._$observationRegistrar.withMutation(of: host, keyPath: \.ephemeral) {
-                    }
                     default:
                         break
                 }

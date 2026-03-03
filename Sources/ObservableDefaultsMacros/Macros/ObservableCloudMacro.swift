@@ -111,7 +111,7 @@ extension ObservableCloudMacros: MemberMacro {
         let (
             autoInit,
             prefix,
-            _,
+            observeFirst,
             syncImmediately,
             developmentMode,
             defaultIsolationIsMainActor
@@ -170,7 +170,9 @@ extension ObservableCloudMacros: MemberMacro {
             primaryAttribute: CloudBackedMacro.name,
             primaryArgument: CloudBackedMacro.key,
             fallbackAttribute: CloudKeyMacro.name,
-            fallbackArgument: CloudKeyMacro.key)
+            fallbackArgument: CloudKeyMacro.key,
+            observeFirst: observeFirst,
+            requiredBackedAttribute: CloudBackedMacro.name)
 
         let caseCode = makeCloudObservationCaseCode(metas: metas, hasMainActor: hasMainActor)
 
