@@ -224,186 +224,14 @@ extension ObservableDefaultsMacros: MemberMacro {
             }
             """
 
-        // Generate NotificationCenter observer class for external UserDefaults changes
-        let observerFunctionSyntax: DeclSyntax =
-            if metas.isEmpty {
-                // No properties to observe, just create empty observer
-                """
-                private var observer: DefaultsObservation?
-
-                /// Manages UserDefaults change observation using NotificationCenter.
-                ///
-                /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
-                private final class DefaultsObservation: @unchecked Sendable {
-                    let host: \(className)
-                    let userDefaults: Foundation.UserDefaults
-                    let prefix: String
-                    let observableKeysBlacklist: [String]
-
-                    /// Initializes the observation with the specified parameters.
-                    /// - Parameters:
-                    ///   - host: The host instance to observe
-                    ///   - userDefaults: The UserDefaults instance to monitor
-                    ///   - prefix: The key prefix for UserDefaults keys
-                    ///   - observableKeysBlacklist: Keys to exclude from observation
-                    init(host: \(
-                    className), userDefaults: Foundation.UserDefaults, prefix: String, observableKeysBlacklist: [String]) {
-                        self.host = host
-                        self.userDefaults = userDefaults
-                        self.prefix = prefix
-                        self.observableKeysBlacklist = observableKeysBlacklist
-                        // No properties to observe, so no need to register for notifications
-                    }
-
-                    deinit {
-                        // No observer to remove
-                    }
-                }
-                """
-            } else if hasMainActor {
-                """
-                private var observer: DefaultsObservation?
-
-                /// Manages UserDefaults change observation using NotificationCenter.
-                ///
-                /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
-                private final class DefaultsObservation: @unchecked Sendable {
-                    let host: \(className)
-                    let userDefaults: Foundation.UserDefaults
-                    let prefix: String
-                    let observableKeysBlacklist: [String]
-                    private var notificationObserver: NSObjectProtocol?
-
-                    /// Initializes the observation with the specified parameters.
-                    /// - Parameters:
-                    ///   - host: The host instance to observe
-                    ///   - userDefaults: The UserDefaults instance to monitor
-                    ///   - prefix: The key prefix for UserDefaults keys
-                    ///   - observableKeysBlacklist: Keys to exclude from observation
-                    init(host: \(
-                    className), userDefaults: Foundation.UserDefaults, prefix: String, observableKeysBlacklist: [String]) {
-                        self.host = host
-                        self.userDefaults = userDefaults
-                        self.prefix = prefix
-                        self.observableKeysBlacklist = observableKeysBlacklist
-
-                        notificationObserver = NotificationCenter.default
-                            .addObserver(
-                                forName: UserDefaults.didChangeNotification,
-                                object: \(raw: limitToInstance ? "userDefaults" : "nil"),
-                                queue: .main
-                            ) { [weak host, prefix, observableKeysBlacklist] notification in
-                                guard let host else { return }
-                                
-                                // Check all monitored keys for changes
-                                let monitoredKeys: [String] = [
-                                    \(raw: monitoredKeysLiteral)
-                                ]
-
-                                for key in monitoredKeys {
-                                    let fullKey = prefix + key
-                                    if !observableKeysBlacklist.contains(fullKey) {
-                                        switch fullKey {
-                                        \(raw: caseCode)
-                                        default:
-                                            break
-                                        }
-                                    }
-                                }
-                            }
-                    }
-
-                    \(raw: defaultIsolationIsMainActor ? "@MainActor" : "")
-                    deinit {
-                        if let observer = notificationObserver {
-                            NotificationCenter.default.removeObserver(observer)
-                        }
-                    }
-                }
-                """
-            } else {
-                """
-                private var observer: DefaultsObservation?
-
-                /// Manages UserDefaults change observation using NotificationCenter.
-                ///
-                /// It ensures that the observer is properly registered and deregistered when the instance is created and destroyed.
-                private final class DefaultsObservation: @unchecked Sendable {
-                    let host: \(className)
-                    let userDefaults: Foundation.UserDefaults
-                    let prefix: String
-                    let observableKeysBlacklist: [String]
-
-                    /// Initializes the observation with the specified parameters.
-                    /// - Parameters:
-                    ///   - host: The host instance to observe
-                    ///   - userDefaults: The UserDefaults instance to monitor
-                    ///   - prefix: The key prefix for UserDefaults keys
-                    ///   - observableKeysBlacklist: Keys to exclude from observation
-                    init(host: \(
-                    className), userDefaults: Foundation.UserDefaults, prefix: String, observableKeysBlacklist: [String]) {
-                        self.host = host
-                        self.userDefaults = userDefaults
-                        self.prefix = prefix
-                        self.observableKeysBlacklist = observableKeysBlacklist
-
-                        NotificationCenter.default
-                            .addObserver(
-                                forName: UserDefaults.didChangeNotification,
-                                object: \(raw: limitToInstance ? "userDefaults" : "nil"),
-                                queue: nil,
-                                using: userDefaultsDidChange
-                            )
-                    }
-
-                    /// Handles UserDefaults changes from external sources.
-                    /// - Parameter notification: The notification containing change information
-                    @Sendable
-                    private func userDefaultsDidChange(_ notification: Foundation.Notification) {
-                        // Check all monitored keys for changes
-                        let monitoredKeys: [String] = [
-                            \(raw: monitoredKeysLiteral)
-                        ]
-
-                        for key in monitoredKeys {
-                            let fullKey = prefix + key
-                            if !observableKeysBlacklist.contains(fullKey) {
-                                switch fullKey {
-                                \(raw: caseCode)
-                                default:
-                                    break
-                                }
-                            }
-                        }
-                    }
-
-                    deinit {
-                        NotificationCenter.default.removeObserver(self)
-                    }
-                }
-                """
-            }
-
-        // Generate observer starter method
-        let observerStarterSyntax: DeclSyntax =
-            if metas.isEmpty {
-                // No properties to observe, create empty starter
-                """
-                private func observerStarter(observableKeysBlacklist: [PartialKeyPath<\(
-                raw: className)>] = []) {
-                    // No properties to observe
-                    observer = DefaultsObservation(host: self, userDefaults: _userDefaults, prefix: _prefix, observableKeysBlacklist: [])
-                }
-                """
-            } else {
-                """
-                private func observerStarter(observableKeysBlacklist: [PartialKeyPath<\(
-                raw: className)>] = []) {
-                    let keyList = observableKeysBlacklist.compactMap{ _defaultsKeyPathMap[$0] }
-                    observer = DefaultsObservation(host: self, userDefaults: _userDefaults, prefix: _prefix, observableKeysBlacklist: keyList)
-                }
-                """
-            }
+        let observerMembers = makeDefaultsObserverMembers(
+            className: className,
+            caseCode: caseCode,
+            monitoredKeysLiteral: monitoredKeysLiteral,
+            hasMainActor: hasMainActor,
+            limitToInstance: limitToInstance,
+            defaultIsolationIsMainActor: defaultIsolationIsMainActor,
+            metas: metas)
 
         return [
             registrarSyntax,
@@ -414,9 +242,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             prefixSyntax,
             keyPathMapsSyntax,
             shouldSetValueSyntax,
-            observerFunctionSyntax,
-            observerStarterSyntax,
-        ] + (autoInit ? [initFunctionSyntax] : [])
+        ] + observerMembers + (autoInit ? [initFunctionSyntax] : [])
     }
 }
 
