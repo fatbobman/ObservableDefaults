@@ -141,21 +141,7 @@ extension ObservableDefaultsMacros: MemberMacro {
             observeFirst: observeFirst,
             requiredBackedAttribute: DefaultsBackedMacro.name)
 
-        // Generate keyPath mapping for external change handling
-        let keyPathMaps =
-            metas.isEmpty
-            ? "[:]"
-            : "["
-                + metas
-                .map { "\\\(className).\($0.propertyID): \"\($0.storageKey)\"" }
-                .joined(separator: ", ") + "]"
-
-        let keyPathMapsSyntax: DeclSyntax =
-            """
-            private let _defaultsKeyPathMap: [PartialKeyPath<\(raw: className)>: String] = \(
-                raw: keyPathMaps)
-            private var _ignoredKeyPathsForExternalUpdates: [PartialKeyPath<\(raw: className)>] = []
-            """
+        let keyPathMapsSyntax = makeDefaultsKeyPathMapSyntax(className: className, metas: metas)
 
         let caseCode = makeDefaultsObservationCaseCode(metas: metas, hasMainActor: hasMainActor)
         let monitoredKeysLiteral = makeMonitoredKeysArrayLiteral(metas)

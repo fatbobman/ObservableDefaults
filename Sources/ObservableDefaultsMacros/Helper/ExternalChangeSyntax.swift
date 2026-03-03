@@ -1,4 +1,25 @@
 import SwiftSyntax
+import SwiftSyntaxBuilder
+
+func makeDefaultsKeyPathMapSyntax(
+    className: IdentifierPatternSyntax,
+    metas: [PersistedPropertyMeta]
+) -> DeclSyntax {
+    let keyPathMapLiteral =
+        metas.isEmpty
+        ? "[:]"
+        : "["
+            + metas
+            .map { "\\\(className).\($0.propertyID): \"\($0.storageKey)\"" }
+            .joined(separator: ", ") + "]"
+
+    return
+        """
+        private let _defaultsKeyPathMap: [PartialKeyPath<\(raw: className)>: String] = \(
+            raw: keyPathMapLiteral)
+        private var _ignoredKeyPathsForExternalUpdates: [PartialKeyPath<\(raw: className)>] = []
+        """
+}
 
 func makeMonitoredKeysArrayLiteral(_ metas: [PersistedPropertyMeta]) -> String {
     metas.map { "\"\($0.storageKey)\"" }.joined(separator: ", ")
