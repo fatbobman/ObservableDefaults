@@ -18,6 +18,9 @@ struct MacroStructureTests {
         let classes = tree.statements.compactMap { $0.item.as(ClassDeclSyntax.self) }
         #expect(classes.count == 1)
         #expect(classes.first?.name.text == "DefaultsBasicFixture")
+        #expect(result.expandedSource.contains("private var notificationObserver: NSObjectProtocol?"))
+        #expect(result.expandedSource.contains("NotificationCenter.default.removeObserver(observer)"))
+        #expect(!result.expandedSource.contains("NotificationCenter.default.removeObserver(self)"))
     }
 
     @Test("ObserveFirst defaults only maps explicitly backed properties")
@@ -42,6 +45,9 @@ struct MacroStructureTests {
         #expect(result.expandedSource.contains("var _ephemeral: String = \"scratch\""))
         #expect(result.expandedSource.contains(#"case prefix + "theme":"#))
         #expect(!result.expandedSource.contains(#"case prefix + "ephemeral":"#))
+        #expect(result.expandedSource.contains("private var notificationObserver: NSObjectProtocol?"))
+        #expect(result.expandedSource.contains("NotificationCenter.default.removeObserver(observer)"))
+        #expect(!result.expandedSource.contains("NotificationCenter.default.removeObserver(self)"))
     }
 
     @Test("defaultIsolationIsMainActor adds MainActor-specific generated code for defaults")

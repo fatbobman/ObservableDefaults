@@ -79,6 +79,20 @@ struct ObservableDefaultsTests {
         #expect(model.name == "Test1", "name should be observable by setting value by UserDefaults")
     }
 
+    @Test("Model with defaults observer infrastructure deallocates")
+    func defaultsObserverInfrastructureDeallocates() {
+        let userDefaults = UserDefaults.getTestInstance(suiteName: #function)
+        weak var weakModel: MockModel?
+
+        do {
+            let model = MockModel(userDefaults: userDefaults)
+            weakModel = model
+            #expect(weakModel != nil)
+        }
+
+        #expect(weakModel == nil)
+    }
+
     @Test("Observable Only")
     func observableOnly() {
         let userDefaults = UserDefaults.getTestInstance(suiteName: #function)

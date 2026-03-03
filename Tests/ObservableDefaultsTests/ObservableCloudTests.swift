@@ -92,6 +92,19 @@ struct ObservableCloudTests {
             #expect(userDefaults.string(forKey: "test_name") == "Test2")
         }
 
+        @Test("Model with cloud observer infrastructure deallocates", .testMode)
+        func cloudObserverInfrastructureDeallocates() {
+            weak var weakModel: MockModelCloud?
+
+            do {
+                let model = MockModelCloud(developmentMode: false)
+                weakModel = model
+                #expect(weakModel != nil)
+            }
+
+            #expect(weakModel == nil)
+        }
+
         @Test("syncImmediately macro default is preserved by generated init", .testMode)
         func syncImmediatelyMacroDefaultIsPreserved() {
             let model = MockModelCloudSyncImmediately()
