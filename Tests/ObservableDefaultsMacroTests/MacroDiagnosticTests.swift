@@ -18,6 +18,38 @@ struct MacroDiagnosticTests {
         #expect(result.diagnostics[0].contains("@ObservableDefaults parameter 'suiteName' must be a string literal"))
     }
 
+    @Test("ObservableDefaults rejects non-literal prefix")
+    func defaultsRejectsNonLiteralPrefix() throws {
+        let result = try MacroTestSupport.expand(
+            source: """
+                let prefix = "app_"
+
+                @ObservableDefaults(prefix: prefix)
+                final class Fixture {
+                    var name: String = "fat"
+                }
+                """)
+
+        #expect(result.diagnostics.count == 1)
+        #expect(result.diagnostics[0].contains("@ObservableDefaults parameter 'prefix' must be a string literal"))
+    }
+
+    @Test("ObservableCloud rejects non-literal prefix")
+    func cloudRejectsNonLiteralPrefix() throws {
+        let result = try MacroTestSupport.expand(
+            source: """
+                let prefix = "app_"
+
+                @ObservableCloud(prefix: prefix)
+                final class Fixture {
+                    var name: String = "fat"
+                }
+                """)
+
+        #expect(result.diagnostics.count == 1)
+        #expect(result.diagnostics[0].contains("@ObservableCloud parameter 'prefix' must be a string literal"))
+    }
+
     @Test("DefaultsBacked rejects non-literal custom key")
     func defaultsBackedRejectsNonLiteralKey() throws {
         let result = try MacroTestSupport.expand(

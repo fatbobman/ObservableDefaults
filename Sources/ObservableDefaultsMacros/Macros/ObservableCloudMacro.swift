@@ -100,7 +100,7 @@ extension ObservableCloudMacros: MemberMacro {
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
         conformingTo protocols: [TypeSyntax],
-        in _: some MacroExpansionContext
+        in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
         guard let identifier = declaration.asProtocol(NamedDeclSyntax.self) else { return [] }
 
@@ -114,8 +114,17 @@ extension ObservableCloudMacros: MemberMacro {
             observeFirst,
             syncImmediately,
             developmentMode,
-            defaultIsolationIsMainActor
+            defaultIsolationIsMainActor,
+            prefixExpression
         ) = extractProperty(node)
+
+        if prefix.isEmpty, let prefixExpression {
+            context.diagnose(
+                .stringLiteralRequired(
+                    expression: prefixExpression,
+                    argumentName: ObservableCloudMacros.prefix,
+                    attributeName: "@\(ObservableCloudMacros.name)"))
+        }
 
         // Find all properties that should be persisted to NSUbiquitousKeyValueStore
         guard let classDecl = declaration as? ClassDeclSyntax else {
@@ -297,7 +306,7 @@ extension ObservableCloudMacros: MemberAttributeMacro {
         providingAttributesFor member: some DeclSyntaxProtocol,
         in _: some MacroExpansionContext
     ) throws -> [SwiftSyntax.AttributeSyntax] {
-        let (_, _, observeFirst, _, _, _) = extractProperty(node)
+        let (_, _, observeFirst, _, _, _, _) = extractProperty(node)
         guard let varDecl = member.as(VariableDeclSyntax.self),
             varDecl.isObservable
         else {
@@ -344,7 +353,8 @@ extension ObservableCloudMacros {
         observeFirst: Bool,
         syncImmediately: Bool,
         developmentMode: Bool,
-        defaultIsolationIsMainActor: Bool
+        defaultIsolationIsMainActor: Bool,
+        invalidPrefixExpression: ExprSyntax?
     ) {
         var autoInit = true
         var prefix = ""
@@ -352,13 +362,18 @@ extension ObservableCloudMacros {
         var syncImmediately = false
         var developmentMode = false
         var defaultIsolationIsMainActor = false
+        var invalidPrefixExpression: ExprSyntax?
 
         if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
             if let value = argumentList.booleanLiteralValue(forLabel: ObservableCloudMacros.autoInit) {
                 autoInit = value
             }
-            if let value = argumentList.trimmedStringLiteralValue(forLabel: ObservableCloudMacros.prefix) {
-                prefix = value
+            if let prefixExpression = argumentList.expression(forLabel: ObservableCloudMacros.prefix) {
+                if let value = prefixExpression.trimmedStringLiteralValue {
+                    prefix = value
+                } else {
+                    invalidPrefixExpression = prefixExpression
+                }
             }
             if let value = argumentList.booleanLiteralValue(
                 forLabel: ObservableCloudMacros.observeFirst)
@@ -381,6 +396,14 @@ extension ObservableCloudMacros {
                 defaultIsolationIsMainActor = value
             }
         }
-        return (autoInit, prefix, observeFirst, syncImmediately, developmentMode, defaultIsolationIsMainActor)
+        return (
+            autoInit,
+            prefix,
+            observeFirst,
+            syncImmediately,
+            developmentMode,
+            defaultIsolationIsMainActor,
+            invalidPrefixExpression
+        )
     }
 }

@@ -110,7 +110,8 @@ extension ObservableDefaultsMacros: MemberMacro {
             observeFirst,
             limitToInstance,
             defaultIsolationIsMainActor,
-            suiteNameExpression
+            suiteNameExpression,
+            prefixExpression
         ) = extractProperty(node)
 
         if suiteName.isEmpty, let suiteNameExpression {
@@ -118,6 +119,14 @@ extension ObservableDefaultsMacros: MemberMacro {
                 .stringLiteralRequired(
                     expression: suiteNameExpression,
                     argumentName: ObservableDefaultsMacros.suiteName,
+                    attributeName: "@\(ObservableDefaultsMacros.name)"))
+        }
+
+        if prefix.isEmpty, let prefixExpression {
+            context.diagnose(
+                .stringLiteralRequired(
+                    expression: prefixExpression,
+                    argumentName: ObservableDefaultsMacros.prefix,
                     attributeName: "@\(ObservableDefaultsMacros.name)"))
         }
 
@@ -301,7 +310,7 @@ extension ObservableDefaultsMacros: MemberAttributeMacro {
         providingAttributesFor member: some DeclSyntaxProtocol,
         in _: some MacroExpansionContext
     ) throws -> [SwiftSyntax.AttributeSyntax] {
-        let (_, _, _, _, observeFirst, _, _, _) = extractProperty(node)
+        let (_, _, _, _, observeFirst, _, _, _, _) = extractProperty(node)
         guard let varDecl = member.as(VariableDeclSyntax.self),
             varDecl.isObservable
         else {
@@ -350,7 +359,8 @@ extension ObservableDefaultsMacros {
         observeFirst: Bool,
         limitToInstance: Bool,
         defaultIsolationIsMainActor: Bool,
-        invalidSuiteNameExpression: ExprSyntax?
+        invalidSuiteNameExpression: ExprSyntax?,
+        invalidPrefixExpression: ExprSyntax?
     ) {
         var autoInit = true
         var suiteName = ""
@@ -360,6 +370,7 @@ extension ObservableDefaultsMacros {
         var limitToInstance = true
         var defaultIsolationIsMainActor = false
         var invalidSuiteNameExpression: ExprSyntax?
+        var invalidPrefixExpression: ExprSyntax?
 
         if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
             if let value = argumentList.booleanLiteralValue(forLabel: ObservableDefaultsMacros.autoInit) {
@@ -377,8 +388,12 @@ extension ObservableDefaultsMacros {
                     invalidSuiteNameExpression = suiteNameExpression
                 }
             }
-            if let value = argumentList.trimmedStringLiteralValue(forLabel: ObservableDefaultsMacros.prefix) {
-                prefix = value
+            if let prefixExpression = argumentList.expression(forLabel: ObservableDefaultsMacros.prefix) {
+                if let value = prefixExpression.trimmedStringLiteralValue {
+                    prefix = value
+                } else {
+                    invalidPrefixExpression = prefixExpression
+                }
             }
             if let value = argumentList.booleanLiteralValue(
                 forLabel: ObservableDefaultsMacros.observeFirst)
@@ -396,6 +411,16 @@ extension ObservableDefaultsMacros {
                 defaultIsolationIsMainActor = value
             }
         }
-        return (autoInit, suiteName, prefix, ignoreExternalChanges, observeFirst, limitToInstance, defaultIsolationIsMainActor, invalidSuiteNameExpression)
+        return (
+            autoInit,
+            suiteName,
+            prefix,
+            ignoreExternalChanges,
+            observeFirst,
+            limitToInstance,
+            defaultIsolationIsMainActor,
+            invalidSuiteNameExpression,
+            invalidPrefixExpression
+        )
     }
 }
