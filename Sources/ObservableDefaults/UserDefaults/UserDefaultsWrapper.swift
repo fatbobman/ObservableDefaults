@@ -38,6 +38,26 @@ public struct UserDefaultsWrapper<Value> {
     /// Private initializer to prevent instantiation since this struct only provides static methods
     private init() {}
 
+    private nonisolated static func decodedURL(from storedObject: Any?) -> URL? {
+        switch storedObject {
+        case let url as URL:
+            url
+        case let url as NSURL:
+            url as URL
+        case let string as String:
+            URL(string: string)
+        case let data as Data:
+            try? JSONDecoder().decode(URL.self, from: data)
+        default:
+            nil
+        }
+    }
+
+    private nonisolated static func setURL(_ key: String, _ url: URL, _ store: UserDefaults) {
+        guard let data = try? JSONEncoder().encode(url) else { return }
+        store.set(data, forKey: key)
+    }
+
     // MARK: - Get Values
 
     /// Gets a RawRepresentable value from the user defaults store.
@@ -273,6 +293,52 @@ public struct UserDefaultsWrapper<Value> {
         return object as? Value ?? defaultValue
     }
 
+    /// Gets a URL value stored through the Codable `Data` path.
+    public nonisolated static func getValue(
+        _ key: String,
+        _ defaultValue: URL,
+        _ store: UserDefaults
+    ) -> URL
+    where Value == URL {
+        decodedURL(from: store.object(forKey: key)) ?? defaultValue
+    }
+
+    /// Gets an optional URL value stored through the Codable `Data` path.
+    public nonisolated static func getValue(
+        _ key: String,
+        _ defaultValue: URL?,
+        _ store: UserDefaults
+    ) -> URL?
+    where Value == URL {
+        guard let object = store.object(forKey: key) else {
+            return defaultValue
+        }
+        return decodedURL(from: object) ?? defaultValue
+    }
+
+    /// Gets an NSURL value stored through URL's Codable `Data` representation.
+    public nonisolated static func getValue(
+        _ key: String,
+        _ defaultValue: NSURL,
+        _ store: UserDefaults
+    ) -> NSURL
+    where Value == NSURL {
+        decodedURL(from: store.object(forKey: key)).map { $0 as NSURL } ?? defaultValue
+    }
+
+    /// Gets an optional NSURL value stored through URL's Codable `Data` representation.
+    public nonisolated static func getValue(
+        _ key: String,
+        _ defaultValue: NSURL?,
+        _ store: UserDefaults
+    ) -> NSURL?
+    where Value == NSURL {
+        guard let object = store.object(forKey: key) else {
+            return defaultValue
+        }
+        return decodedURL(from: object).map { $0 as NSURL } ?? defaultValue
+    }
+
     /// Gets a Codable value from the user defaults store.
     /// This method is used for custom types that can be encoded/decoded using JSON.
     /// - Parameters:
@@ -479,6 +545,46 @@ public struct UserDefaultsWrapper<Value> {
     where Value: UserDefaultsPropertyListValue & Codable {
         // Store the optional value (nil will remove the key)
         store.set(newValue, forKey: key)
+    }
+
+    /// Stores URL values as JSON-encoded `Data` instead of passing URL objects to UserDefaults.
+    public nonisolated static func setValue(_ key: String, _ newValue: URL, _ store: UserDefaults)
+    where Value == URL {
+        setURL(key, newValue, store)
+    }
+
+    /// Stores optional URL values as JSON-encoded `Data`, removing the key for nil.
+    public nonisolated static func setValue(
+        _ key: String,
+        _ newValue: URL?,
+        _ store: UserDefaults
+    )
+    where Value == URL {
+        guard let newValue else {
+            store.removeObject(forKey: key)
+            return
+        }
+        setURL(key, newValue, store)
+    }
+
+    /// Stores NSURL values through URL's JSON-encoded `Data` representation.
+    public nonisolated static func setValue(_ key: String, _ newValue: NSURL, _ store: UserDefaults)
+    where Value == NSURL {
+        setURL(key, newValue as URL, store)
+    }
+
+    /// Stores optional NSURL values through URL's JSON-encoded `Data` representation.
+    public nonisolated static func setValue(
+        _ key: String,
+        _ newValue: NSURL?,
+        _ store: UserDefaults
+    )
+    where Value == NSURL {
+        guard let newValue else {
+            store.removeObject(forKey: key)
+            return
+        }
+        setURL(key, newValue as URL, store)
     }
 
     /// Sets a Codable value in the user defaults store.

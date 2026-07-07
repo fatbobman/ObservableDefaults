@@ -464,6 +464,9 @@ When a type matches multiple constraints, the implementation chooses the most sp
   - Example: `String`/`Int` raw values are stored directly as `String`/`Int`.
 - `PropertyListValue` paths: persist the value directly as PropertyList-compatible objects.
 - `Codable`-only path: persist JSON-encoded `Data`.
+- `URL` / `NSURL` paths: persist JSON-encoded `Data` using `URL`'s Codable
+  representation. They are not passed directly to `UserDefaults` or
+  `NSUbiquitousKeyValueStore` as property-list objects.
 - Optional values:
   - non-`nil`: stored using the same rules above
   - `nil`: key is removed
@@ -484,6 +487,7 @@ If you also read/write these keys directly outside the macros, use the same form
 - Use `rawValue` for all `RawRepresentable`-based properties.
 - Use direct PropertyList values for PropertyList paths.
 - Use JSON `Data` only for `Codable`-only properties.
+- Use JSON `Data` encoded from `URL` for `URL` / `NSURL` properties.
 - Key naming follows macro key resolution:
   - default: `prefix + propertyName`
   - custom key: `@DefaultsKey` / `@CloudKey`
@@ -496,6 +500,9 @@ defaults.set(theme.rawValue, forKey: "app_theme")
 
 // For Codable-only property
 defaults.set(try JSONEncoder().encode(profile), forKey: "app_profile")
+
+// For URL / NSURL properties
+defaults.set(try JSONEncoder().encode(homepageURL), forKey: "app_homepage")
 ```
 
 ### Integrating with Other Observable Objects

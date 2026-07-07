@@ -204,6 +204,7 @@ public macro ObservableOnly() =
 ///
 /// - Important: Can only be applied to classes, not structs
 /// - Note: Supports Codable types
+/// - Note: URL and NSURL values are stored as JSON-encoded Data using URL's Codable representation.
 @attached(
     member,
     names: named(_$observationRegistrar),
@@ -497,6 +498,7 @@ public macro CloudKey(keyValueStoreKey: String? = nil) =
 ///
 /// - Important: Can only be applied to classes, not structs
 /// - Note: Supports all CloudPropertyListValue types and Codable types
+/// - Note: URL and NSURL values are stored as JSON-encoded Data using URL's Codable representation.
 /// - Warning: Changing class structure after deployment may affect cloud data compatibility
 @attached(
     member,

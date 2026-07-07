@@ -23,6 +23,26 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     /// Private initializer to prevent instantiation since this struct only provides static methods
     private init() {}
 
+    private func decodedURL(from storedObject: Any?) -> URL? {
+        switch storedObject {
+        case let url as URL:
+            url
+        case let url as NSURL:
+            url as URL
+        case let string as String:
+            URL(string: string)
+        case let data as Data:
+            try? JSONDecoder().decode(URL.self, from: data)
+        default:
+            nil
+        }
+    }
+
+    private func setURL(_ key: String, _ url: URL) {
+        guard let data = try? JSONEncoder().encode(url) else { return }
+        store.set(data, forKey: key)
+    }
+
     #if DEBUG
         /// A TaskLocal variable to determine if the current environment is a test environment.
         @TaskLocal
@@ -248,6 +268,44 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
     ) -> R?
     where R: CloudPropertyListValue & Codable {
         store.object(forKey: key) as? R ?? defaultValue
+    }
+
+    /// Gets a URL value stored through the Codable `Data` path.
+    public func getValue(
+        _ key: String,
+        _ defaultValue: URL
+    ) -> URL {
+        decodedURL(from: store.object(forKey: key)) ?? defaultValue
+    }
+
+    /// Gets an optional URL value stored through the Codable `Data` path.
+    public func getValue(
+        _ key: String,
+        _ defaultValue: URL?
+    ) -> URL? {
+        guard let object = store.object(forKey: key) else {
+            return defaultValue
+        }
+        return decodedURL(from: object) ?? defaultValue
+    }
+
+    /// Gets an NSURL value stored through URL's Codable `Data` representation.
+    public func getValue(
+        _ key: String,
+        _ defaultValue: NSURL
+    ) -> NSURL {
+        decodedURL(from: store.object(forKey: key)).map { $0 as NSURL } ?? defaultValue
+    }
+
+    /// Gets an optional NSURL value stored through URL's Codable `Data` representation.
+    public func getValue(
+        _ key: String,
+        _ defaultValue: NSURL?
+    ) -> NSURL? {
+        guard let object = store.object(forKey: key) else {
+            return defaultValue
+        }
+        return decodedURL(from: object).map { $0 as NSURL } ?? defaultValue
     }
 
     /// Gets a Codable value from the ubiquitous key-value store.
@@ -489,6 +547,46 @@ public struct NSUbiquitousKeyValueStoreWrapper: Sendable {
         } else {
             store.removeObject(forKey: key)
         }
+    }
+
+    /// Stores URL values as JSON-encoded `Data`.
+    public func setValue(
+        _ key: String,
+        _ newValue: URL
+    ) {
+        setURL(key, newValue)
+    }
+
+    /// Stores optional URL values as JSON-encoded `Data`, removing the key for nil.
+    public func setValue(
+        _ key: String,
+        _ newValue: URL?
+    ) {
+        guard let newValue else {
+            store.removeObject(forKey: key)
+            return
+        }
+        setURL(key, newValue)
+    }
+
+    /// Stores NSURL values through URL's JSON-encoded `Data` representation.
+    public func setValue(
+        _ key: String,
+        _ newValue: NSURL
+    ) {
+        setURL(key, newValue as URL)
+    }
+
+    /// Stores optional NSURL values through URL's JSON-encoded `Data` representation.
+    public func setValue(
+        _ key: String,
+        _ newValue: NSURL?
+    ) {
+        guard let newValue else {
+            store.removeObject(forKey: key)
+            return
+        }
+        setURL(key, newValue as URL)
     }
 
     /// Sets a Codable value in the ubiquitous key-value store.

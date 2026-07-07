@@ -54,14 +54,6 @@ extension NSString: UserDefaultsPropertyListValue {}
 /// String conforms to UserDefaultsPropertyListValue as it's a fundamental property list type
 extension String: UserDefaultsPropertyListValue {}
 
-// MARK: - URL Types
-
-/// NSURL conforms to UserDefaultsPropertyListValue as it can be stored in property lists
-extension NSURL: UserDefaultsPropertyListValue {}
-
-/// URL conforms to UserDefaultsPropertyListValue as it can be stored in property lists
-extension URL: UserDefaultsPropertyListValue {}
-
 // MARK: - Date Types
 
 /// NSDate conforms to UserDefaultsPropertyListValue as it's a fundamental property list type

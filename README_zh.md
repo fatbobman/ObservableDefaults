@@ -464,6 +464,9 @@ class AppearanceSettings {
   - 例如 `String`/`Int` rawValue 会直接以 `String`/`Int` 存储。
 - `PropertyListValue` 路径：直接以 PropertyList 值存储。
 - 仅 `Codable` 路径：以 JSON 编码后的 `Data` 存储。
+- `URL` / `NSURL` 路径：使用 `URL` 的 Codable 表示并以 JSON 编码后的
+  `Data` 存储，不会把 URL 对象直接作为 PropertyList 值写入
+  `UserDefaults` 或 `NSUbiquitousKeyValueStore`。
 - Optional 值：
   - 非 `nil`：按上述规则保存
   - `nil`：删除对应 key
@@ -484,6 +487,7 @@ class AppearanceSettings {
 - `RawRepresentable` 相关属性：手动写 `rawValue`
 - `PropertyListValue` 属性：手动写 PropertyList 原值
 - 仅 `Codable` 属性：手动写 JSON `Data`
+- `URL` / `NSURL` 属性：手动写由 `URL` 编码得到的 JSON `Data`
 - key 规则与宏一致：
   - 默认：`prefix + propertyName`
   - 自定义 key：`@DefaultsKey` / `@CloudKey`
@@ -496,6 +500,9 @@ defaults.set(theme.rawValue, forKey: "app_theme")
 
 // 仅 Codable 属性
 defaults.set(try JSONEncoder().encode(profile), forKey: "app_profile")
+
+// URL / NSURL 属性
+defaults.set(try JSONEncoder().encode(homepageURL), forKey: "app_homepage")
 ```
 
 ### 与其他 Observable 对象集成
